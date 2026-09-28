@@ -1,0 +1,5 @@
+{
+  "description": "Scrobbles the songs you play to your Last.fm account. Requires a free Last.fm API account and your own API credentials.",
+  "category": "Listening",
+  "author": "Compás"
+}

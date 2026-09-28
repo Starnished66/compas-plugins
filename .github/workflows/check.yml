@@ -1,0 +1,21 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Lua 5.5.1 (lua and luac)
+        run: .github/scripts/setup-lua.sh
+      - name: Compile every plugin
+        run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
+      - name: Validate the store index
+        run: python3 tools/build_index.py --check

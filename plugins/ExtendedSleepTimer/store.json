@@ -1,0 +1,5 @@
+{
+  "description": "A longer sleep timer that remembers its duration and stops playback when it ends.",
+  "category": "Listening",
+  "author": "Compás"
+}

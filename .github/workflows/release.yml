@@ -1,0 +1,34 @@
+name: Release
+
+# Push a tag such as v2026.09.27 to publish. The player's Plugin Store reads
+# index.json from the latest release and downloads every file from it.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Lua 5.5.1 (lua and luac)
+        run: .github/scripts/setup-lua.sh
+      - name: Compile every plugin
+        run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
+      - name: Build the release assets
+        run: python3 tools/build_index.py --tag "$GITHUB_REF_NAME" --out dist
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - > notes.md <<'PY'
+          import json
+          index = json.load(open("dist/index.json"))
+          print("Plugins in this release:\n")
+          for p in index["plugins"]:
+              print(f"- **{p['name']}** {p['version']}: {p['description']}")
+          PY
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Plugins $GITHUB_REF_NAME" --notes-file notes.md --latest

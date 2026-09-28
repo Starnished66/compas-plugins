@@ -1,0 +1,12 @@
+{
+  "description": "Internet radio stations from the Radio.txt file on the SD card, in Stream Media.",
+  "category": "Listening",
+  "author": "Compás",
+  "files": [
+    {
+      "src": "Radio.txt",
+      "dest": "Radio.txt",
+      "keep": true
+    }
+  ]
+}

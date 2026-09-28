@@ -1,0 +1,5 @@
+{
+  "description": "Shows the volume level on the charge LED, red above a high-volume threshold.",
+  "category": "Customization",
+  "author": "Compás"
+}
