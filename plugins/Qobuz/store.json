@@ -1,5 +1,5 @@
 {
-  "description": "Beta. Qobuz for a paid account. Needs your own app credentials; not yet tested with a live account.",
+  "description": "Beta. Qobuz for a paid account. Sign in with your email and password.",
   "category": "Experimental",
   "author": "Compás"
 }

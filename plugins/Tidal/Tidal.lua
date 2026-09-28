@@ -4,8 +4,9 @@ Tidal, for a paid account you already have.
 Tidal does not take a password from a third-party player. Sign-in is the
 device-code flow: this screen shows a short code, a phone opens
 link.tidal.com and enters it, and the player polls until that succeeds.
-The app id and app secret are yours to supply. Tidal revokes pairs, and
-when sign-in starts failing those two values are the first thing to replace.
+The device-flow client is the one from the stock player, so opening the
+tile shows the code. Tidal revokes client pairs; when sign-in starts
+failing, that pair is the first thing to replace.
 
 The access token is a JWT, renewed from the refresh token about a minute
 before it expires. Catalogue calls send it as a bearer token.
@@ -28,7 +29,7 @@ to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.1.0",
+    version = "1.3.0",
     api_min = 14,
 })
 
@@ -39,6 +40,9 @@ end
 
 local API = "https://api.tidal.com/v1"
 local AUTH = "https://auth.tidal.com/v1/oauth2"
+-- The pair from the stock player's device login.
+local CLIENT_ID = "8Ky7IQAz2AVnuy4x"
+local CLIENT_SECRET = "TX6C2zpsS4JnmduzltEYEXnpM4NO8VrIuBCnhMHIHpo="
 local IMAGES = "https://resources.tidal.com/images"
 local SCOPE = "r_usr w_usr"
 local CLIENT_VERSION = "2025.7.16"
@@ -251,8 +255,8 @@ local tidal_get
 
 refresh_token = function(callback)
     local refresh = stored("refresh_token")
-    local client_id = stored("client_id")
-    local client_secret = stored("client_secret")
+    local client_id = CLIENT_ID
+    local client_secret = CLIENT_SECRET
     if not refresh or not client_id or not client_secret then
         callback(false, "Not signed in")
         return
@@ -734,8 +738,8 @@ local function poll_login()
     end
     login_busy = true
     local generation = login_generation
-    local form = "client_id=" .. url_encode(stored("client_id"))
-        .. "&client_secret=" .. url_encode(stored("client_secret"))
+    local form = "client_id=" .. url_encode(CLIENT_ID)
+        .. "&client_secret=" .. url_encode(CLIENT_SECRET)
         .. "&device_code=" .. url_encode(login.device_code)
         .. "&grant_type=" .. url_encode("urn:ietf:params:oauth:grant-type:device_code")
         .. "&scope=" .. url_encode(SCOPE)
@@ -780,7 +784,7 @@ local function begin_login()
     login_starting = true
     login_generation = login_generation + 1
     local generation = login_generation
-    local form = "client_id=" .. url_encode(stored("client_id")) .. "&scope=" .. url_encode(SCOPE)
+    local form = "client_id=" .. url_encode(CLIENT_ID) .. "&scope=" .. url_encode(SCOPE)
     form_post(AUTH .. "/device_authorization", form, function(status, data, err)
         if generation ~= login_generation then return end
         login_starting = false
@@ -808,8 +812,6 @@ local function begin_login()
     end)
 end
 
-local prompt_keys
-
 show_home = function()
     show_list("Tidal", {
         "Search tracks",
@@ -819,7 +821,6 @@ show_home = function()
         "Favorite albums",
         "Playlists",
         "Quality",
-        "Change app credentials",
         "Sign in or log out",
     }, function(index, handle)
         if index >= 1 and index <= 6 and not stored("refresh_token") then
@@ -864,7 +865,6 @@ show_home = function()
         elseif index == 5 then favorite_albums(2, handle)
         elseif index == 6 then show_playlists(2, handle)
         elseif index == 7 then choose_quality(handle)
-        elseif index == 8 then prompt_keys()
         else
             if stored("refresh_token") then
                 login_generation = login_generation + 1
@@ -879,28 +879,7 @@ show_home = function()
     end)
 end
 
-prompt_keys = function(show_root)
-    plugin.show_text_input("Tidal client id", stored("client_id"), false, function(client_id)
-        if not client_id or client_id == "" then return end
-        plugin.show_text_input("Tidal client secret", nil, true, function(secret)
-            if not secret or secret == "" then return end
-            stop_login()
-            plugin.storage.set("client_id", client_id)
-            plugin.storage.set("client_secret", secret)
-            playback_generation = playback_generation + 1
-            clear_session()
-            if show_root then show_home() end
-            begin_login()
-        end)
-    end)
-end
-
 local function open_tidal()
-    if not stored("client_id") or not stored("client_secret") then
-        toast("Tidal does not issue third-party keys. Enter the pair you use.")
-        prompt_keys(true)
-        return
-    end
     if login_timer or login_starting then
         toast("Still waiting for the phone")
         return

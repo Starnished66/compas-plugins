@@ -1,5 +1,5 @@
 {
-  "description": "Beta. Tidal for a paid account, signed in with a code on your phone. Needs your own app credentials; not yet tested with a live account.",
+  "description": "Beta. Tidal for a paid account. Sign in with a code on your phone.",
   "category": "Experimental",
   "author": "Compás"
 }

@@ -1,10 +1,9 @@
 --[[
 Qobuz, for a paid account you already have.
 
-Qobuz does not publish a third-party API or issue app credentials. This
-plugin speaks the same HTTPS catalogue the stock player uses. You supply
-the app id and app secret once; they are stored with the session token
-under plugin.storage and the password is not saved.
+Sign in with the account email and password. The password is not saved.
+The app id is the one shipped in the stock player, so opening the tile
+goes straight to sign-in.
 
 The Stream Media row uses the player's own stream_media/qobuz.png, the same
 theme-relative icon path Net Radio and Podcasts pass to
@@ -22,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.1.0",
+    version = "1.3.0",
     api_min = 14,
 })
 
@@ -32,6 +31,9 @@ if not plugin.has_capability("playback.remote") then
 end
 
 local API = "https://www.qobuz.com/api.json/0.2"
+-- The pair from the stock player's Qobuz login. getFileUrl accepts it.
+local APP_ID = "575344876"
+local APP_SECRET = "6dc277296c6d6dc5627ff8c1c199f1d7"
 local PAGE = 25
 local BROWSE_CAP = 475 -- plus the "Play these" row, within show_list's 500 rows
 local SEARCH_CAP = 100
@@ -119,7 +121,7 @@ local function api_message(body, status)
 end
 
 local function qobuz_get(path, extra_headers, callback)
-    local headers = { ["X-App-Id"] = stored("app_id") }
+    local headers = { ["X-App-Id"] = APP_ID }
     local token = stored("auth_token")
     if token then headers["X-User-Auth-Token"] = token end
     if extra_headers then
@@ -258,10 +260,10 @@ end
 
 local function file_url(track, callback)
     local ts = tostring(os.time())
-    local secret = stored("app_secret") or ""
+    local secret = APP_SECRET
     local signed = "trackgetFileUrlformat_id" .. tostring(format_id())
         .. "intentstreamtrack_id" .. track.id .. ts .. secret
-    local path = "/track/getFileUrl?app_id=" .. url_encode(stored("app_id"))
+    local path = "/track/getFileUrl?app_id=" .. url_encode(APP_ID)
         .. "&user_auth_token=" .. url_encode(stored("auth_token") or "")
         .. "&request_ts=" .. ts
         .. "&request_sig=" .. plugin.md5(signed)
@@ -379,7 +381,7 @@ local function open_album(album, offset, depth, parent)
     local generation = browse_generation
     local all, hint = {}, album
     local function fetch(page_offset)
-        qobuz_get("/album/get?app_id=" .. url_encode(stored("app_id"))
+        qobuz_get("/album/get?app_id=" .. url_encode(APP_ID)
             .. "&album_id=" .. url_encode(album.id) .. "&limit=" .. PAGE .. "&offset=" .. page_offset,
             nil, function(data, err)
             if generation ~= browse_generation or not parent_showing(parent) then return end
@@ -403,7 +405,7 @@ local function open_playlist(playlist, offset, depth, parent)
     local generation = browse_generation
     local all = {}
     local function fetch(page_offset)
-        qobuz_get("/playlist/get?app_id=" .. url_encode(stored("app_id"))
+        qobuz_get("/playlist/get?app_id=" .. url_encode(APP_ID)
             .. "&playlist_id=" .. url_encode(playlist.id)
             .. "&extra=tracks&limit=" .. PAGE .. "&offset=" .. page_offset, nil, function(data, err)
             if generation ~= browse_generation or not parent_showing(parent) then return end
@@ -456,7 +458,7 @@ end
 
 local function search_albums(query, depth, parent)
     fetch_pages(function(offset)
-        return "/album/search?app_id=" .. url_encode(stored("app_id"))
+        return "/album/search?app_id=" .. url_encode(APP_ID)
             .. "&query=" .. url_encode(query) .. "&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.albums) end, SEARCH_CAP, parent, function(list)
         show_albums("Albums", albums_from(list), depth)
@@ -465,7 +467,7 @@ end
 
 local function search_tracks(query, depth, parent)
     fetch_pages(function(offset)
-        return "/track/search?app_id=" .. url_encode(stored("app_id"))
+        return "/track/search?app_id=" .. url_encode(APP_ID)
             .. "&query=" .. url_encode(query) .. "&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.tracks) end, SEARCH_CAP, parent, function(list)
         show_tracks("Tracks", track_rows(list))
@@ -476,7 +478,7 @@ local function open_artist(artist, offset, depth, parent)
     depth = depth or 3
     local generation, albums = browse_generation, {}
     local function fetch(page_offset, page_number)
-        qobuz_get("/artist/get?app_id=" .. url_encode(stored("app_id"))
+        qobuz_get("/artist/get?app_id=" .. url_encode(APP_ID)
             .. "&artist_id=" .. url_encode(artist.id)
             .. "&extra=albums&limit=" .. PAGE .. "&offset=" .. page_offset, nil, function(data, err)
             if generation ~= browse_generation or not parent_showing(parent) then return end
@@ -495,7 +497,7 @@ end
 
 local function search_artists(query, depth, parent)
     fetch_pages(function(offset)
-        return "/artist/search?app_id=" .. url_encode(stored("app_id"))
+        return "/artist/search?app_id=" .. url_encode(APP_ID)
             .. "&query=" .. url_encode(query) .. "&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.artists) end, SEARCH_CAP, parent, function(list)
         local rows = {}
@@ -522,7 +524,7 @@ end
 
 local function favorite_tracks(depth, parent)
     fetch_pages(function(offset)
-        return "/favorite/getUserFavorites?app_id=" .. url_encode(stored("app_id"))
+        return "/favorite/getUserFavorites?app_id=" .. url_encode(APP_ID)
             .. "&type=tracks&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.tracks) end, BROWSE_CAP, parent, function(list)
         show_tracks("Favorite tracks", track_rows(list))
@@ -531,7 +533,7 @@ end
 
 local function favorite_albums(depth, parent)
     fetch_pages(function(offset)
-        return "/favorite/getUserFavorites?app_id=" .. url_encode(stored("app_id"))
+        return "/favorite/getUserFavorites?app_id=" .. url_encode(APP_ID)
             .. "&type=albums&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.albums) end, BROWSE_CAP, parent, function(list)
         show_albums("Favorite albums", albums_from(list), depth)
@@ -540,7 +542,7 @@ end
 
 local function show_playlists(depth, parent)
     fetch_pages(function(offset)
-        return "/playlist/getUserPlaylists?app_id=" .. url_encode(stored("app_id"))
+        return "/playlist/getUserPlaylists?app_id=" .. url_encode(APP_ID)
             .. "&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.playlists) end, BROWSE_CAP, parent, function(list)
         local rows = {}
@@ -557,7 +559,7 @@ end
 
 local function show_new(depth, parent)
     fetch_pages(function(offset)
-        return "/album/getFeatured?app_id=" .. url_encode(stored("app_id"))
+        return "/album/getFeatured?app_id=" .. url_encode(APP_ID)
             .. "&type=new-releases&limit=" .. PAGE .. "&offset=" .. offset
     end, function(data) return items_of(data.albums) end, SEARCH_CAP, parent, function(list)
         show_albums("New releases", albums_from(list), depth)
@@ -583,7 +585,6 @@ local function logout()
     toast("Logged out of Qobuz")
 end
 
-local prompt_keys
 local prompt_login
 
 local function show_home()
@@ -596,7 +597,6 @@ local function show_home()
         "Favorite albums",
         "Playlists",
         "Quality",
-        "Change app credentials",
         "Sign in or log out",
     }, function(index, handle)
         if index >= 1 and index <= 7 and not stored("auth_token") then
@@ -611,7 +611,6 @@ local function show_home()
         elseif index == 6 then favorite_albums(2, handle)
         elseif index == 7 then show_playlists(2, handle)
         elseif index == 8 then choose_quality(handle)
-        elseif index == 9 then prompt_keys(false, handle)
         else
             if stored("auth_token") then logout() else prompt_login() end
         end
@@ -635,14 +634,13 @@ end
 
 local function do_login(email, password)
     -- The password goes in a header, not the query, and is not written down.
-    -- device_manufacturer_id carries the app secret; that is the login form
-    -- the stock client sends.
+    -- device_manufacturer_id carries the app secret.
     auth_generation = auth_generation + 1
     local generation = auth_generation
-    qobuz_get("/user/login?app_id=" .. url_encode(stored("app_id")), {
+    qobuz_get("/user/login?app_id=" .. url_encode(APP_ID), {
         username = email,
         password = password,
-        device_manufacturer_id = stored("app_secret"),
+        device_manufacturer_id = APP_SECRET,
     }, function(data, err)
         if generation ~= auth_generation then return end
         if not data then toast(err) return end
@@ -661,30 +659,7 @@ prompt_login = function()
     if ok == false then toast(err or "Text input is busy") end
 end
 
-prompt_keys = function(show_root, parent)
-    plugin.show_text_input("Qobuz app id", stored("app_id"), false, function(app_id)
-        if not app_id or app_id == "" then return end
-        plugin.show_text_input("Qobuz app secret", nil, true, function(secret)
-            if not secret or secret == "" then return end
-            auth_generation = auth_generation + 1
-            browse_generation = browse_generation + 1
-            plugin.storage.set("app_id", app_id)
-            plugin.storage.set("app_secret", secret)
-            playback_generation = playback_generation + 1
-            plugin.storage.delete("auth_token")
-            plugin.storage.delete("display_name")
-            if show_root and parent == nil then show_home() end
-            prompt_login()
-        end)
-    end)
-end
-
 local function open_qobuz()
-    if not stored("app_id") or not stored("app_secret") then
-        toast("Qobuz does not issue third-party keys. Enter the pair you use.")
-        prompt_keys(true, nil)
-        return
-    end
     if not stored("auth_token") then
         show_home()
         prompt_login()
