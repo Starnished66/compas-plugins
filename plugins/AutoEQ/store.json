@@ -1,0 +1,11 @@
+{
+  "description": "Searches the AutoEQ recommended headphone catalog and saves compatible parametric EQ profiles to PEQ_Profiles.",
+  "category": "Audio",
+  "author": "Compás",
+  "files": [
+    {
+      "src": "SOURCES.txt",
+      "dest": ".plugin-assets/AutoEQ/SOURCES.txt"
+    }
+  ]
+}

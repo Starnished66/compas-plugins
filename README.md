@@ -11,6 +11,12 @@ Download the files of a plugin from the [latest release](https://github.com/Star
 
 Then open Settings > Plugin Manager and choose Refresh Plugins.
 
+## AutoEQ profiles
+
+Open **Settings > Music Settings > Audio > AutoEQ**, search for your headphone model, and choose **Download profile**. The plugin uses [AutoEQ's recommended catalog](https://github.com/jaakkopasanen/AutoEq/tree/master/results) and saves compatible profiles in the SD card's `PEQ_Profiles` folder. Load a downloaded profile from **Equalizer > Profiles**; downloading does not change the active EQ.
+
+The catalog is cached for offline searches. Downloads and catalog refreshes need a network connection. Existing profiles can be replaced explicitly or saved as another copy; incompatible profiles are rejected without changing saved files.
+
 ## Layout
 
 ```
