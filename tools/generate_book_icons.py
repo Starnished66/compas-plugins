@@ -54,20 +54,18 @@ def badge(name, colors):
     tint=tuple(min(255,int(v*1.18)) for v in bytes.fromhex(bg[1:]))+(255,)
     d.ellipse(rect(6,6,90,90),outline=tint,width=q(1))
     if name=='audiobooks':
-        # Full-size transparent glyph: headphones above the book, with a
-        # visible gap between them even at the native 44px row size.
+        # A single upright book with sound waves beside it: bold geometry
+        # and clear separation keep the symbol readable in a 44px row.
         im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
-        arc(d,(18,5,78,65),180,360,CYAN,6)
-        line(d,[(18,34),(18,42)],CYAN,6)
-        line(d,[(78,34),(78,42)],CYAN,6)
-        d.rounded_rectangle(rect(13,28,24,44),radius=q(3),fill=CYAN)
-        d.rounded_rectangle(rect(72,28,83,44),radius=q(3),fill=CYAN)
-        line(d,[(48,60),(38,54),(20,53),(6,56),(6,86),(22,83),(37,85),(48,91)],GOLD,5)
-        line(d,[(48,60),(58,54),(76,53),(90,56),(90,86),(74,83),(59,85),(48,91)],GOLD,5)
-        line(d,[(48,60),(48,89)],GOLD,4)
-        for y in (65,73):
-            line(d,[(16,y),(28,y-1),(38,y+2)],GOLD,3)
-            line(d,[(80,y),(68,y-1),(58,y+2)],GOLD,3)
+        d.rounded_rectangle(rect(9,8,61,88),radius=q(5),outline=GOLD,width=q(5))
+        line(d,[(21,11),(21,75)],GOLD,4)
+        line(d,[(12,76),(60,76)],GOLD,4)
+        line(d,[(23,82),(56,82)],GOLD,2)
+        line(d,[(31,27),(50,27)],GOLD,4)
+        line(d,[(31,37),(45,37)],GOLD,4)
+        # Detached arcs read as sound, without crossing the book silhouette.
+        arc(d,(63,33,77,63),-70,70,CYAN,5)
+        arc(d,(64,20,92,76),-70,70,CYAN,5)
     elif name=='epub':
         # Full-size open book with a contrasting ribbon on the right page.
         im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
