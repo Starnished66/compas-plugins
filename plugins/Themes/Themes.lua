@@ -634,7 +634,7 @@ plugin.register_list_item("display", "Theme", function()
         plugin.show_toast("Theme applied", 1000)
         plugin.refresh_theme()
     end, { selected = selected_index, height = 100 })
-end)
+end, { group = "appearance" })
 
 -- After the settings row is registered so a failure here cannot take the
 -- Theme picker down with it. Native plugin_call() credits set_icon time,

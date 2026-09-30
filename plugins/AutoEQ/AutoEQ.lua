@@ -442,4 +442,4 @@ local function show_home()
     active_screen = handle
 end
 
-plugin.register_list_item("music_audio", "AutoEQ", show_home)
+plugin.register_list_item("music_audio", "AutoEQ", show_home, { group = "profiles" })

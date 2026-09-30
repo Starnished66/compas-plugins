@@ -106,7 +106,7 @@ if plugin.has_capability("audio.hw_volume_curve") then
         plugin.set_hw_volume_curve(current_mode.curve)
     end -- else: leave the app's own built-in taper alone until a mode is chosen below
 
-    plugin.register_list_item("music_audio", "Gain Mode", function()
+    local function open_settings()
         local names = {}
         local selected = 0
         for i, m in ipairs(MODES) do
@@ -127,7 +127,9 @@ if plugin.has_capability("audio.hw_volume_curve") then
             end
             plugin.show_toast(mode.name .. " applied")
         end, selected > 0 and { selected = selected } or nil)
-    end)
+    end
+
+    plugin.register_list_item("music_audio", "Gain Mode", open_settings)
 
     -- Quick drawer tile: High/Low only, the same two modes the list offers.
     -- Gated on the capability rather than api_min for the same reason the
@@ -149,6 +151,7 @@ if plugin.has_capability("audio.hw_volume_curve") then
             value = current_mode ~= nil and current_mode.key == "high",
             on_text = "High",
             off_text = "Low",
+            on_hold = open_settings,
         })
     end
 else

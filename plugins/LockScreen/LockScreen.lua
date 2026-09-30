@@ -127,4 +127,4 @@ plugin.register_list_item("display", "Lock Screen", function()
       plugin.show_toast("Lock Screen: " .. MODES[index].label)
     end
   end, selected_idx > 0 and { selected = selected_idx } or nil)
-end)
+end, { group = "player_layout" })

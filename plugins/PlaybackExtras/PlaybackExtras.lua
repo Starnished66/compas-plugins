@@ -196,4 +196,4 @@ local function open_menu()
     })
 end
 
-plugin.register_list_item("music_audio", "Loudness Boost", open_menu)
+plugin.register_list_item("music_audio", "Loudness Boost", open_menu, { group = "effects" })

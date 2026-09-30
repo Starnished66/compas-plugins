@@ -136,4 +136,4 @@ plugin.register_list_item("music_audio", "Sound Profile", function()
         current_key = key
         plugin.show_toast("Sound profile applied")
     end)
-end)
+end, { group = "effects" })

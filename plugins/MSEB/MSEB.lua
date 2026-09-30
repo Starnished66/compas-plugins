@@ -312,7 +312,7 @@ end
 -- Grouped into 3 sub-screens (3/4/3 sliders) rather than one 10-slider
 -- screen: plugin.show_settings_list() silently drops any slider past
 -- PLUGIN_SETTINGS_LIST_MAX_SLIDERS (4) in a single call.
-plugin.register_list_item("music_audio", "MSEB", function()
+local function open_settings()
     plugin.show_settings_list("MSEB", {
         {
             type = "toggle",
@@ -398,7 +398,9 @@ plugin.register_list_item("music_audio", "MSEB", function()
             end,
         },
     })
-end)
+end
+
+plugin.register_list_item("music_audio", "MSEB", open_settings, { group = "effects" })
 
 -- Quick drawer tile, mirroring the "Enabled" row above. Gated on the
 -- capability rather than api_min so this plugin still loads on an older
@@ -414,5 +416,6 @@ if plugin.has_capability("ui.quick_toggle") then
     end, {
         icon = "pull_down/mseb.png",
         value = enabled,
+        on_hold = open_settings,
     })
 end
