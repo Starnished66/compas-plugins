@@ -158,6 +158,17 @@ do
     check(contains(current_list(app).rows[1].label, "Model: Fixture Headphone 103"), "last result opens details")
 end
 
+-- Oversized catalog rows are rejected before the model pattern can rescan them.
+do
+    local app = new_app()
+    local req = start_search(app, "headphone")
+    local malformed = "- [" .. string.rep("x](./", 200000)
+    respond(req, 200, malformed)
+    check(contains(app.toasts[#app.toasts], "line longer than 4096 bytes"), "delimiter-heavy catalog row rejected")
+    eq(#app.lists, 1, "invalid catalog does not open search results")
+    eq(saved_profile(app), nil, "invalid catalog saves no profile")
+end
+
 -- Cache is persisted atomically and reused after an offline refresh failure;
 -- stale callbacks after cancellation or a replacement request do not redraw UI.
 do

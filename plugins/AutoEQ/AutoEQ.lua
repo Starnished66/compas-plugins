@@ -15,6 +15,7 @@ local CATALOG_URL = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/mast
 local RAW_PREFIX = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/"
 local MAX_CATALOG_BYTES = 1024 * 1024
 local MAX_MODELS = 20000
+local MAX_CATALOG_LINE_BYTES = 4096
 local PAGE_SIZE = 40
 
 local BAND_FREQS = { 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 }
@@ -62,14 +63,14 @@ local function valid_catalog_path(path)
     local decoded = path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)
     if decoded:find("\\", 1, true) or decoded:find("%c") then return false end
     local i = 1
-    while i <= #path do
-        if path:sub(i, i) == "%" then
-            if not path:sub(i + 1, i + 2):match("^%x%x$") then return false end
-            local byte = tonumber(path:sub(i + 1, i + 2), 16)
-            if not byte or byte == 47 or byte == 92 or byte < 32 or byte == 127 then return false end
-            i = i + 2
-        end
-        i = i + 1
+    while true do
+        local percent = path:find("%", i, true)
+        if not percent then break end
+        local escape = path:sub(percent + 1, percent + 2)
+        if not escape:match("^%x%x$") then return false end
+        local byte = tonumber(escape, 16)
+        if not byte or byte == 47 or byte == 92 or byte < 32 or byte == 127 then return false end
+        i = percent + 3
     end
     if decoded:sub(1, 1) == "/" or decoded:match("^[%a][%w+%.%-]*:") or decoded:find("//", 1, true) then return false end
     for segment in decoded:gmatch("[^/]+") do
@@ -103,6 +104,9 @@ local function parse_catalog(data)
     end
     local models = {}
     for line in (data .. "\n"):gmatch("(.-)\n") do
+        if #line > MAX_CATALOG_LINE_BYTES then
+            return nil, "Catalog has a line longer than " .. MAX_CATALOG_LINE_BYTES .. " bytes"
+        end
         -- Greedy href capture intentionally takes the final ')' so model names and
         -- nested path segments containing parentheses remain intact.
         local name, path = line:match("^%- %[(.-)%]%(%./(.+)%)%s*$")
