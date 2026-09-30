@@ -2,7 +2,7 @@
 """Generate original dark-theme book plugin icons.
 
 Aesthetic reference: compas-plugins/tools/generate_podcast_icons.py (96px,
-transparent corners, dark tinted round badge, bright compact glyph). All artwork
+transparent backgrounds, optional dark tinted badges, bright glyphs). All artwork
 below is original Pillow vector geometry; no external images or font assets.
 Requires Pillow. Example: python generate_book_icons.py --output-dir /tmp/book-plugin-assets
 """
@@ -53,26 +53,32 @@ def badge(name, colors):
     d.ellipse(rect(5.5,5.5,90.5,90.5),fill=bg,outline=bg,width=q(1))
     tint=tuple(min(255,int(v*1.18)) for v in bytes.fromhex(bg[1:]))+(255,)
     d.ellipse(rect(6,6,90,90),outline=tint,width=q(1))
-    if name in ('audiobooks','epub'):
-        # Open book: two distinct page leaves meet at a visible center gutter.
-        # Audiobooks add a cyan headset arch over the spread; EPUB gets a ribbon.
-        line(d,[(48,34),(48,69)],'#8E7B53' if name=='audiobooks' else '#79639B',2)
-        line(d,[(47,37),(40,33),(29,32),(24,34),(24,65),(34,63),(42,66),(48,70)],primary,4)
-        line(d,[(49,37),(56,33),(67,32),(72,34),(72,65),(62,63),(54,66),(48,70)],primary,4)
-        line(d,[(29,40),(39,41),(43,44)],'#FFF0C6' if name=='audiobooks' else '#E8D9FF',2)
-        line(d,[(29,48),(39,49),(43,52)],'#FFF0C6' if name=='audiobooks' else '#E8D9FF',2)
-        line(d,[(67,40),(57,41),(53,44)],'#FFF0C6' if name=='audiobooks' else '#E8D9FF',2)
-        line(d,[(67,48),(57,49),(53,52)],'#FFF0C6' if name=='audiobooks' else '#E8D9FF',2)
-        if name=='audiobooks':
-            # A wide headband sits above the spread, with earcups outside its edges.
-            # The open space keeps the headphones distinct from the book at 44px.
-            arc(d,(21,11,75,65),180,360,CYAN,4)
-            d.rounded_rectangle(rect(21,39,30,55),radius=q(3),fill=CYAN)
-            d.rounded_rectangle(rect(66,39,75,55),radius=q(3),fill=CYAN)
-        else:
-            # Bookmark ribbon descending from the upper right page edge.
-            d.polygon([(q(58),q(25)),(q(68),q(25)),(q(68),q(47)),(q(63),q(43)),(q(58),q(47))],fill=PURPLE)
-            line(d,[(60,29),(60,38)],'#F4E9FF',1.5)
+    if name=='audiobooks':
+        # Full-size transparent glyph: headphones above the book, with a
+        # visible gap between them even at the native 44px row size.
+        im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
+        arc(d,(18,5,78,65),180,360,CYAN,6)
+        line(d,[(18,34),(18,42)],CYAN,6)
+        line(d,[(78,34),(78,42)],CYAN,6)
+        d.rounded_rectangle(rect(13,28,24,44),radius=q(3),fill=CYAN)
+        d.rounded_rectangle(rect(72,28,83,44),radius=q(3),fill=CYAN)
+        line(d,[(48,60),(38,54),(20,53),(6,56),(6,86),(22,83),(37,85),(48,91)],GOLD,5)
+        line(d,[(48,60),(58,54),(76,53),(90,56),(90,86),(74,83),(59,85),(48,91)],GOLD,5)
+        line(d,[(48,60),(48,89)],GOLD,4)
+        for y in (65,73):
+            line(d,[(16,y),(28,y-1),(38,y+2)],GOLD,3)
+            line(d,[(80,y),(68,y-1),(58,y+2)],GOLD,3)
+    elif name=='epub':
+        # Full-size open book with a contrasting ribbon on the right page.
+        im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
+        line(d,[(48,25),(37,18),(21,16),(6,20),(6,76),(22,72),(36,75),(48,83)],PURPLE,5)
+        line(d,[(48,25),(59,18),(75,16),(90,20),(90,76),(74,72),(60,75),(48,83)],PURPLE,5)
+        line(d,[(48,25),(48,81)],PURPLE,4)
+        for y in (35,47,59):
+            line(d,[(16,y),(28,y-1),(38,y+3)],PURPLE,3)
+        for y in (57,65):
+            line(d,[(80,y),(68,y-1),(58,y+3)],PURPLE,3)
+        d.polygon([(q(65),q(18)),(q(78),q(18)),(q(78),q(49)),(q(71.5),q(42)),(q(65),q(49))],fill='#E7D7FF')
     elif name=='play':
         d.polygon([(q(37),q(27)),(q(37),q(69)),(q(69),q(48))],fill=primary)
     elif name=='chapters':
