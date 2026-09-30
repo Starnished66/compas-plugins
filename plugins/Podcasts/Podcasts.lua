@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.1", api_min = 2 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.2", api_min = 2 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
@@ -9,6 +9,19 @@ plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.1", api
 -- episodes per show. Playback speed and chapters are not provided.
 
 local ROOT = plugin.sd_root() .. "/Podcasts"
+local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Podcasts"
+local ICON = {
+    show = ICON_ROOT .. "/show.png",
+    download = ICON_ROOT .. "/download.png",
+    search = ICON_ROOT .. "/search.png",
+    manage = ICON_ROOT .. "/manage.png",
+    play = ICON_ROOT .. "/play.png",
+    refresh = ICON_ROOT .. "/refresh.png",
+    remove = ICON_ROOT .. "/remove.png",
+    check = ICON_ROOT .. "/check.png",
+    link = ICON_ROOT .. "/link.png",
+}
+local LIST_WRAP = plugin.has_capability("ui.list_wrap")
 local CATALOG = ROOT .. "/.catalog"
 local SUBSCRIPTIONS = ROOT .. "/subscriptions.opml"
 local PROGRESS = ROOT .. "/.progress.tsv"
@@ -1150,27 +1163,36 @@ local function open_show(show)
         catalog.key = show.key
     end
     if catalog then
-        local labels, episodes = { "Refresh episodes" }, {}
+        local labels, episodes = {}, {}
         for i, episode in ipairs(catalog.items) do
             episodes[i] = episode
             local p = progress[progress_key(show, episode)]
-            local mark = p and p.played and "v "
+            local status = p and p.played and "Played: "
                 or (
-                    p and p.position > 0 and "> " .. format_duration(p.position) .. " "
-                    or (p and p.new and "* " or "")
+                    p and p.position > 5 and "Resume " .. format_duration(p.position) .. ": "
+                    or (p and p.new and "New: " or "")
                 )
-            local suffix = downloaded(show, episode) and " [saved]"
-                or (queued(show, episode) and " [downloading]" or "")
-            labels[#labels + 1] = cap(mark .. episode.title .. suffix, 200)
+            local availability = downloaded(show, episode) and "Downloaded: "
+                or (queued(show, episode) and "Downloading: " or "")
+            local icon = downloaded(show, episode) and ICON.download
+                or (p and p.played and ICON.check or ICON.play)
+            labels[#labels + 1] = {
+                label = cap(availability .. status .. episode.title, LIST_WRAP and 511 or 159),
+                icon = icon,
+                wrap = LIST_WRAP,
+            }
         end
-        labels[#labels + 1] = "Unsubscribe"
+        local refresh_index = #episodes + 1
+        labels[refresh_index] = { label = "Refresh episodes", icon = ICON.refresh }
+        local unsubscribe_index = refresh_index + 1
+        labels[unsubscribe_index] = { label = "Unsubscribe", icon = ICON.remove }
         plugin.show_list(show.title, labels, function(index)
-            if index == 1 then
+            if index == refresh_index then
                 fetch_feed(show, false)
-            elseif index == #labels then
+            elseif index == unsubscribe_index then
                 confirm_unsubscribe(show)
             else
-                open_episode(show, episodes[index - 1])
+                open_episode(show, episodes[index])
             end
         end)
         return
@@ -1339,7 +1361,10 @@ fetch_feed = function(show, first_open)
 end
 
 local function ask_unsubscribe(show)
-    plugin.show_list("Unsubscribe?", { "Unsubscribe " .. cap(show.title, 180), "Cancel" }, function(index)
+    plugin.show_list("Unsubscribe?", {
+        { label = "Unsubscribe " .. cap(show.title, 180), icon = ICON.remove },
+        { label = "Cancel", icon = ICON.link },
+    }, function(index)
         if index ~= 1 then
             return
         end
@@ -1377,12 +1402,21 @@ open_episode = function(show, episode)
     local labels, actions = {}, {}
     local path = downloaded(show, episode)
     local is_queued = queued(show, episode)
-    local function add(label, fn)
-        labels[#labels + 1] = label
+    local metadata = (episode.date ~= "" and episode.date or "Undated")
+        .. " - "
+        .. format_duration(episode.duration)
+    labels[1] = {
+        label = LIST_WRAP and (episode.title .. "\n" .. metadata) or cap(episode.title, 159),
+        icon = ICON.show,
+        wrap = LIST_WRAP,
+    }
+    actions[1] = function() end
+    local function add(label, fn, icon)
+        labels[#labels + 1] = icon and { label = label, icon = icon } or label
         actions[#actions + 1] = fn
     end
     if path then
-        add("Play", function()
+        add((p.position > 5 and not p.played) and "Resume" or "Play download", function()
             local current = state()
             -- A replay of a finished episode starts over and can be resumed.
             if current.played then
@@ -1392,24 +1426,24 @@ open_episode = function(show, episode)
             current.last_played = os.time()
             save_progress()
             plugin.play_file(path)
-        end)
+        end, ICON.play)
     end
     if not path and not is_queued and episode.url ~= "" then
         add("Download", function()
             enqueue_download(show, episode)
-        end)
+        end, ICON.download)
     end
     if is_queued then
         add("Cancel download", function()
             cancel_download(key)
-        end)
+        end, ICON.remove)
     end
     if
         not path
         and episode.url ~= ""
         and ((episode.mime or ""):lower() == "audio/mpeg" or is_mp3_url(episode.url))
     then
-        add("Stream", function()
+        add("Stream (no resume)", function()
             -- Any newer stream or track makes this request stale.
             stream_generation = stream_generation + 1
             local generation = stream_generation
@@ -1426,7 +1460,7 @@ open_episode = function(show, episode)
                     plugin.play_file(url)
                 end
             end, nil, stale)
-        end)
+        end, ICON.link)
     end
     local mark_played = not p.played
     add(mark_played and "Mark as played" or "Mark as unplayed", function()
@@ -1435,9 +1469,22 @@ open_episode = function(show, episode)
         current.position = 0
         save_progress()
         plugin.show_toast(current.played and "Marked as played" or "Marked as unplayed")
-    end)
+    end, ICON.check)
+    local delete_index
+    local delete_armed, delete_deadline = false, 0
     if path then
         add("Delete download", function()
+            if not delete_armed or os.time() > delete_deadline then
+                delete_armed = true
+                delete_deadline = os.time() + 8
+                plugin.show_toast("Tap Delete download again within 8 seconds to confirm")
+                return
+            end
+            delete_armed, delete_deadline = false, 0
+            if downloaded(show, episode) ~= path then
+                plugin.show_toast("Download is no longer available")
+                return
+            end
             if not os.remove(path) then
                 plugin.show_toast("Could not delete download. Try again.")
                 return
@@ -1447,13 +1494,13 @@ open_episode = function(show, episode)
             current.position = 0
             save_progress()
             plugin.show_toast("Download deleted")
-        end)
+        end, ICON.remove)
+        delete_index = #actions
     end
-    labels[#labels + 1] = (episode.date ~= "" and episode.date or "Undated")
-        .. " - "
-        .. format_duration(episode.duration)
-    actions[#labels] = function() end
-    plugin.show_list(cap(episode.title, 200), labels, function(index)
+    plugin.show_list("Episode", labels, function(index)
+        if index ~= delete_index then
+            delete_armed, delete_deadline = false, 0
+        end
         actions[index]()
     end)
 end
@@ -1572,7 +1619,11 @@ local function pick_import()
         plugin.show_toast("No OPML files found in Podcasts")
         return
     end
-    plugin.show_list("Import OPML", files, function(index)
+    local rows = {}
+    for i, name in ipairs(files) do
+        rows[i] = { label = name, icon = ICON.link }
+    end
+    plugin.show_list("Import OPML", rows, function(index)
         import_file(ROOT .. "/" .. files[index])
     end)
 end
@@ -1592,7 +1643,11 @@ local function show_search_results(results)
     end
     local labels = {}
     for i, r in ipairs(results) do
-        labels[i] = cap(r.title .. (r.author ~= "" and (" - " .. r.author) or ""), 200)
+        labels[i] = {
+            label = cap(r.title .. (r.author ~= "" and (" - " .. r.author) or ""), LIST_WRAP and 511 or 159),
+            icon = ICON.show,
+            wrap = LIST_WRAP,
+        }
     end
     plugin.show_list("Podcast Search", labels, function(index)
         local r = results[index]
@@ -2011,7 +2066,14 @@ local function show_download_list(title, list, with_show, keep_order)
     local labels = {}
     for i = 1, math.min(#list, MAX_LIST_ROWS) do
         local row = list[i]
-        labels[i] = cap((with_show and (row.show.title .. ": ") or "") .. row.episode.title, 200)
+        local p = row.progress
+        local status = p.played and "Played: "
+            or (p.position > 5 and "Resume " .. format_duration(p.position) .. ": " or "")
+        labels[i] = {
+            label = cap(status .. (with_show and (row.show.title .. ": ") or "") .. row.episode.title, LIST_WRAP and 511 or 159),
+            icon = ICON.download,
+            wrap = LIST_WRAP,
+        }
     end
     plugin.show_list(title, labels, function(index)
         open_episode(list[index].show, list[index].episode)
@@ -2021,6 +2083,10 @@ end
 -- A flat list while it fits one screen; beyond that, one row per show.
 local function open_downloads()
     local list = downloaded_entries()
+    if #list == 0 then
+        plugin.show_toast("No downloads yet. Open an episode and choose Download.")
+        return
+    end
     if #list <= MAX_LIST_ROWS then
         show_download_list("Downloads (" .. #list .. ")", list, true)
         return
@@ -2073,7 +2139,11 @@ local function open_downloads()
     local function show_groups(title, page)
         local labels = {}
         for i, key in ipairs(page) do
-            labels[i] = cap(by_show[key].title .. " (" .. #by_show[key].rows .. ")", 200)
+            labels[i] = {
+                label = cap(by_show[key].title .. " (" .. #by_show[key].rows .. ")", LIST_WRAP and 511 or 159),
+                icon = ICON.show,
+                wrap = LIST_WRAP,
+            }
         end
         plugin.show_list(title, labels, function(index)
             local group = by_show[page[index]]
@@ -2106,10 +2176,14 @@ local function open_downloads()
             page[#page + 1] = ordered[i]
         end
         pages[#pages + 1] = page
-        labels[#labels + 1] = cap(page[1].show.title .. " to " .. page[#page].show.title, 200)
+        labels[#labels + 1] = {
+            label = cap(page[1].show.title .. " to " .. page[#page].show.title, LIST_WRAP and 511 or 159),
+            icon = ICON.download,
+            wrap = LIST_WRAP,
+        }
     end
     plugin.show_list(title, labels, function(index)
-        show_download_list(labels[index], pages[index], true, true)
+        show_download_list(labels[index].label, pages[index], true, true)
     end)
 end
 
@@ -2117,7 +2191,7 @@ local function continue_episode(entries)
     local best, best_time
     for _, row in ipairs(entries) do
         local p = row.progress
-        if p.position > 0 and not p.played and (not best_time or p.last_played > best_time) then
+        if p.position > 5 and not p.played and (not best_time or p.last_played > best_time) then
             best = { show = row.show, episode = row.episode, path = row.path, position = p.position }
             best_time = p.last_played
         end
@@ -2125,12 +2199,34 @@ local function continue_episode(entries)
     return best
 end
 
+local function open_manage_subscriptions()
+    plugin.show_list("Manage subscriptions", {
+        { label = "Add feed URL", icon = ICON.link },
+        { label = "Import OPML", icon = ICON.link },
+        { label = "Export subscriptions", icon = ICON.check },
+    }, function(index)
+        if index == 1 then
+            add_feed_input()
+        elseif index == 2 then
+            pick_import()
+        elseif save_subscriptions() then
+            plugin.show_toast("Subscriptions exported")
+        else
+            plugin.show_toast("Could not export subscriptions. Try again.")
+        end
+    end)
+end
+
 local function open_home()
     local rows, actions = {}, {}
     local entries = downloaded_entries()
     local cont = continue_episode(entries)
     if cont then
-        rows[#rows + 1] = "Continue: " .. cont.episode.title
+        rows[#rows + 1] = {
+            label = cap("Continue: " .. cont.episode.title, LIST_WRAP and 511 or 159),
+            icon = ICON.play,
+            wrap = LIST_WRAP,
+        }
         actions[#actions + 1] = function()
             -- track_started resumes from the position saved at that moment,
             -- not the one this screen was built with.
@@ -2138,28 +2234,9 @@ local function open_home()
             plugin.play_file(cont.path)
         end
     end
-    rows[#rows + 1] = "Search podcasts"
-    actions[#actions + 1] = start_search
-    rows[#rows + 1] = "Add feed URL"
-    actions[#actions + 1] = add_feed_input
-    rows[#rows + 1] = "Import OPML"
-    actions[#actions + 1] = pick_import
-    rows[#rows + 1] = "Export OPML"
-    actions[#actions + 1] = function()
-        if save_subscriptions() then
-            plugin.show_toast("Subscriptions exported")
-        else
-            plugin.show_toast("Could not export subscriptions. Try again.")
-        end
-    end
-    if #entries > 0 then
-        rows[#rows + 1] = "Downloads (" .. #entries .. ")"
-        actions[#actions + 1] = open_downloads
-    end
-    if #subscriptions == 0 then
-        rows[#rows + 1] = "Subscribe with Search or Add feed URL"
-        actions[#actions + 1] = function() end
-    else
+    rows[#rows + 1] = { label = "Downloads (" .. #entries .. ")", icon = ICON.download }
+    actions[#actions + 1] = open_downloads
+    if #subscriptions > 0 then
         sort_subscriptions()
         -- New counts come from progress state, so Home never loads every catalog.
         local new_counts = {}
@@ -2173,12 +2250,20 @@ local function open_home()
         end
         for _, show in ipairs(subscriptions) do
             local new_count = new_counts[show.key] or 0
-            rows[#rows + 1] = show.title .. (new_count > 0 and (" (" .. new_count .. " new)") or "")
+            rows[#rows + 1] = {
+                label = cap(show.title .. (new_count > 0 and (" (" .. new_count .. " new)") or ""), LIST_WRAP and 511 or 159),
+                icon = ICON.show,
+                wrap = LIST_WRAP,
+            }
             actions[#actions + 1] = function()
                 open_show(show)
             end
         end
     end
+    rows[#rows + 1] = { label = "Discover podcasts", icon = ICON.search }
+    actions[#actions + 1] = start_search
+    rows[#rows + 1] = { label = "Manage subscriptions", icon = ICON.manage }
+    actions[#actions + 1] = open_manage_subscriptions
     plugin.show_list("Podcasts", rows, function(index)
         actions[index]()
     end)
@@ -2318,4 +2403,4 @@ plugin.register_stream_media_tile("Podcasts", function()
         return
     end
     open_home()
-end, "stream_media/download.png")
+end, "stream_media/podcasts_row.png")

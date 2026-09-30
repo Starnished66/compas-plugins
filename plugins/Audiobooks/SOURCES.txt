@@ -1,0 +1,1 @@
+Original Compas Audiobooks UI icons. Authored with Pillow geometric drawing at 4x supersampling, downsampled to 96x96 RGBA. No external icon pack or font is used. Reproduce with tools/generate_book_icons.py --output-dir <directory>.

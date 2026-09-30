@@ -1,5 +1,67 @@
 {
-  "description": "Audiobook library with resume, bookmarks, chapters, skip back and forward, and a sleep timer.",
+  "description": "Audiobook library with resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer.",
   "category": "Listening",
-  "author": "Compás"
+  "author": "Comp\u00e1s",
+  "files": [
+    {
+      "src": "icons/audiobooks.png",
+      "dest": ".plugin-assets/Audiobooks/audiobooks.png"
+    },
+    {
+      "src": "icons/bookmark.png",
+      "dest": ".plugin-assets/Audiobooks/bookmark.png"
+    },
+    {
+      "src": "icons/bookmarks.png",
+      "dest": ".plugin-assets/Audiobooks/bookmarks.png"
+    },
+    {
+      "src": "icons/chapters.png",
+      "dest": ".plugin-assets/Audiobooks/chapters.png"
+    },
+    {
+      "src": "icons/finished.png",
+      "dest": ".plugin-assets/Audiobooks/finished.png"
+    },
+    {
+      "src": "icons/forward.png",
+      "dest": ".plugin-assets/Audiobooks/forward.png"
+    },
+    {
+      "src": "icons/history.png",
+      "dest": ".plugin-assets/Audiobooks/history.png"
+    },
+    {
+      "src": "icons/in_progress.png",
+      "dest": ".plugin-assets/Audiobooks/in_progress.png"
+    },
+    {
+      "src": "icons/library.png",
+      "dest": ".plugin-assets/Audiobooks/library.png"
+    },
+    {
+      "src": "icons/new.png",
+      "dest": ".plugin-assets/Audiobooks/new.png"
+    },
+    {
+      "src": "icons/play.png",
+      "dest": ".plugin-assets/Audiobooks/play.png"
+    },
+    {
+      "src": "icons/refresh.png",
+      "dest": ".plugin-assets/Audiobooks/refresh.png"
+    },
+    {
+      "src": "icons/rewind.png",
+      "dest": ".plugin-assets/Audiobooks/rewind.png"
+    },
+    {
+      "src": "icons/sleep.png",
+      "dest": ".plugin-assets/Audiobooks/sleep.png"
+    },
+    {
+      "src": "icons/settings.png",
+      "dest": ".plugin-assets/Audiobooks/settings.png"
+    }
+  ]
 }

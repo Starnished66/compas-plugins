@@ -1,4 +1,4 @@
-plugin.define({ id = "example.net_radio", name = "Net Radio", version = "1.4", api_min = 1 })
+plugin.define({ id = "example.net_radio", name = "Net Radio", version = "1.5", api_min = 1 })
 
 -- Net Radio reads its stations from Radio.txt at the root of the SD card:
 --
@@ -18,9 +18,15 @@ local RADIO_FILE = plugin.sd_root() .. "/Radio.txt"
 local THEME_ICON_ROOT = "/usr/resource/litegui/theme2/"
 local MAX_FILE_BYTES, MAX_LINE_BYTES, MAX_STATIONS = 65536, 1024, 500
 
--- Absolute theme2 paths are supported for show_list() row icons and keep the
--- station rows aligned with the native wireless submenu artwork.
+-- show_list() takes filesystem paths, so prefer the player's writable
+-- override before the firmware copy, just like the Stream Media tile.
 local function themed_item(label, icon)
+    local override = "/usr/data/theme_overrides/" .. icon
+    local file = io.open(override, "rb")
+    if file then
+        file:close()
+        return { label = label, icon = override }
+    end
     return { label = label, icon = THEME_ICON_ROOT .. icon }
 end
 
@@ -89,7 +95,7 @@ local function open_stations()
 
     local items = {}
     for i, label in ipairs(stations.labels) do
-        items[i] = themed_item(label, "wireless/list_airplay.png")
+        items[i] = themed_item(label, "stream_media/radio_row.png")
     end
 
     plugin.show_list("Net Radio", items, function(index)
@@ -100,4 +106,4 @@ local function open_stations()
     end
 end
 
-plugin.register_stream_media_tile("Net Radio", open_stations, "wireless/list_airplay.png")
+plugin.register_stream_media_tile("Net Radio", open_stations, "stream_media/radio_row.png")

@@ -1,5 +1,43 @@
 {
   "description": "Search and subscribe to podcasts, download episodes, and resume where you left off.",
   "category": "Listening",
-  "author": "Compás"
+  "author": "Compás",
+  "files": [
+    {
+      "src": "icons/show.png",
+      "dest": ".plugin-assets/Podcasts/show.png"
+    },
+    {
+      "src": "icons/download.png",
+      "dest": ".plugin-assets/Podcasts/download.png"
+    },
+    {
+      "src": "icons/search.png",
+      "dest": ".plugin-assets/Podcasts/search.png"
+    },
+    {
+      "src": "icons/manage.png",
+      "dest": ".plugin-assets/Podcasts/manage.png"
+    },
+    {
+      "src": "icons/play.png",
+      "dest": ".plugin-assets/Podcasts/play.png"
+    },
+    {
+      "src": "icons/refresh.png",
+      "dest": ".plugin-assets/Podcasts/refresh.png"
+    },
+    {
+      "src": "icons/remove.png",
+      "dest": ".plugin-assets/Podcasts/remove.png"
+    },
+    {
+      "src": "icons/check.png",
+      "dest": ".plugin-assets/Podcasts/check.png"
+    },
+    {
+      "src": "icons/link.png",
+      "dest": ".plugin-assets/Podcasts/link.png"
+    }
+  ]
 }

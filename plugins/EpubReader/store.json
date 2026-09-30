@@ -1,5 +1,11 @@
 {
   "description": "Reads EPUB books from the Books folder on the SD card, shown as covers, with pictures and your reading position saved.",
   "category": "Reading",
-  "author": "Compás"
+  "author": "Compás",
+  "files": [
+    {
+      "src": "icons/epub.png",
+      "dest": ".plugin-assets/EpubReader/epub.png"
+    }
+  ]
 }

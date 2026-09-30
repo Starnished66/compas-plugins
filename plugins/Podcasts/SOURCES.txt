@@ -1,0 +1,7 @@
+Podcast plugin UI icon set
+
+All nine PNG icons were authored from scratch as vector-like geometric primitives with Pillow drawing operations. Each icon uses a 96x96 RGBA canvas rendered at 4x supersampling and downsampled with Lanczos. The transparent canvas corners and circular tinted badge are part of the design.
+
+Visual reference for the show microphone: assets/theme2/stream_media/podcasts_row.png in the compas-player repository. The reference was inspected for its purple microphone and cyan broadcast-wave palette; no pixels or shapes were copied from the reference image.
+
+No external icon packs, stock artwork, fonts, or generated images were used. The Python source tools/generate_podcast_icons.py is the editable geometric source for the PNGs.

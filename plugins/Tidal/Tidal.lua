@@ -11,7 +11,7 @@ failing, that pair is the first thing to replace.
 The access token is a JWT, renewed from the refresh token about a minute
 before it expires. Catalogue calls send it as a bearer token.
 
-The Stream Media row uses the player's own stream_media/tidal.png, the same
+The Stream Media row uses the player's own stream_media/tidal_row.png, the same
 theme-relative icon path Net Radio and Podcasts pass to
 plugin.register_stream_media_tile().
 
@@ -29,7 +29,7 @@ to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.0",
+    version = "1.3.1",
     api_min = 14,
 })
 
@@ -892,4 +892,4 @@ local function open_tidal()
     show_home()
 end
 
-plugin.register_stream_media_tile("Tidal", open_tidal, "stream_media/tidal.png")
+plugin.register_stream_media_tile("Tidal", open_tidal, "stream_media/tidal_row.png")

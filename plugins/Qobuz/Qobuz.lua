@@ -5,7 +5,7 @@ Sign in with the account email and password. The password is not saved.
 The app id is the one shipped in the stock player, so opening the tile
 goes straight to sign-in.
 
-The Stream Media row uses the player's own stream_media/qobuz.png, the same
+The Stream Media row uses the player's own stream_media/qobuz_row.png, the same
 theme-relative icon path Net Radio and Podcasts pass to
 plugin.register_stream_media_tile().
 
@@ -21,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.3.0",
+    version = "1.3.1",
     api_min = 14,
 })
 
@@ -668,4 +668,4 @@ local function open_qobuz()
     show_home()
 end
 
-plugin.register_stream_media_tile("Qobuz", open_qobuz, "stream_media/qobuz.png")
+plugin.register_stream_media_tile("Qobuz", open_qobuz, "stream_media/qobuz_row.png")
