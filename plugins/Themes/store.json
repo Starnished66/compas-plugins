@@ -62,6 +62,10 @@
     {
       "src": "Themes/MidnightIndigo.theme",
       "dest": "Themes/MidnightIndigo.theme"
+    },
+    {
+      "src": "Themes/CherryNoir.theme",
+      "dest": "Themes/CherryNoir.theme"
     }
   ]
 }
