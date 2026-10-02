@@ -1,0 +1,19 @@
+{
+  "description": "A Gallery-style Now Playing screen with frosted artwork, tap-to-open lyrics, and the standard playback controls.",
+  "category": "Customization",
+  "author": "Compás",
+  "files": [
+    {
+      "src": "player_layouts/gallery_player.xml",
+      "dest": ".plugins/GalleryPlayer/player_layouts/gallery_player.xml"
+    },
+    {
+      "src": "player_layouts/gallery_player_320x480.xml",
+      "dest": ".plugins/GalleryPlayer/player_layouts/gallery_player_320x480.xml"
+    },
+    {
+      "src": "player_layouts/gallery_player_480x720.xml",
+      "dest": ".plugins/GalleryPlayer/player_layouts/gallery_player_480x720.xml"
+    }
+  ]
+}

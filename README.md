@@ -17,6 +17,10 @@ Open **Settings > Sound > Equalizer > Profiles > Download profiles** to reach Au
 
 The catalog is cached for offline searches. Downloads and catalog refreshes need a network connection. Existing profiles can be replaced explicitly or saved as another copy; incompatible profiles are rejected without changing saved files.
 
+## Gallery Player layout
+
+**Gallery Player** adds a Gallery-style Now Playing screen with frosted artwork, tap-to-open lyrics, and the standard playback controls. Install it from the Plugin Store, then choose it from Settings > Display > Player Layout > Layout, or use its Gallery Player row to apply it for the current session. It requires a recent daily build with XML player-layout lyrics support (Plugin API 14). The package includes 320×480, 480×720, and default-size layouts; the plugin prepares the two board-specific variants locally when that capability is available.
+
 ## Layout
 
 ```
