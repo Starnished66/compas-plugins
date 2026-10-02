@@ -16,5 +16,5 @@ screen=0xE6F6FF
 card=0xF2F2F2
 list_row=0xECECEC
 text_primary=0x1A1A1A
-text_muted=0x6E6E6E
+text_muted=0x696969
 icon_root=theme1

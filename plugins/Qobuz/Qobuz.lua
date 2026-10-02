@@ -250,6 +250,15 @@ local function parent_showing(parent)
     return parent == nil or plugin.is_list_showing(parent)
 end
 
+local function show_browse_retry(parent, retry)
+    if not parent_showing(parent) then return end
+    local handle
+    handle = plugin.show_list("Could not load", { "Retry" }, function(index)
+        if index == 1 then retry(handle) end
+    end)
+    return handle
+end
+
 show_list = function(title, labels, on_select, options)
     local handle
     handle = plugin.show_list(title, labels, function(index)
@@ -380,18 +389,22 @@ local function open_album(album, offset, depth, parent)
     offset = offset or 0
     local generation = browse_generation
     local all, hint = {}, album
-    local function fetch(page_offset)
+    local function fetch(page_offset, active_handle)
         qobuz_get("/album/get?app_id=" .. url_encode(APP_ID)
             .. "&album_id=" .. url_encode(album.id) .. "&limit=" .. PAGE .. "&offset=" .. page_offset,
             nil, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(page_offset, retry_handle) end)
+                return
+            end
             hint = album_from(data) or hint
             local page = items_of(data.tracks)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
             if #page == PAGE and #all < BROWSE_CAP
                 and ((hint.count or 0) == 0 or page_offset + PAGE < hint.count) then
-                fetch(page_offset + PAGE)
+                fetch(page_offset + PAGE, active_handle)
             else
                 show_tracks(hint.title, track_rows(all, hint))
             end
@@ -404,15 +417,19 @@ local function open_playlist(playlist, offset, depth, parent)
     offset = offset or 0
     local generation = browse_generation
     local all = {}
-    local function fetch(page_offset)
+    local function fetch(page_offset, active_handle)
         qobuz_get("/playlist/get?app_id=" .. url_encode(APP_ID)
             .. "&playlist_id=" .. url_encode(playlist.id)
             .. "&extra=tracks&limit=" .. PAGE .. "&offset=" .. page_offset, nil, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(page_offset, retry_handle) end)
+                return
+            end
             local page = items_of(data.tracks)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE)
+            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
             else show_tracks(playlist.name, track_rows(all)) end
         end)
     end
@@ -435,13 +452,17 @@ end
 -- adds a screen. done(items) runs only while parent is still in front.
 local function fetch_pages(path_for, items_of_page, cap, parent, done)
     local generation, all = browse_generation, {}
-    local function fetch(offset)
+    local function fetch(offset, active_handle)
         qobuz_get(path_for(offset), nil, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(offset, retry_handle) end)
+                return
+            end
             local page = items_of_page(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < cap then fetch(offset + PAGE) else done(all) end
+            if #page == PAGE and #all < cap then fetch(offset + PAGE, active_handle) else done(all) end
         end)
     end
     fetch(0)
@@ -477,18 +498,24 @@ end
 local function open_artist(artist, offset, depth, parent)
     depth = depth or 3
     local generation, albums = browse_generation, {}
-    local function fetch(page_offset, page_number)
+    local function fetch(page_offset, page_number, active_handle)
         qobuz_get("/artist/get?app_id=" .. url_encode(APP_ID)
             .. "&artist_id=" .. url_encode(artist.id)
             .. "&extra=albums&limit=" .. PAGE .. "&offset=" .. page_offset, nil, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle)
+                    fetch(page_offset, page_number, retry_handle)
+                end)
+                return
+            end
             local page = items_of(data.albums)
             for _, obj in ipairs(page) do
                 local album = album_from(obj)
                 if album then albums[#albums + 1] = album end
             end
-            if #page == PAGE and page_number < BROWSE_CAP / PAGE then fetch(page_offset + PAGE, page_number + 1)
+            if #page == PAGE and page_number < BROWSE_CAP / PAGE then fetch(page_offset + PAGE, page_number + 1, active_handle)
             else show_albums(artist.name, albums, depth) end
         end)
     end

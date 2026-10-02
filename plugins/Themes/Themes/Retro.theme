@@ -21,7 +21,7 @@ screen=0x140F08
 card=0x241A10
 list_row=0x2C2014
 text_primary=0xFFDCA0
-text_muted=0x9A7A4A
+text_muted=0xA3865A
 icon_root=theme2
 
 home_tile_gap=6
@@ -39,13 +39,13 @@ tile.wireless.text_color=0x2A1A0A
 tile.wireless.radius=8
 
 tile.books.bg_color=0xC46A4A
-tile.books.text_color=0xF2E9D8
+tile.books.text_color=0x1A1917
 tile.books.radius=8
 
 tile.settings.bg_color=0x8A6B4A
-tile.settings.text_color=0xF2E9D8
+tile.settings.text_color=0xFBF8F2
 tile.settings.radius=8
 
 tile.dac.bg_color=0xB5804A
-tile.dac.text_color=0xF2E9D8
+tile.dac.text_color=0x242320
 tile.dac.radius=8

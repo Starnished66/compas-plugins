@@ -1167,17 +1167,25 @@ local function open_show(show)
         for i, episode in ipairs(catalog.items) do
             episodes[i] = episode
             local p = progress[progress_key(show, episode)]
-            local status = p and p.played and "Played: "
-                or (
-                    p and p.position > 5 and "Resume " .. format_duration(p.position) .. ": "
-                    or (p and p.new and "New: " or "")
-                )
-            local availability = downloaded(show, episode) and "Downloaded: "
-                or (queued(show, episode) and "Downloading: " or "")
+            local status = p and p.played and "Played"
+                or (p and p.position > 5 and "Resume at " .. format_duration(p.position)
+                    or (p and p.new and "New" or ""))
+            local availability = downloaded(show, episode) and "Downloaded"
+                or (queued(show, episode) and "Downloading" or "")
+            local metadata = {}
+            if availability ~= "" then metadata[#metadata + 1] = availability end
+            if status ~= "" then metadata[#metadata + 1] = status end
+            if episode.date ~= "" then metadata[#metadata + 1] = episode.date end
+            if (episode.duration or 0) > 0 then metadata[#metadata + 1] = format_duration(episode.duration) end
+            local detail = table.concat(metadata, " · ")
             local icon = downloaded(show, episode) and ICON.download
                 or (p and p.played and ICON.check or ICON.play)
             labels[#labels + 1] = {
-                label = cap(availability .. status .. episode.title, LIST_WRAP and 511 or 159),
+                label = cap(
+                    detail ~= "" and (episode.title .. (LIST_WRAP and ("\n" .. detail) or (" · " .. detail)))
+                        or episode.title,
+                    LIST_WRAP and 511 or 159
+                ),
                 icon = icon,
                 wrap = LIST_WRAP,
             }
@@ -1402,9 +1410,10 @@ open_episode = function(show, episode)
     local labels, actions = {}, {}
     local path = downloaded(show, episode)
     local is_queued = queued(show, episode)
-    local metadata = (episode.date ~= "" and episode.date or "Undated")
-        .. " - "
-        .. format_duration(episode.duration)
+    local detail_parts = {}
+    if episode.date ~= "" then detail_parts[#detail_parts + 1] = episode.date end
+    if (episode.duration or 0) > 0 then detail_parts[#detail_parts + 1] = format_duration(episode.duration) end
+    local metadata = #detail_parts > 0 and table.concat(detail_parts, " · ") or "Episode details unavailable"
     labels[1] = {
         label = LIST_WRAP and (episode.title .. "\n" .. metadata) or cap(episode.title, 159),
         icon = ICON.show,
@@ -2067,10 +2076,19 @@ local function show_download_list(title, list, with_show, keep_order)
     for i = 1, math.min(#list, MAX_LIST_ROWS) do
         local row = list[i]
         local p = row.progress
-        local status = p.played and "Played: "
-            or (p.position > 5 and "Resume " .. format_duration(p.position) .. ": " or "")
+        local status = p.played and "Played"
+            or (p.position > 5 and "Resume at " .. format_duration(p.position) or "")
+        local title = (with_show and (row.show.title .. " · ") or "") .. row.episode.title
+        local metadata = {}
+        if status ~= "" then metadata[#metadata + 1] = status end
+        local date = row.episode.date or ""
+        if date ~= "" then metadata[#metadata + 1] = date end
         labels[i] = {
-            label = cap(status .. (with_show and (row.show.title .. ": ") or "") .. row.episode.title, LIST_WRAP and 511 or 159),
+            label = cap(
+                title .. (#metadata > 0 and (LIST_WRAP and ("\n" .. table.concat(metadata, " · "))
+                    or (" · " .. table.concat(metadata, " · "))) or ""),
+                LIST_WRAP and 511 or 159
+            ),
             icon = ICON.download,
             wrap = LIST_WRAP,
         }
@@ -2250,8 +2268,13 @@ local function open_home()
         end
         for _, show in ipairs(subscriptions) do
             local new_count = new_counts[show.key] or 0
+            local new_label = new_count == 1 and "1 new episode" or (new_count .. " new episodes")
             rows[#rows + 1] = {
-                label = cap(show.title .. (new_count > 0 and (" (" .. new_count .. " new)") or ""), LIST_WRAP and 511 or 159),
+                label = cap(
+                    show.title .. (new_count > 0 and (LIST_WRAP and ("\n" .. new_label)
+                        or (" (" .. new_count .. " new)")) or ""),
+                    LIST_WRAP and 511 or 159
+                ),
                 icon = ICON.show,
                 wrap = LIST_WRAP,
             }

@@ -409,6 +409,15 @@ local function parent_showing(parent)
     return parent == nil or plugin.is_list_showing(parent)
 end
 
+local function show_browse_retry(parent, retry)
+    if not parent_showing(parent) then return end
+    local handle
+    handle = plugin.show_list("Could not load", { "Retry" }, function(index)
+        if index == 1 then retry(handle) end
+    end)
+    return handle
+end
+
 show_list = function(title, labels, on_select, options)
     local handle
     handle = plugin.show_list(title, labels, function(index)
@@ -553,14 +562,18 @@ end
 local function open_album(album, offset, depth, parent)
     offset = offset or 0
     local generation, all = browse_generation, {}
-    local function fetch(page_offset)
+    local function fetch(page_offset, active_handle)
         tidal_get("/albums/" .. url_encode(album.id) .. "/tracks?countryCode=" .. url_encode(country())
             .. "&limit=" .. PAGE .. "&offset=" .. page_offset, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(page_offset, retry_handle) end)
+                return
+            end
             local page = items_of(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE)
+            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
             else show_tracks(album.title, track_rows(all, album)) end
         end)
     end
@@ -582,14 +595,18 @@ end
 local function open_playlist(playlist, offset, depth, parent)
     offset = offset or 0
     local generation, all = browse_generation, {}
-    local function fetch(page_offset)
+    local function fetch(page_offset, active_handle)
         tidal_get("/playlists/" .. url_encode(playlist.id) .. "/tracks?countryCode=" .. url_encode(country())
             .. "&limit=" .. PAGE .. "&offset=" .. page_offset, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(page_offset, retry_handle) end)
+                return
+            end
             local page = items_of(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE)
+            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
             else show_tracks(playlist.name, track_rows(all)) end
         end)
     end
@@ -600,13 +617,17 @@ end
 -- adds a screen. done(items, data) runs only while parent is still in front.
 local function fetch_pages(path_for, items_of_page, start, cap, parent, done)
     local generation, all = browse_generation, {}
-    local function fetch(offset)
+    local function fetch(offset, active_handle)
         tidal_get(path_for(offset), function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(offset, retry_handle) end)
+                return
+            end
             local page = items_of_page(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < cap then fetch(offset + PAGE) else done(all) end
+            if #page == PAGE and #all < cap then fetch(offset + PAGE, active_handle) else done(all) end
         end)
     end
     fetch(start)
@@ -691,17 +712,21 @@ end
 local function open_artist(artist, offset, depth, parent)
     depth = depth or 3
     local generation, albums = browse_generation, {}
-    local function fetch(page_offset)
+    local function fetch(page_offset, active_handle)
         tidal_get("/artists/" .. url_encode(artist.id) .. "/albums?countryCode="
             .. url_encode(country()) .. "&limit=" .. PAGE .. "&offset=" .. page_offset, function(data, err)
-            if generation ~= browse_generation or not parent_showing(parent) then return end
-            if not data then toast(err); return end
+            if generation ~= browse_generation or not parent_showing(active_handle or parent) then return end
+            if not data then
+                toast(err)
+                show_browse_retry(active_handle or parent, function(retry_handle) fetch(page_offset, retry_handle) end)
+                return
+            end
             local page = items_of(data)
             for _, obj in ipairs(page) do
                 local album = album_from(obj)
                 if album then albums[#albums + 1] = album end
             end
-            if #page == PAGE and #albums < BROWSE_CAP then fetch(page_offset + PAGE)
+            if #page == PAGE and #albums < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
             else show_albums(artist.name, albums, depth) end
         end)
     end

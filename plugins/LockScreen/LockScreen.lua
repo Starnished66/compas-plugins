@@ -1,7 +1,7 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.1",
+  version = "1.2",
   api_min = 1,
 })
 
@@ -18,6 +18,7 @@ end
 
 local STORAGE_KEY_MODE = "mode"
 local STORAGE_KEY_IMAGE = "image_path"
+local STORAGE_KEY_IMAGE_FIT = "image_fit"
 
 local MODES = {
   { key = "off",       label = "Off" },
@@ -42,6 +43,18 @@ local function set_custom_image_path(path)
   plugin.storage.set(STORAGE_KEY_IMAGE, path)
 end
 
+local function get_custom_image_fit()
+  local fit = plugin.storage.get(STORAGE_KEY_IMAGE_FIT)
+  if fit == "cover" then return "cover" end
+  -- Migrate existing custom-image selections from natural-size rendering to
+  -- Fit image the first time this plugin version opens the lock screen.
+  return "contain"
+end
+
+local function set_custom_image_fit(fit)
+  plugin.storage.set(STORAGE_KEY_IMAGE_FIT, fit)
+end
+
 local function trigger_lock_screen()
   local mode = get_current_mode()
   if mode == "off" then return end
@@ -51,6 +64,7 @@ local function trigger_lock_screen()
     local img_path = get_custom_image_path()
     if not img_path or img_path == "" then return end
     opts.image_path = img_path
+    opts.image_fit = get_custom_image_fit()
   end
 
   local shown = plugin.show_lock_screen(opts)
@@ -106,6 +120,20 @@ local function open_custom_image_picker()
   end, selected_idx > 0 and { selected = selected_idx } or nil)
 end
 
+local function open_custom_image_fit_picker()
+  local current_fit = get_custom_image_fit()
+  local selected_idx = current_fit == "cover" and 2 or 1
+  plugin.show_list("Custom Image Fit", { "Fit image", "Fill screen" }, function(index)
+    if index == 1 then
+      set_custom_image_fit("contain")
+      plugin.show_toast("Custom image: Fit image")
+    elseif index == 2 then
+      set_custom_image_fit("cover")
+      plugin.show_toast("Custom image: Fill screen")
+    end
+  end, { selected = selected_idx })
+end
+
 plugin.register_list_item("display", "Lock Screen", function()
   local current_mode = get_current_mode()
   local labels = {}
@@ -118,7 +146,17 @@ plugin.register_list_item("display", "Lock Screen", function()
     end
   end
 
+  local show_image_fit = current_mode == "image" and get_custom_image_path() ~= ""
+  if show_image_fit then
+    local fit = get_custom_image_fit() == "cover" and "Fill screen" or "Fit image"
+    labels[#labels + 1] = "Image fit: " .. fit
+  end
+
   plugin.show_list("Lock Screen", labels, function(index)
+    if show_image_fit and index == #MODES + 1 then
+      open_custom_image_fit_picker()
+      return
+    end
     local chosen_mode = MODES[index].key
     if chosen_mode == "image" then
       open_custom_image_picker()

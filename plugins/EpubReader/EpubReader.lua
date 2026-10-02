@@ -39,6 +39,7 @@ end
 -- show_list copies a row into a 160-byte buffer. Clip before the spine
 -- retains the label, or a slash-free href is kept whole for every itemref.
 local MAX_LABEL_BYTES = 160
+local ICON_EPUB = plugin.sd_root() .. "/.plugin-assets/EpubReader/epub.png"
 
 -- A chapter href names a ZIP entry. The container path, the document
 -- directory, and the joined path share this limit. Reject a longer value
@@ -856,6 +857,14 @@ local function cover_file(book_path)
     return CACHE_DIR .. "/" .. plugin.md5(book_path) .. ".cover.bin"
 end
 
+local function cached_book_details(book_path)
+    local stored = plugin.storage.get("title:" .. plugin.md5(book_path))
+    local title, author
+    if stored then title, author = stored:match("^([^\n]*)\n(.*)$") end
+    if not title then title = stored end
+    return title, author or "", stored and stored:find("\n", 1, true) ~= nil
+end
+
 local function picture_file(book_path, entry)
     return CACHE_DIR .. "/" .. plugin.md5(book_path .. "\n" .. entry) .. ".bin"
 end
@@ -968,7 +977,12 @@ local function queue_cover(book_path)
                 covers_queued[key] = nil
                 return
             end
-            plugin.storage.set("title:" .. key, clip_text(book.title, MAX_LABEL_BYTES))
+            -- Older releases stored only the title. Keep that cached title
+            -- authoritative while appending author metadata in the same key.
+            local cached_title, cached_author = cached_book_details(book_path)
+            local title = cached_title and cached_title ~= "" and cached_title or book.title
+            local author = cached_author ~= "" and cached_author or (book.author or "")
+            plugin.storage.set("title:" .. key, clip_text(title, MAX_LABEL_BYTES) .. "\n" .. clip_text(author, MAX_LABEL_BYTES))
             local entry = book.cover_item and resolved_href(book.cover_item, book.opf_dir)
             if not entry then
                 plugin.storage.set("nocover:" .. key, "1")
@@ -1179,25 +1193,84 @@ local function open_continue(book_path, list_handle)
     open_chapter(book_path, book, saved_chap, saved_off, list_handle)
 end
 
-local function book_label(book_path)
-    local title = plugin.storage.get("title:" .. plugin.md5(book_path))
-    if title and title ~= "" then
-        return title
+local function book_details(book_path)
+    local title, author = cached_book_details(book_path)
+    if not title or title == "" then
+        title = clip_text((basename(book_path):gsub("%.[Ee][Pp][Uu][Bb]$", "")), MAX_LABEL_BYTES)
     end
-    return clip_text((basename(book_path):gsub("%.[Ee][Pp][Uu][Bb]$", "")), MAX_LABEL_BYTES)
+    return title, author or ""
 end
 
 -- A grid of cover cards. Covers and titles not read yet are prepared in the
 -- background and appear the next time the grid opens.
-local function open_books_list()
+local function open_books_grid()
     local paths = scan_epub_files()
     if #paths == 0 then
         plugin.show_toast("No EPUB files in Books")
         return
     end
 
+    local have_cache = ensure_cache()
+    local items = {}
+    local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
+    local function add(book_path)
+        local cover = cover_file(book_path)
+        local title, author = book_details(book_path)
+        local label = title .. (author ~= "" and ("\n" .. author) or "")
+        local item = { label = clip_text(label, wrap and 511 or 159), icon = ICON_EPUB, wrap = wrap == true }
+        if have_cache and file_exists(cover) then
+            item.icon = cover
+        end
+        items[#items + 1] = item
+    end
+    for i = 1, #paths do
+        add(paths[i])
+    end
+
+    if have_cache then
+        for i = 1, #paths do
+            local key = plugin.md5(paths[i])
+            local _, _, details_cached = cached_book_details(paths[i])
+            if (not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1")
+                or not details_cached
+            then
+                queue_cover(paths[i])
+            end
+        end
+    end
+
+    chapter_generation = chapter_generation + 1 -- drops a chapter still preparing pictures
+    plugin.show_list("EPUB Reader", items, function(index)
+        local book_path = paths[index]
+        if book_path then
+            open_book(book_path)
+        end
+    end, { layout = "grid", columns = 2 })
+end
+
+local function open_books_list()
+    local paths = scan_epub_files()
+    if #paths == 0 then
+        local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
+        local items = {
+            {
+                label = wrap
+                        and "No EPUB books found\nCopy EPUB files into the Books folder on your SD card."
+                    or "No EPUB books found. Add EPUB files to Books.",
+                icon = ICON_EPUB,
+                wrap = wrap == true,
+            },
+            { label = "Refresh library", icon = ICON_EPUB },
+        }
+        plugin.show_list("EPUB Reader", items, function(index)
+            if index == 2 then open_books_list() end
+        end)
+        return
+    end
+
+    local have_cache = ensure_cache()
     local saved_continue = plugin.storage.get("continue")
-    local continue_path = nil
+    local continue_path
     if saved_continue then
         for i = 1, #paths do
             if paths[i] == saved_continue then
@@ -1207,47 +1280,46 @@ local function open_books_list()
         end
     end
 
-    local have_cache = ensure_cache()
     local items = {}
-    local function add(book_path, label)
-        local cover = cover_file(book_path)
-        local item = { label = label }
-        if have_cache and file_exists(cover) then
-            item.icon = cover
-        end
-        items[#items + 1] = item
-    end
+    local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
     if continue_path then
-        add(continue_path, "Continue: " .. book_label(continue_path))
+        local title, author = book_details(continue_path)
+        local label = wrap and ("Continue reading: " .. title .. (author ~= "" and ("\n" .. author) or ""))
+            or ("Continue: " .. title)
+        local cover = cover_file(continue_path)
+        items[#items + 1] = {
+            label = clip_text(label, wrap and 511 or 159),
+            icon = have_cache and file_exists(cover) and cover or ICON_EPUB,
+            wrap = wrap == true,
+        }
     end
-    for i = 1, #paths do
-        add(paths[i], book_label(paths[i]))
-    end
+    items[#items + 1] = {
+        label = "Browse library (" .. #paths .. ")", icon = ICON_EPUB,
+    }
 
     if have_cache then
         for i = 1, #paths do
             local key = plugin.md5(paths[i])
-            if not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1" then
+            local _, _, details_cached = cached_book_details(paths[i])
+            if (not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1")
+                or not details_cached
+            then
                 queue_cover(paths[i])
             end
         end
     end
-
-    chapter_generation = chapter_generation + 1 -- drops a chapter still preparing pictures
-    local grid_handle
-    grid_handle = plugin.show_list("EPUB Reader", items, function(index)
+    local root_handle
+    root_handle = plugin.show_list("EPUB Reader", items, function(index)
         if continue_path and index == 1 then
-            open_continue(continue_path, grid_handle)
-        else
-            local path_idx = continue_path and (index - 1) or index
-            local book_path = paths[path_idx]
-            if book_path then
-                open_book(book_path)
-            end
+            open_continue(continue_path, root_handle)
+        elseif continue_path and index == 2 then
+            open_books_grid()
+        elseif not continue_path and index == 1 then
+            open_books_grid()
         end
-    end, { layout = "grid" })
+    end)
 end
 
 plugin.register_list_item("books", "EPUB Reader", open_books_list, {
-    icon = plugin.sd_root() .. "/.plugin-assets/EpubReader/epub.png",
+    icon = ICON_EPUB,
 })

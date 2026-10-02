@@ -9,7 +9,7 @@ screen=0x000000
 card=0x0A0A0A
 list_row=0x0D140D
 text_primary=0xE6FFE6
-text_muted=0x2E7D2E
+text_muted=0x478D47
 icon_root=theme2
 
 home_mode=list

@@ -89,7 +89,12 @@ end
 local function open_stations()
     local stations, truncated = load_stations()
     if not stations then
-        plugin.show_toast("Could not load stations. Check Radio.txt on the SD card.")
+        -- Keep an action visible after the first failure. Radio.txt can be
+        -- added or corrected without restarting the player, so retrying the
+        -- same tile is enough to recover once the card contents change.
+        plugin.show_list("No stations found in Radio.txt", { "Check again" }, function(index)
+            if index == 1 then open_stations() end
+        end)
         return
     end
 

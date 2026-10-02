@@ -1432,15 +1432,23 @@ local function book_progress(book)
         return ""
     end
     if s.finished then
-        return " [Finished]"
+        return "Finished"
     end
     if s.file and s.file ~= "" then
         local position, duration = s.position or 0, s.duration or 0
-        local suffix = duration > 0 and (" [Current file: " .. math.floor(position / duration * 100) .. "%]")
-            or (" [file position: " .. time_label(position) .. "]")
-        return suffix
+        return duration > 0 and ("Current file: " .. math.floor(position / duration * 100) .. "%")
+            or ("Current file position: " .. time_label(position))
     end
     return ""
+end
+
+local function book_list_label(book)
+    local metadata = {}
+    local author = book.author or ""
+    if author ~= "" then metadata[#metadata + 1] = author end
+    local progress = book_progress(book)
+    if progress ~= "" then metadata[#metadata + 1] = progress end
+    return book.title .. (#metadata > 0 and ("\n" .. table.concat(metadata, " · ")) or "")
 end
 
 local function list_row(label, icon)
@@ -1452,7 +1460,7 @@ local function split_group(title, group)
     if #group <= MAX_ROWS then
         local rows = {}
         for i, b in ipairs(group) do
-            local label = b.title .. (b.author ~= "" and ("\n" .. b.author) or "") .. book_progress(b)
+            local label = book_list_label(b)
             rows[i] = list_row(label, cover_for(b))
         end
         plugin.show_list(title, rows, function(i)
@@ -1541,8 +1549,13 @@ local function open_library()
         end
     end
     if recent then
+        local continuation = {}
+        local author = recent.author or ""
+        if author ~= "" then continuation[#continuation + 1] = author end
+        local progress = book_progress(recent)
+        if progress ~= "" then continuation[#continuation + 1] = progress end
         local label = "Continue listening: " .. recent.title
-            .. (recent.author ~= "" and ("\n" .. recent.author) or "") .. book_progress(recent)
+            .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, cover_for(recent), function() resume_book(recent) end, true)
     end
     add_row("All audiobooks (" .. #books .. ")", ICON_LIBRARY, function()

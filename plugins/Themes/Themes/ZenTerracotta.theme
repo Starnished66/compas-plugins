@@ -8,7 +8,7 @@ screen=0xF5EDE1
 card=0xE8DDCC
 list_row=0xDCCBB5
 text_primary=0x3A2A1E
-text_muted=0x806a58
+text_muted=0x645345
 icon_root=theme2
 drawer_root=theme1
 

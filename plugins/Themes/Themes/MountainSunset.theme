@@ -35,7 +35,7 @@ tile.stream_media.text_size=large
 tile.stream_media.icon=false
 
 tile.wireless.bg_color=0xC9587C
-tile.wireless.text_color=0xFFE8D6
+tile.wireless.text_color=0x131110
 tile.wireless.radius=36
 tile.wireless.height=90
 tile.wireless.width=420

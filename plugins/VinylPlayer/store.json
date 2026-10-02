@@ -1,0 +1,19 @@
+{
+  "description": "A vinyl-inspired Now Playing screen with an envelope waveform seek bar and standard playback controls.",
+  "category": "Customization",
+  "author": "Compás",
+  "files": [
+    {
+      "src": "player_layouts/vinyl_player.xml",
+      "dest": ".plugins/VinylPlayer/player_layouts/vinyl_player.xml"
+    },
+    {
+      "src": "player_layouts/vinyl_player_320x480.xml",
+      "dest": ".plugins/VinylPlayer/player_layouts/vinyl_player_320x480.xml"
+    },
+    {
+      "src": "player_layouts/vinyl_player_480x720.xml",
+      "dest": ".plugins/VinylPlayer/player_layouts/vinyl_player_480x720.xml"
+    }
+  ]
+}
