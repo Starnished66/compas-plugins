@@ -21,6 +21,10 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 **Gallery Player** adds a Gallery-style Now Playing screen with frosted artwork, tap-to-open lyrics, and the standard playback controls. Install it from the Plugin Store, then choose it from Settings > Display > Player Layout > Layout, or use its Gallery Player row to apply it for the current session. It requires a recent daily build with XML player-layout lyrics support (Plugin API 14). The package includes 320×480, 480×720, and default-size layouts; the plugin prepares the two board-specific variants locally when that capability is available.
 
+## Panorama Player layout
+
+**Panorama Player** combines full-width artwork, a smooth cover fade and rounded waveform bars. Tap the cover for lyrics; playback controls use the player’s existing icons. Install it from the Plugin Store and select **Settings > Display > Player Layout > Layout**. The package fits all three displays and requires a current daily build with waveform and cover-fade support.
+
 ## Layout
 
 ```
