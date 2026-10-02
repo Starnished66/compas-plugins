@@ -82,6 +82,10 @@
     {
       "src": "Themes/RoseQuartz.theme",
       "dest": "Themes/RoseQuartz.theme"
+    },
+    {
+      "src": "Themes/CitrusSlate.theme",
+      "dest": "Themes/CitrusSlate.theme"
     }
   ]
 }
