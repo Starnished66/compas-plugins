@@ -66,6 +66,10 @@
     {
       "src": "Themes/CherryNoir.theme",
       "dest": "Themes/CherryNoir.theme"
+    },
+    {
+      "src": "Themes/BrassStudio.theme",
+      "dest": "Themes/BrassStudio.theme"
     }
   ]
 }
