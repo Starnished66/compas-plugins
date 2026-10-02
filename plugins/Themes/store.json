@@ -54,6 +54,10 @@
     {
       "src": "Themes/ZenTerracotta.theme",
       "dest": "Themes/ZenTerracotta.theme"
+    },
+    {
+      "src": "Themes/Porcelain.theme",
+      "dest": "Themes/Porcelain.theme"
     }
   ]
 }

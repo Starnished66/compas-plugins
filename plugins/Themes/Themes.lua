@@ -1,4 +1,4 @@
-plugin.define({ id = "example.themes", name = "Themes", version = "3.8", api_min = 9 })
+plugin.define({ id = "example.themes", name = "Themes", version = "3.9", api_min = 9 })
 
 -- Loader/switcher for theme DEFINITION FILES, not a hardcoded theme list --
 -- every *.theme file under SD/Themes/ becomes its own selectable entry,
@@ -126,6 +126,7 @@ local ASSETS = {
     "pull_down/dlna.png", "pull_down/dlna_s.png",
     "pull_down/gapless_play.png", "pull_down/gapless_play_s.png",
     "pull_down/hibylink.png", "pull_down/hibylink_s.png",
+    "pull_down/car_mode.png", "pull_down/car_mode_s.png",
     "sub_back/bg_search.png", "sub_back/btn_back.png", "sub_back/btn_search.png", "sub_back/close.png",
     "sub_back/btn_playlist.png", "sub_back/set.png",
     -- Status bar glyphs. The clock, battery, volume, transport, Wi-Fi and
@@ -168,6 +169,7 @@ local ASSETS = {
     -- settings/bg_<name>.png at runtime (gui_settings.c).
     "settings/music.png", "settings/display.png", "settings/power.png",
     "settings/system.png", "settings/about.png",
+    "settings/sound.png", "settings/playback.png", "settings/library.png",
     "settings/bg_music.png", "settings/bg_display.png", "settings/bg_power.png",
     "settings/bg_system.png", "settings/bg_about.png",
     -- Library/DAC submenu tiles and their gradient card backgrounds
@@ -175,6 +177,7 @@ local ASSETS = {
     "submenu/files.png", "submenu/artists.png", "submenu/albums.png",
     "submenu/album_artist.png", "submenu/all_songs.png", "submenu/playlists.png",
     "submenu/favorites.png", "submenu/books.png", "submenu/subsonic.png",
+    "submenu/genres.png", "submenu/music_database.png",
     "submenu/bluetooth.png", "submenu/usb.png",
     "submenu/bg_blue.png", "submenu/bg_coral.png", "submenu/bg_gold.png",
     "submenu/bg_green.png", "submenu/bg_purple.png", "submenu/bg_silver.png",
