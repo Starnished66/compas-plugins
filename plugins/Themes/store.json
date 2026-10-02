@@ -74,6 +74,10 @@
     {
       "src": "Themes/ArcticGlass.theme",
       "dest": "Themes/ArcticGlass.theme"
+    },
+    {
+      "src": "Themes/CobaltSignal.theme",
+      "dest": "Themes/CobaltSignal.theme"
     }
   ]
 }
