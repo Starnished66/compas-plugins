@@ -58,6 +58,10 @@
     {
       "src": "Themes/Porcelain.theme",
       "dest": "Themes/Porcelain.theme"
+    },
+    {
+      "src": "Themes/MidnightIndigo.theme",
+      "dest": "Themes/MidnightIndigo.theme"
     }
   ]
 }
