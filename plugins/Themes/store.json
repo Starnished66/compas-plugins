@@ -78,6 +78,10 @@
     {
       "src": "Themes/CobaltSignal.theme",
       "dest": "Themes/CobaltSignal.theme"
+    },
+    {
+      "src": "Themes/RoseQuartz.theme",
+      "dest": "Themes/RoseQuartz.theme"
     }
   ]
 }
