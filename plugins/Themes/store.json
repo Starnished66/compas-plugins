@@ -70,6 +70,10 @@
     {
       "src": "Themes/BrassStudio.theme",
       "dest": "Themes/BrassStudio.theme"
+    },
+    {
+      "src": "Themes/ArcticGlass.theme",
+      "dest": "Themes/ArcticGlass.theme"
     }
   ]
 }
