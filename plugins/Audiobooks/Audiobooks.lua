@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.2", api_min = 1 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.2.1", api_min = 1 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Title/CD1/files, or loose one-file books.

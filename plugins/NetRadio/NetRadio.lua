@@ -1,4 +1,4 @@
-plugin.define({ id = "example.net_radio", name = "Net Radio", version = "1.5", api_min = 1 })
+plugin.define({ id = "example.net_radio", name = "Net Radio", version = "1.5.1", api_min = 1 })
 
 -- Net Radio reads its stations from Radio.txt at the root of the SD card:
 --

@@ -29,7 +29,7 @@ to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.1",
+    version = "1.3.2",
     api_min = 14,
 })
 

@@ -21,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.3.1",
+    version = "1.3.2",
     api_min = 14,
 })
 
