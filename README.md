@@ -19,7 +19,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Player layouts
 
-Download and install Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires a recent daily build with XML player-layout support (Plugin API 14); Gallery and Panorama also use lyrics support, and Panorama and Vinyl use waveform seeking.
+Download and install Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires Plugin API 15 or newer, which guarantees the current XML player-layout features and board-size variant discovery; Gallery and Panorama also use lyrics support, and Panorama and Vinyl use waveform seeking.
 
 - **Gallery Player** adds frosted artwork, tap-to-open lyrics, and standard playback controls.
 - **Panorama Player** combines full-width artwork, a smooth cover fade, animated lyrics, and rounded waveform bars.

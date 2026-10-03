@@ -3,8 +3,8 @@
 plugin.define({
     id = "org.compas.panorama_player",
     name = "Panorama Player",
-    version = "1.1.0",
-    api_min = 14,
+    version = "1.1.1",
+    api_min = 15,
 })
 
 local LAYOUT = {
