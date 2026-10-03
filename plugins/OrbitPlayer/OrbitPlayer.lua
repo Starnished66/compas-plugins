@@ -1,28 +1,28 @@
--- A vinyl-inspired Now Playing screen with an envelope waveform seek bar and standard playback controls.
+-- A dynamic Now Playing screen with circular artwork and a circular seek bar.
 
 plugin.define({
-    id = "org.compas.vinyl_player",
-    name = "Vinyl Player",
+    id = "org.compas.orbit_player",
+    name = "Orbit Player",
     version = "1.0.1",
     api_min = 14,
 })
 
 local LAYOUT = {
-    id = "plugin.vinyl_player",
-    xml = "VinylPlayer/player_layouts/vinyl_player.xml",
-    name = "Vinyl Player",
+    id = "plugin.orbit_player",
+    xml = "OrbitPlayer/player_layouts/orbit_player.xml",
+    name = "Orbit Player",
 }
 
-local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/VinylPlayer/player_layouts/"
+local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/OrbitPlayer/player_layouts/"
 local MIGRATION_KEY = "generated_at_variants_migrated_v1"
 
 local function remove_legacy_variant(size)
-    local old_path = LAYOUT_DIR .. "vinyl_player@" .. size .. ".xml"
+    local old_path = LAYOUT_DIR .. "orbit_player@" .. size .. ".xml"
     local old_file = io.open(old_path, "rb")
     if not old_file then return true end
     old_file:close()
 
-    local new_file = io.open(LAYOUT_DIR .. "vinyl_player_" .. size .. ".xml", "rb")
+    local new_file = io.open(LAYOUT_DIR .. "orbit_player_" .. size .. ".xml", "rb")
     if not new_file then return false end
     new_file:close()
 

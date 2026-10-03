@@ -1,6 +1,6 @@
 # Compás Plugins
 
-Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. They are published here, and the player's **Plugin Store** (Settings > Plugin Manager) installs and updates them from the latest release.
+Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. The **Plugin Store** (Settings > System > Plugin Manager) installs and updates plugins from the latest release. Player layouts have their own download page under **Settings > Display > Player Layout > Layout > Download**.
 
 ## Installing by hand
 
@@ -17,13 +17,14 @@ Open **Settings > Sound > Equalizer > Profiles > Download profiles** to reach Au
 
 The catalog is cached for offline searches. Downloads and catalog refreshes need a network connection. Existing profiles can be replaced explicitly or saved as another copy; incompatible profiles are rejected without changing saved files.
 
-## Gallery Player layout
+## Player layouts
 
-**Gallery Player** adds a Gallery-style Now Playing screen with frosted artwork, tap-to-open lyrics, and the standard playback controls. Install it from the Plugin Store, then choose it from Settings > Display > Player Layout > Layout, or use its Gallery Player row to apply it for the current session. It requires a recent daily build with XML player-layout lyrics support (Plugin API 14). The package includes 320×480, 480×720, and default-size layouts; the plugin prepares the two board-specific variants locally when that capability is available.
+Download and install Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires a recent daily build with XML player-layout support (Plugin API 14); Gallery and Panorama also use lyrics support, and Panorama and Vinyl use waveform seeking.
 
-## Panorama Player layout
-
-**Panorama Player** combines full-width artwork, a smooth cover fade and rounded waveform bars. Tap the cover for lyrics; playback controls use the player’s existing icons. Install it from the Plugin Store and select **Settings > Display > Player Layout > Layout**. The package fits all three displays and requires a current daily build with waveform and cover-fade support.
+- **Gallery Player** adds frosted artwork, tap-to-open lyrics, and standard playback controls.
+- **Panorama Player** combines full-width artwork, a smooth cover fade, animated lyrics, and rounded waveform bars.
+- **Vinyl Player** uses a record-inspired layout with an envelope waveform seek bar.
+- **Orbit Player** uses circular artwork and a circular seek bar.
 
 ## Layout
 
@@ -71,7 +72,7 @@ git tag v2026.09.27
 git push origin v2026.09.27
 ```
 
-The Release workflow compiles every plugin with Lua 5.5.1 (the version the player runs), builds `index.json`, and publishes a release with every file. The newest release is what the Plugin Store offers.
+The Release workflow compiles every plugin with Lua 5.5.1 (the version the player runs), builds `index.json`, and publishes its assets. Plugin files are downloadable install assets; optional preview images are separate release assets and are never installed. The newest release is what the Plugin Store offers.
 
 ## index.json
 
@@ -101,6 +102,8 @@ Built by `tools/build_index.py`; the player reads it from `https://github.com/St
 ```
 
 Each file is downloaded from `https://github.com/Starnished66/compas-plugins/releases/download/<tag>/<asset>`, and its size and SHA-256 are checked before it replaces anything on the card. Destinations are plain relative paths; nothing may be written to `.compas/` or as a firmware image.
+
+A plugin may set `"preview": "preview.jpg"` in `store.json`. This optional path must name a file inside that plugin folder. The builder accepts baseline JPEGs up to 65,536 bytes and 240×400 pixels, then adds a `preview` object to the plugin record with the release asset name, SHA-256, size, width, and height. Preview assets use the same `<Plugin>--<path>` naming and collision checks as install assets, and publish in the GitHub release without a `dest` or entry in `files`; they do not affect installed files or install size.
 
 ## License
 

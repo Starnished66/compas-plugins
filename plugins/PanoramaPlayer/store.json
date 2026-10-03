@@ -14,6 +14,11 @@
     {
       "src": "player_layouts/panorama_player_480x720.xml",
       "dest": ".plugins/PanoramaPlayer/player_layouts/panorama_player_480x720.xml"
+    },
+    {
+      "src": "player_layouts/panorama_player.png",
+      "dest": ".plugins/PanoramaPlayer/player_layouts/panorama_player.png"
     }
-  ]
+  ],
+  "preview": "preview.jpg"
 }

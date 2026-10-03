@@ -35,6 +35,9 @@ MAX_FILE_BYTES = 1024 * 1024
 MAX_INDEX_BYTES = 256 * 1024
 MAX_PLUGINS = 200
 MAX_FILES_PER_PLUGIN = 32  # the script included, as the player allows
+MAX_PREVIEW_BYTES = 65536
+MAX_PREVIEW_WIDTH = 240
+MAX_PREVIEW_HEIGHT = 400
 
 # Used with fullmatch and re.ASCII so they mean what the player checks: a
 # plain "$" would allow a trailing newline and "\d" any Unicode digit.
@@ -160,6 +163,60 @@ def sha256_of(path):
     return h.hexdigest()
 
 
+def baseline_jpeg_dimensions(path, where):
+    """Read dimensions from a baseline JPEG without optional image libraries."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) < 4 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
+        raise BuildError(f"{where}: preview must be a baseline JPEG")
+    pos = 2
+    dimensions = None
+    while pos < len(data):
+        if data[pos] != 0xFF:
+            raise BuildError(f"{where}: malformed JPEG marker")
+        while pos < len(data) and data[pos] == 0xFF:
+            pos += 1
+        if pos >= len(data):
+            break
+        marker = data[pos]
+        pos += 1
+        if marker == 0xD9:
+            break
+        if marker in (0xD8, *range(0xD0, 0xD8), 0x01):
+            continue
+        if pos + 2 > len(data):
+            break
+        segment_size = int.from_bytes(data[pos:pos + 2], "big")
+        if segment_size < 2 or pos + segment_size > len(data):
+            raise BuildError(f"{where}: malformed JPEG segment")
+        if marker == 0xC0:
+            if dimensions is not None:
+                raise BuildError(f"{where}: preview JPEG has multiple frames")
+            if segment_size < 8:
+                raise BuildError(f"{where}: malformed baseline JPEG frame")
+            payload = data[pos + 2:pos + segment_size]
+            precision = payload[0]
+            height = int.from_bytes(payload[1:3], "big")
+            width = int.from_bytes(payload[3:5], "big")
+            components = payload[5]
+            if (precision != 8 or components not in (1, 3)
+                    or segment_size != 8 + 3 * components):
+                raise BuildError(f"{where}: preview must use an 8-bit grayscale or three-component baseline frame")
+            if not width or not height:
+                raise BuildError(f"{where}: preview JPEG dimensions must be positive")
+            dimensions = width, height
+        elif 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+            raise BuildError(f"{where}: preview must use baseline JPEG encoding")
+        if marker == 0xDA:
+            if dimensions is None:
+                raise BuildError(f"{where}: preview JPEG scan appears before its baseline frame")
+            if segment_size < 6:
+                raise BuildError(f"{where}: malformed JPEG scan")
+            return dimensions
+        pos += segment_size
+    raise BuildError(f"{where}: preview must be a valid baseline JPEG")
+
+
 def load_plugin(folder):
     base = os.path.join(PLUGINS_DIR, folder)
     lua_name = folder + ".lua"
@@ -243,6 +300,39 @@ def load_plugin(folder):
             item["keep"] = True
         files.append((item, src_path))
 
+    preview = None
+    preview_source = None
+    preview_src = store.get("preview")
+    if preview_src is not None:
+        where = f"plugins/{folder}/{preview_src}"
+        if (not isinstance(preview_src, str) or not preview_src or preview_src.startswith("/")
+                or "\\" in preview_src or any(part in ("", ".", "..") for part in preview_src.split("/"))
+                or not ASSET_RE.fullmatch(preview_src.replace("/", "--"))):
+            raise BuildError(f"plugins/{folder}/store.json: preview must be a normalized relative file path")
+        preview_source = os.path.normpath(os.path.join(base, preview_src))
+        real_base = os.path.realpath(base)
+        real_source = os.path.realpath(preview_source)
+        if (os.path.commonpath([preview_source, base]) != base
+                or os.path.commonpath([real_source, real_base]) != real_base
+                or not os.path.isfile(preview_source)):
+            raise BuildError(f"{where}: preview file not found inside the plugin folder")
+        preview_size = os.path.getsize(preview_source)
+        if not preview_size or preview_size > MAX_PREVIEW_BYTES:
+            raise BuildError(f"{where}: preview must be 1 to {MAX_PREVIEW_BYTES} bytes")
+        width, height = baseline_jpeg_dimensions(preview_source, where)
+        if width > MAX_PREVIEW_WIDTH or height > MAX_PREVIEW_HEIGHT:
+            raise BuildError(f"{where}: preview dimensions {width}x{height} exceed {MAX_PREVIEW_WIDTH}x{MAX_PREVIEW_HEIGHT}")
+        preview_asset = folder + "--" + preview_src.replace("/", "--")
+        if not ASSET_RE.fullmatch(preview_asset) or len(preview_asset) > 127:
+            raise BuildError(f"{where}: asset name {preview_asset!r} has characters GitHub would rename")
+        preview = {
+            "asset": preview_asset,
+            "sha256": sha256_of(preview_source),
+            "size": preview_size,
+            "width": width,
+            "height": height,
+        }
+
     publish = store.get("publish", True)
     if not isinstance(publish, bool):
         raise BuildError(f"plugins/{folder}/store.json: publish must be true or false")
@@ -259,7 +349,9 @@ def load_plugin(folder):
         "size": sum(item["size"] for item, _ in files),
         "files": [item for item, _ in files],
     }
-    return plugin, files
+    if preview is not None:
+        plugin["preview"] = preview
+    return plugin, files, (preview["asset"], preview_source) if preview is not None else None
 
 
 def build(tag):
@@ -273,7 +365,7 @@ def build(tag):
     plugins, sources, held = [], [], []
     ids, dests, assets = {}, {}, set()
     for folder in folders:
-        plugin, files = load_plugin(folder)
+        plugin, files, preview_source = load_plugin(folder)
         if plugin["id"] in ids:
             raise BuildError(f"plugins/{folder}: id {plugin['id']} is also used by plugins/{ids[plugin['id']]}")
         ids[plugin["id"]] = folder
@@ -292,6 +384,12 @@ def build(tag):
                 raise BuildError(f"plugins/{folder}: two files would both be released as {item['asset']}")
             assets.add(item["asset"])
             plugin_sources.append((item["asset"], src_path))
+        if preview_source:
+            preview_asset, preview_path = preview_source
+            if preview_asset in assets:
+                raise BuildError(f"plugins/{folder}: two files would both be released as {preview_asset}")
+            assets.add(preview_asset)
+            plugin_sources.append((preview_asset, preview_path))
         # Held plugins ("publish": false) are validated but not released.
         if plugin.pop("publish"):
             plugins.append(plugin)

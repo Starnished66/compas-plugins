@@ -1,0 +1,24 @@
+{
+  "description": "A dynamic Now Playing screen with circular artwork and a circular seek bar.",
+  "category": "Customization",
+  "author": "Compás",
+  "files": [
+    {
+      "src": "player_layouts/orbit_player.xml",
+      "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player.xml"
+    },
+    {
+      "src": "player_layouts/orbit_player_320x480.xml",
+      "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player_320x480.xml"
+    },
+    {
+      "src": "player_layouts/orbit_player_480x720.xml",
+      "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player_480x720.xml"
+    },
+    {
+      "src": "player_layouts/orbit_player.png",
+      "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player.png"
+    }
+  ],
+  "preview": "preview.jpg"
+}
