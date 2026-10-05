@@ -21,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.3.2",
+    version = "1.3.3",
     api_min = 14,
 })
 
@@ -63,6 +63,11 @@ local function toast(message)
         plugin.show_toast(message)
     elseif message == "Not in this subscription" then
         plugin.show_toast("This track is unavailable")
+    elseif message:match("^Qobuz HTTP %d%d%d") or message:match("^Qobuz API error")
+        or message:match("^Qobuz network: ") or message == "Qobuz returned invalid JSON"
+        or message == "No stream link" then
+        if message == "No stream link" then message = "Qobuz returned no stream link" end
+        plugin.show_toast(message)
     else
         plugin.show_toast("Could not complete the request. Try again.")
     end
@@ -112,12 +117,68 @@ local function clip_utf8(text, limit)
     return text:sub(1, cut) .. "..."
 end
 
-local function api_message(body, status)
-    local data = body and plugin.json_decode(body)
-    if type(data) == "table" and data.message and data.message ~= "" then
-        return tostring(data.message)
+local function safe_api_code(data)
+    if type(data) ~= "table" then return nil end
+    local code = data.code
+    if code == nil and type(data.error) == "table" then code = data.error.code end
+    if type(code) == "number" and code >= 0 and code <= 999999 and code == math.floor(code) then
+        return tostring(code)
     end
-    return "Qobuz answered HTTP " .. tostring(status)
+    if type(code) == "string" and #code >= 1 and #code <= 6 and code:match("^%d+$") then
+        return code
+    end
+    return nil
+end
+
+local function response_api_code(body)
+    -- Never display server-provided message text: an error body could echo
+    -- request data. Only surface a bounded numeric code from a size-limited decode.
+    local data = body and plugin.json_decode(body, { max_input_bytes = JSON_LIMIT })
+    return safe_api_code(data)
+end
+
+local function api_error(body, status)
+    local code = response_api_code(body)
+    if code then return "Qobuz API error (HTTP " .. tostring(status) .. ", code " .. code .. ")" end
+    return "Qobuz API error (HTTP " .. tostring(status) .. ")"
+end
+
+local function http_error(status, body)
+    local code = tonumber(status)
+    if not code or code ~= math.floor(code) or code < 100 or code > 599 then
+        return "Qobuz request failed"
+    end
+    local api_code = response_api_code(body)
+    local code_suffix = api_code and (" (API code " .. api_code .. ")") or ""
+    if code == 401 then return "Qobuz HTTP 401: session rejected; sign in again" .. code_suffix end
+    if code == 403 then return "Qobuz HTTP 403: access denied; check account or subscription" .. code_suffix end
+    if code == 429 then return "Qobuz HTTP 429: rate limited; retry later" .. code_suffix end
+    return api_error(body, code)
+end
+
+local SAFE_TRANSPORT_ERRORS = {
+    invalid_url = "invalid URL",
+    invalid_request = "invalid request",
+    dns = "DNS lookup failed",
+    connect = "connection failed",
+    connect_timeout = "connection timed out",
+    tls = "TLS connection failed",
+    timeout = "request timed out",
+    cancelled = "request cancelled",
+    too_many_redirects = "too many redirects",
+    response_too_large = "response too large",
+    malformed = "malformed HTTP response",
+    io = "network I/O failed",
+    insecure_redirect = "insecure redirect refused",
+    ["too many active HTTP requests"] = "player HTTP request limit reached",
+    ["could not start HTTP worker"] = "player could not start the request",
+    ["request unavailable"] = "player could not start the request",
+}
+
+local function safe_transport_error(err)
+    local description = SAFE_TRANSPORT_ERRORS[tostring(err or "")]
+    if description then return "Qobuz network: " .. description end
+    return "Qobuz network: request failed"
 end
 
 local function qobuz_get(path, extra_headers, callback)
@@ -128,32 +189,32 @@ local function qobuz_get(path, extra_headers, callback)
         for name, value in pairs(extra_headers) do headers[name] = value end
     end
 
-    local handle = plugin.http_request({
+    local handle, start_err = plugin.http_request({
         url = API .. path,
         headers = headers,
         total_timeout_ms = 20000,
         max_response_bytes = JSON_LIMIT,
     }, function(status, body, err)
         if err then
-            callback(nil, err)
+            callback(nil, safe_transport_error(err))
             return
         end
         if status ~= 200 then
-            callback(nil, api_message(body, status))
+            callback(nil, http_error(status, body))
             return
         end
-        local data, decode_err = plugin.json_decode(body, { max_input_bytes = JSON_LIMIT })
+        local data = plugin.json_decode(body, { max_input_bytes = JSON_LIMIT })
         if type(data) ~= "table" then
-            callback(nil, decode_err or "Qobuz sent an unreadable reply")
+            callback(nil, "Qobuz returned invalid JSON")
             return
         end
         if data.status == "error" then
-            callback(nil, api_message(body, status))
+            callback(nil, api_error(body, status))
             return
         end
         callback(data)
     end)
-    if not handle then callback(nil, "request unavailable") end
+    if not handle then callback(nil, safe_transport_error(start_err)) end
 end
 
 local function items_of(node)
@@ -341,20 +402,24 @@ local function play_these(tracks)
     end
     toast("Preparing playback")
 
-    local resolved = {}
+    local resolved, first_failure_reason = {}, nil
     local function step(index)
         if generation ~= playback_generation then return end
         if index > #pending then
             if #resolved == 0 then
-                toast("None of these tracks returned a stream link")
+                toast(first_failure_reason or "No stream link")
                 return
             end
             plugin.queue_remote_list(resolved, 1)
             return
         end
-        file_url(pending[index], function(remote)
+        file_url(pending[index], function(remote, err)
             if generation ~= playback_generation then return end
-            if remote then resolved[#resolved + 1] = remote end
+            if remote then
+                resolved[#resolved + 1] = remote
+            elseif not first_failure_reason then
+                first_failure_reason = err
+            end
             step(index + 1)
         end)
     end

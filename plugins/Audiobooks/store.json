@@ -1,5 +1,5 @@
 {
-  "description": "Audiobook library with resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer.",
+  "description": "Browse nested audiobook folders on demand, with resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer.",
   "category": "Listening",
   "author": "Comp\u00e1s",
   "files": [

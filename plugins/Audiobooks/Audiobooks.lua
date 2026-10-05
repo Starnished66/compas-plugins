@@ -1,10 +1,10 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.2.1", api_min = 1 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.3.0", api_min = 15 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Title/CD1/files, or loose one-file books.
 -- Progress, bookmarks, notes, chapter jumps, finished state, and a sleep
 -- timer are per book. Optional time skipping applies to both physical and
--- Now Playing Next/Previous. Speed and progress remain per file.
+-- Now Playing Next/Previous. Progress remains per file.
 -- Files over 2 GiB have no chapters.
 
 local ROOT = plugin.sd_root() .. "/Audiobooks"
@@ -34,6 +34,8 @@ local AUDIO = {
 local MAX_ROWS, MAX_BOOK_FILES, MAX_ENTRIES = 500, 500, 2000
 local state, books, book_by_key = {}, nil, {}
 local file_cache, chapter_cache = {}, {}
+local file_cache_order, chapter_cache_order = {}, {}
+local saved_books_hydrated = false
 local pending_seek, history_dirty, state_dirty = nil, false, false
 local last_saved_position, ticks = -1, 0
 local sleep_timer, sleep_chapter, sleep_book = nil, nil, nil
@@ -41,7 +43,7 @@ local warned_mode = false
 local warned_state_full = false
 local open_guard, last_seen, sleep_pause = nil, nil, nil
 local bookmark_serial = 0 -- session identities, so a stale row never acts on another bookmark
-local open_book
+local open_book, open_library, open_legacy_library, remember_book
 local atomic_write
 local skip_by_30 = false
 
@@ -209,10 +211,11 @@ local function safe_dir(path)
     if not ok or type(entries) ~= "table" then
         return {}
     end
-    local out, n = {}, 0
+    local out, n, cut = {}, 0, false
     for _, entry in ipairs(entries) do
         n = n + 1
         if n > MAX_ENTRIES then
+            cut = true
             break
         end
         if type(entry) == "table" and type(entry.name) == "string" and #entry.name <= 255 then
@@ -220,7 +223,7 @@ local function safe_dir(path)
         end
     end
     table.sort(out, natural_less)
-    return out
+    return out, cut
 end
 
 local function valid_path_piece(s)
@@ -228,8 +231,37 @@ local function valid_path_piece(s)
         and s ~= ""
         and s ~= "."
         and s ~= ".."
+        and #s <= 255
+        and not s:find("[%z\1-\31\127]")
         and not s:find("/", 1, true)
         and not s:find("\\", 1, true)
+end
+
+-- Saved book keys and file names are relative to Audiobooks. Validate every
+-- component before joining persisted data to ROOT; state files are user data.
+local function valid_relative_path(path)
+    if type(path) ~= "string" or path == "" or #path > 512 or path:sub(1, 1) == "/" then
+        return false
+    end
+    local count = 0
+    for part in path:gmatch("[^/]+") do
+        if not valid_path_piece(part) then
+            return false
+        end
+        count = count + 1
+    end
+    return count > 0 and path:sub(-1) ~= "/" and not path:find("//", 1, true)
+end
+
+local function path_parts(path)
+    local parts = {}
+    if not valid_relative_path(path) then
+        return nil
+    end
+    for part in path:gmatch("[^/]+") do
+        parts[#parts + 1] = part
+    end
+    return parts
 end
 
 local function read_state_file(path, importing)
@@ -278,6 +310,7 @@ local function read_state_file(path, importing)
                         s.file, s.position, s.duration = file, position, duration
                         s.finished, s.last_played = p[6] == "1", last
                         s.finished_manual = not importing and p[8] == "1" or false
+                        s.direct_only = not importing and p[9] == "1" or false
                     end
                 end
             elseif valid_key and kind == "B" and #p >= 5 then
@@ -373,7 +406,8 @@ local function save_state()
                 tostring(math.floor(s.duration or 0)),
                 s.finished and "1" or "0",
                 tostring(math.floor(s.last_played or 0)),
-                s.finished_manual and "1" or "0"
+                s.finished_manual and "1" or "0",
+                s.direct_only and "1" or "0"
             )
         end
         for _, key in ipairs(keys) do
@@ -564,6 +598,7 @@ local function scan_library()
     for _, b in ipairs(result) do
         book_by_key[b.key] = b
     end
+    saved_books_hydrated = false
 end
 
 -- Share the player's bounded image worker with EPUB; show our icon until ready.
@@ -645,7 +680,7 @@ local function scan_book(book, quiet)
             end
             local rel = prefix == "" and e.name or (prefix .. "/" .. e.name)
             if e.dir then
-                if depth < 2 then
+                if not book.direct_only and depth < 2 then
                     walk(dir .. "/" .. e.name, depth + 1, rel)
                 end
             elseif is_audio(e.name) then
@@ -657,7 +692,10 @@ local function scan_book(book, quiet)
         end
     end
     if book.loose then
-        files[1] = { name = book.key, path = ROOT .. "/" .. book.key }
+        local rel = book.file_rel or book.key
+        if valid_relative_path(rel) then
+            files[1] = { name = rel, path = ROOT .. "/" .. rel }
+        end
     else
         walk(book.dir, 0, "")
     end
@@ -678,8 +716,6 @@ end
 -- come from the progress tick and must not toast.
 -- A few books' file lists stay cached; older ones are dropped.
 local FILE_CACHE_BOOKS, CHAPTER_CACHE_FILES = 4, 8
-local file_cache_order, chapter_cache_order = {}, {}
-
 local function remember(cache, order, limit, key, value)
     for i, k in ipairs(order) do
         if k == key then
@@ -1355,6 +1391,7 @@ local function trusted_position(path)
 end
 
 local function start_book(book, rel, position, record_jump)
+    remember_book(book)
     local files = get_files(book)
     if #files == 0 then
         plugin.show_toast("No audio files in " .. cap(book.title, 100))
@@ -1390,6 +1427,7 @@ local function start_book(book, rel, position, record_jump)
         s.duration = 0
     end
     s.file, s.position, s.last_played = files[idx].name, math.max(0, position or 0), os.time()
+    s.direct_only = book.direct_only == true
     if s.finished then
         s.finished = false
     end
@@ -1454,6 +1492,172 @@ end
 local function list_row(label, icon)
     local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
     return { label = cap(label, wrap and 511 or 159), icon = icon, wrap = wrap == true }
+end
+
+local BROWSE_TITLE, BROWSE_PAGE_SIZE = "Browse folders", 17
+
+remember_book = function(book)
+    local previous = book_by_key[book.key]
+    if previous and (previous.dir ~= book.dir or previous.loose ~= book.loose
+        or previous.direct_only ~= book.direct_only or previous.file_rel ~= book.file_rel) then
+        file_cache[book.key], chapter_cache[book.key] = nil, nil
+        for _, order in ipairs({ file_cache_order, chapter_cache_order }) do
+            for i = #order, 1, -1 do
+                if order[i] == book.key then table.remove(order, i) end
+            end
+        end
+    end
+    book_by_key[book.key] = book
+    return book
+end
+
+local function folder_book(relative, direct_only)
+    local parts = path_parts(relative)
+    if not parts then
+        return nil
+    end
+    local book = {
+        key = relative,
+        title = parts[#parts],
+        author = #parts > 1 and parts[#parts - 1] or "",
+        dir = ROOT .. "/" .. relative,
+        direct_only = direct_only ~= false,
+    }
+    return remember_book(book)
+end
+
+local function file_book(relative)
+    if not valid_relative_path(relative) or not is_audio(relative) then
+        return nil
+    end
+    local parts = path_parts(relative)
+    local filename = parts[#parts]
+    return remember_book({
+        key = relative,
+        file_rel = relative,
+        title = filename:gsub("%.[^%.]+$", ""),
+        author = #parts > 1 and parts[#parts - 1] or "",
+        dir = ROOT,
+        loose = true,
+        single = true,
+    })
+end
+
+local function browsed_file_book(relative)
+    local parts = path_parts(relative)
+    if not parts or not is_audio(parts[#parts]) then
+        return nil
+    end
+    if #parts == 1 then
+        return file_book(relative)
+    end
+    local parent = table.concat(parts, "/", 1, #parts - 1)
+    local book = folder_book(parent)
+    if book then
+        book.initial_file = parts[#parts]
+    end
+    return book
+end
+
+local function browse_row(label, icon, action, wrap)
+    local supports_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
+    return {
+        type = "row",
+        label = cap(label, wrap and supports_wrap and 511 or 95),
+        icon = icon,
+        text_size = "medium",
+        wrap = wrap == true and supports_wrap == true,
+        on_select = action,
+    }
+end
+
+-- Rebuild the same settings-list screen in place for every directory/page.
+-- This keeps unlimited folder depth out of show_list's four-screen stack.
+local function browse_directory(relative, page)
+    relative = relative or ""
+    page = math.max(1, math.floor(tonumber(page) or 1))
+    if relative ~= "" and not valid_relative_path(relative) then
+        plugin.show_toast("That folder path is too long or invalid")
+        return
+    end
+    local directory = relative == "" and ROOT or (ROOT .. "/" .. relative)
+    local entries, cut = safe_dir(directory)
+    table.sort(entries, function(a, b)
+        if a.dir ~= b.dir then
+            return a.dir
+        end
+        return natural_less(a, b)
+    end)
+
+    local visible = {}
+    local direct_audio = 0
+    for _, entry in ipairs(entries) do
+        if entry.dir or is_audio(entry.name) then
+            visible[#visible + 1] = entry
+            if not entry.dir then
+                direct_audio = direct_audio + 1
+            end
+        end
+    end
+    local pages = math.max(1, math.ceil(#visible / BROWSE_PAGE_SIZE))
+    page = math.min(page, pages)
+    local first = (page - 1) * BROWSE_PAGE_SIZE + 1
+    local last = math.min(#visible, first + BROWSE_PAGE_SIZE - 1)
+    local label_path = relative == "" and "Audiobooks" or ("Audiobooks/" .. relative)
+    local rows = {
+        browse_row(label_path .. " · " .. page .. "/" .. pages, ICON_LIBRARY, function() end, true),
+    }
+    if relative ~= "" then
+        local parent = relative:match("^(.*)/[^/]+$") or ""
+        rows[#rows + 1] = browse_row("Up one folder", ICON_HISTORY, function()
+            browse_directory(parent, 1)
+        end)
+    end
+    if direct_audio > 0 and relative ~= "" then
+        rows[#rows + 1] = browse_row("Book controls · " .. direct_audio .. " audio files", ICON_BOOK, function()
+            local book = folder_book(relative)
+            if book then open_book(book, { path = relative, page = page }) end
+        end)
+    end
+    if page > 1 then
+        rows[#rows + 1] = browse_row("Previous page", ICON_LIBRARY, function()
+            browse_directory(relative, page - 1)
+        end)
+    end
+    for i = first, last do
+        local entry = visible[i]
+        local child_relative = relative == "" and entry.name or (relative .. "/" .. entry.name)
+        if #child_relative <= 512 and valid_relative_path(child_relative) then
+            if entry.dir then
+                rows[#rows + 1] = browse_row(entry.name .. "/", ICON_LIBRARY, function()
+                    browse_directory(child_relative, 1)
+                end)
+            else
+                rows[#rows + 1] = browse_row(entry.name, ICON_PLAY, function()
+                    local book = browsed_file_book(child_relative)
+                    if book then open_book(book, { path = relative, page = page }) end
+                end)
+            end
+        else
+            rows[#rows + 1] = browse_row(entry.name .. " · path too long", ICON_LIBRARY, function()
+                plugin.show_toast("This path is too long to save audiobook progress")
+            end)
+        end
+    end
+    if page < pages then
+        rows[#rows + 1] = browse_row("Next page", ICON_LIBRARY, function()
+            browse_directory(relative, page + 1)
+        end)
+    end
+    if cut then
+        rows[#rows + 1] = browse_row("First 2000 entries only", ICON_LIBRARY, function()
+            plugin.show_toast("This folder has more than 2000 entries")
+        end)
+    end
+    if #visible == 0 then
+        rows[#rows + 1] = browse_row("No folders or audio files here", ICON_BOOK, function() end)
+    end
+    plugin.show_settings_list(BROWSE_TITLE, rows, { update = true })
 end
 
 local function split_group(title, group)
@@ -1527,7 +1731,73 @@ local function group_for(kind)
     return out
 end
 
+local function book_from_saved_state(key, saved)
+    if not valid_relative_path(key) or type(saved) ~= "table"
+        or not valid_relative_path(saved.file) or not is_audio(saved.file) then
+        return nil
+    end
+    if saved.file == key and is_audio(key) then
+        return file_book(key)
+    end
+    -- New browser folders persist their flat-folder mode explicitly; older
+    -- progress records default to the legacy bounded subfolder scan.
+    return folder_book(key, saved.direct_only == true)
+end
+
+local function hydrate_saved_books()
+    if saved_books_hydrated then
+        return
+    end
+    for key, saved in pairs(state) do
+        if not book_by_key[key] then
+            book_from_saved_state(key, saved)
+        end
+    end
+    saved_books_hydrated = true
+end
+
+local function recent_saved_book()
+    local recent, recent_time
+    for key, saved in pairs(state) do
+        if saved.file and saved.file ~= "" and not saved.finished
+            and (not recent_time or (saved.last_played or 0) > recent_time) then
+            local book = book_from_saved_state(key, saved)
+            if book then
+                recent, recent_time = book, saved.last_played or 0
+            end
+        end
+    end
+    return recent
+end
+
 local function open_library()
+    local recent = recent_saved_book()
+    local rows = {}
+    local settings_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
+    local function add_row(label, icon, action, wrap)
+        local limit = (wrap and settings_wrap) and 511 or 159
+        rows[#rows + 1] = {
+            type = "row", label = cap(label, limit), icon = icon, text_size = "medium",
+            wrap = wrap and settings_wrap == true or false, on_select = action,
+        }
+    end
+    if recent then
+        local continuation = {}
+        local author = recent.author or ""
+        if author ~= "" then continuation[#continuation + 1] = author end
+        local progress = book_progress(recent)
+        if progress ~= "" then continuation[#continuation + 1] = progress end
+        local label = "Continue listening: " .. recent.title
+            .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
+        add_row(label, ICON_BOOK, function() resume_book(recent) end, true)
+    end
+    add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
+    add_row("All audiobooks · scan library", ICON_LIBRARY, open_legacy_library)
+    add_row("Settings", ICON_SETTINGS, open_settings)
+    plugin.show_settings_list("Audiobooks", rows)
+end
+
+open_legacy_library = function()
     if not books then
         scan_library()
     end
@@ -1558,6 +1828,7 @@ local function open_library()
             .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, cover_for(recent), function() resume_book(recent) end, true)
     end
+    add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
     add_row("All audiobooks (" .. #books .. ")", ICON_LIBRARY, function()
         split_group("All audiobooks", books)
     end)
@@ -1584,10 +1855,11 @@ local function open_library()
         if #books == 0 then
             plugin.show_toast("Add files to Audiobooks on your SD card, then refresh.")
         else
-            plugin.show_toast("Library refreshed. Reopen it to see changes.")
+            plugin.show_toast("Library refreshed.")
         end
+        open_legacy_library()
     end)
-    plugin.show_settings_list("Audiobooks", rows)
+    plugin.show_settings_list("Audiobooks", rows, { update = true })
 end
 
 local function chapters_for_book(book)
@@ -1860,7 +2132,8 @@ local function sleep_menu(book)
     end)
 end
 
-open_book = function(book)
+open_book = function(book, return_to_browser)
+    remember_book(book)
     local s = ensure_state(book.key)
     local rows = {}
     local settings_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
@@ -1871,15 +2144,42 @@ open_book = function(book)
         }
     end
     local heading = book.title .. (book.author ~= "" and ("\n" .. book.author) or "")
+    if return_to_browser then
+        add_row("Back to folder", ICON_HISTORY, function()
+            browse_directory(return_to_browser.path, return_to_browser.page)
+        end)
+    end
     add_row(heading, cover_for(book), function() end, true)
+    if book.initial_file then
+        add_row("Play selected file", ICON_PLAY, function()
+            local files = get_files(book)
+            for _, file in ipairs(files) do
+                if file.name == book.initial_file then
+                    start_book(book, book.initial_file, 0, true)
+                    return
+                end
+            end
+            plugin.show_toast("Selected file is no longer available")
+        end)
+    end
     local can_resume = s.file and s.file ~= "" and not s.finished
     add_row(can_resume and "Resume listening" or "Start listening", ICON_PLAY, function()
         local current = ensure_state(book.key)
         if current.finished then
             local files = get_files(book)
             if files[1] then start_book(book, files[1].name, 0, false) end
-        else
+        elseif current.file and current.file ~= "" then
             resume_book(book)
+        else
+            local files = get_files(book)
+            local first = book.initial_file
+            local found = false
+            if first then
+                for _, file in ipairs(files) do
+                    if file.name == first then found = true break end
+                end
+            end
+            start_book(book, found and first or (files[1] and files[1].name), 0, false)
         end
     end)
     local loaded = current_for_book(book) ~= nil and (plugin.is_playing() or plugin.is_paused())
@@ -1905,7 +2205,8 @@ open_book = function(book)
             if not save_state() then plugin.show_toast("Finished state could not be saved") end
         end,
     }
-    plugin.show_settings_list("Book controls", rows)
+    plugin.show_settings_list(return_to_browser and BROWSE_TITLE or "Book controls", rows,
+        return_to_browser and { update = true } or nil)
 end
 
 local function service_seek()
@@ -1944,31 +2245,33 @@ local function book_for_path(path)
     if not path or path:sub(1, #ROOT + 1) ~= ROOT .. "/" then
         return nil
     end
-    -- A book resumed by the player itself (after a reboot) is tracked even
-    -- if the Audiobooks screen was never opened this session.
-    if not books then
-        scan_library()
-    end
-    local book, file
-    for _, b in ipairs(books or {}) do
-        if b.loose then
-            if path == ROOT .. "/" .. b.key then
-                book, file = b, { name = b.key, path = path }
-                break
+    local function match(book)
+        if book.loose then
+            local file_path = book.file_rel and (ROOT .. "/" .. book.file_rel) or (ROOT .. "/" .. book.key)
+            if path == file_path then
+                return { name = book.file_rel or book.key, path = path }, #file_path
             end
-        else
-            local prefix = b.dir .. "/"
-            if path:sub(1, #prefix) == prefix then
-                local rel = path:sub(#prefix + 1)
-                local _, depth = rel:gsub("/", "")
-                if depth <= 2 then
-                    book, file = b, { name = rel, path = path }
-                    break
-                end
+            return nil
+        end
+        local prefix = book.dir .. "/"
+        if path:sub(1, #prefix) == prefix then
+            local rel = path:sub(#prefix + 1)
+            if valid_relative_path(rel) and is_audio(rel)
+                and (not book.direct_only or not rel:find("/", 1, true)) then
+                return { name = rel, path = path }, #prefix
             end
         end
     end
-    return book, file
+
+    hydrate_saved_books()
+    local best_book, best_file, best_length
+    for _, book in pairs(book_by_key) do
+        local file, length = match(book)
+        if file and (not best_length or length > best_length) then
+            best_book, best_file, best_length = book, file, length
+        end
+    end
+    return best_book, best_file
 end
 
 -- Stores a position for the book file; marks the book finished near the end
