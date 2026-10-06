@@ -29,7 +29,7 @@ to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.2",
+    version = "1.3.3",
     api_min = 14,
 })
 
@@ -212,11 +212,28 @@ local function save_tokens(data, keep_refresh)
     return true
 end
 
+-- plugin.json_decode() returns every JSON number as a float, so a plain
+-- tostring() turns id 123 into "123.0", which breaks Tidal API paths.
+local function id_string(value)
+    if type(value) == "number" then
+        local whole = math.tointeger(value)
+        if whole then return tostring(whole) end
+    end
+    return tostring(value)
+end
+
+-- Sessions saved by 1.3.2 and earlier hold user_id as "123.0".
+do
+    local saved = stored("user_id")
+    local whole = saved and saved:match("^(%d+)%.0$")
+    if whole then plugin.storage.set("user_id", whole) end
+end
+
 local function save_user(user)
     if type(user) ~= "table" then return false end
     local id = user.userId or user.user_id
-    if id == nil or tostring(id) == "" or tostring(id) == "0" then return false end
-    plugin.storage.set("user_id", tostring(id))
+    if id == nil or id_string(id) == "" or id_string(id) == "0" then return false end
+    plugin.storage.set("user_id", id_string(id))
     if user.countryCode and user.countryCode ~= "" then
         plugin.storage.set("country", tostring(user.countryCode))
     end
@@ -349,7 +366,7 @@ end
 local function album_from(obj)
     if type(obj) ~= "table" or obj.id == nil then return nil end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         title = obj.title or "Unknown album",
         artist = person_name(obj),
         cover = image_url(obj.cover, 320),
@@ -362,7 +379,7 @@ local function track_from(obj, album_hint)
     local hint = album_hint or {}
     local album = type(obj.album) == "table" and obj.album or nil
     local album_id = ""
-    if album and album.id ~= nil then album_id = tostring(album.id) end
+    if album and album.id ~= nil then album_id = id_string(album.id) end
     if album_id == "" then album_id = hint.id or "" end
     local cover = ""
     if album and album.cover then cover = image_url(album.cover, 320) end
@@ -370,7 +387,7 @@ local function track_from(obj, album_hint)
     local streamable = true
     if obj.allowStreaming == false or obj.streamReady == false then streamable = false end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         title = obj.title or "Unknown title",
         artist = person_name(obj) ~= "" and person_name(obj) or (hint.artist or "Unknown artist"),
         album = (album and album.title) or hint.title or "",
@@ -877,7 +894,7 @@ show_home = function()
                     for _, obj in ipairs(list) do
                         if type(obj) == "table" and obj.id ~= nil then
                             rows[#rows + 1] = {
-                                id = tostring(obj.id),
+                                id = id_string(obj.id),
                                 name = obj.name or "Unknown artist",
                                 label = obj.name or "Unknown artist",
                             }

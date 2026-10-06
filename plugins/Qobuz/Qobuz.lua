@@ -21,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.3.3",
+    version = "1.3.4",
     api_min = 14,
 })
 
@@ -217,6 +217,17 @@ local function qobuz_get(path, extra_headers, callback)
     if not handle then callback(nil, safe_transport_error(start_err)) end
 end
 
+-- plugin.json_decode() returns every JSON number as a float, so a plain
+-- tostring() turns track 5966783 into "5966783.0", which Qobuz rejects
+-- with HTTP 400 on getFileUrl, playlist/get and artist/get.
+local function id_string(value)
+    if type(value) == "number" then
+        local whole = math.tointeger(value)
+        if whole then return tostring(whole) end
+    end
+    return tostring(value)
+end
+
 local function items_of(node)
     if type(node) ~= "table" then return {} end
     if type(node.items) == "table" then return node.items end
@@ -247,11 +258,11 @@ local function track_from(obj, album_hint)
     local rate = tonumber(obj.maximum_sampling_rate) or 0
     if rate > 0 and rate < 1000 then rate = math.floor(rate * 1000 + 0.5) end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         title = clip_utf8(obj.title or "Unknown title", 127),
         artist = clip_utf8(artist_name(obj) ~= "" and artist_name(obj) or (hint.artist or "Unknown artist"), 127),
         album = clip_utf8((album and album.title) or hint.title or "", 127),
-        album_id = (album and album.id and tostring(album.id)) or hint.id or "",
+        album_id = (album and album.id and id_string(album.id)) or hint.id or "",
         cover = cover ~= "" and cover or (hint.cover or ""),
         duration = tonumber(obj.duration) or 0,
         sample_rate = rate,
@@ -265,7 +276,7 @@ local function album_from(obj)
     local artist = ""
     if type(obj.artist) == "table" then artist = obj.artist.name or "" end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         title = obj.title or "Unknown album",
         artist = artist,
         cover = cover_url(obj.image),
@@ -276,7 +287,7 @@ end
 local function artist_from(obj)
     if type(obj) ~= "table" or obj.id == nil then return nil end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         name = obj.name or "Unknown artist",
         count = tonumber(obj.albums_count) or 0,
     }
@@ -288,7 +299,7 @@ local function playlist_from(obj)
     if type(obj.images300) == "table" then image = obj.images300[1] or "" end
     if image == "" and type(obj.images150) == "table" then image = obj.images150[1] or "" end
     return {
-        id = tostring(obj.id),
+        id = id_string(obj.id),
         name = obj.name or "Playlist",
         count = tonumber(obj.tracks_count) or 0,
         cover = image,
