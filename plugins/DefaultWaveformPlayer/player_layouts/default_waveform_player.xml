@@ -1,0 +1,34 @@
+<component>
+    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0">
+        <lv_obj name="overlay_panel" x="0" y="0" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0" clickable="false">
+            <lv_image name="background_img" x="0" y="0" width="#screen_w" height="#screen_h" />
+        </lv_obj>
+        <lv_obj name="cover_card" x="65" y="152" width="350" height="350" scrollable="false" style_radius="10" style_clip_corner="true" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="cover_img" src="default_cover" align="center" />
+            <lv_label name="song_count" text="" x="10" y="10" width="content" height="content" style_text_font="font_16" style_text_color="0xf2f3f4" style_bg_color="0x000000" style_bg_opa="128" style_radius="100" style_pad_hor="9" style_pad_ver="5" />
+            <lv_obj name="favorite_circle" x="294" y="294" width="44" height="44" scrollable="false" style_radius="100" style_bg_color="0x000000" style_bg_opa="102" style_border_width="0" style_pad_all="0">
+                <lv_image name="favorite_icon" src="collect_out" width="36" height="36" align="center" inner_align="contain" />
+            </lv_obj>
+        </lv_obj>
+        <lv_obj name="dismiss_btn" x="22" y="62" width="44" height="44" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" />
+        <lv_label name="title" text="" x="22" y="36" width="436" height="41" style_text_font="player_title" style_text_color="0xf2f3f4" style_text_align="center" style_pad_all="0" />
+        <lv_label name="artist" text="" x="22" y="83" width="436" height="28" style_text_font="player_meta" style_text_color="0xaab1b8" style_text_align="center" style_pad_all="0" />
+        <lv_label name="album" text="" x="22" y="117" width="436" height="28" style_text_font="player_meta" style_text_color="0xaab1b8" style_text_align="center" style_pad_all="0" />
+        <lv_obj name="quality_pill" x="110" y="518" width="260" height="36" scrollable="false" style_radius="100" style_bg_color="0x000000" style_bg_opa="51" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image src="quality_waveform" x="12" y="8" width="20" height="20" inner_align="contain" />
+            <lv_label name="format_badge" text="" x="36" y="0" width="212" height="100%" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="center" />
+        </lv_obj>
+        <lv_label name="seek_style" text="waveform_bars" hidden="true" />
+        <lv_slider name="progress_slider" x="30" y="575" width="420" height="36" style_bg_color="0x46515b" style_bg_opa="255" style_radius="8" />
+        <lv_label name="pos_label" text="0:00" x="30" y="617" width="120" height="28" style_text_font="player_meta" style_text_color="0xaab1b8" style_text_align="left" style_pad_all="0" />
+        <lv_label name="dur_label" text="--:--" x="330" y="617" width="120" height="28" style_text_font="player_meta" style_text_color="0xaab1b8" style_text_align="right" style_pad_all="0" />
+        <lv_image name="order_btn" src="order" x="37" y="676" width="40" height="40" inner_align="contain" />
+        <lv_image name="prev_btn" src="btn_prev" x="122" y="676" width="40" height="40" inner_align="contain" />
+        <lv_obj name="play_circle" x="198" y="654" width="84" height="84" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="play_btn" src="btn_play" x="0" y="0" width="84" height="84" inner_align="contain" />
+        </lv_obj>
+        <lv_image name="next_btn" src="btn_next" x="318" y="676" width="40" height="40" inner_align="contain" />
+        <lv_image name="more_btn" src="ic_more" x="403" y="676" width="40" height="40" inner_align="contain" />
+        <lv_slider name="volume_slider" width="100" height="10" hidden="true" />
+    </view>
+</component>
