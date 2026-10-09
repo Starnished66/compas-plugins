@@ -2,6 +2,10 @@ dist/
 
 # Local validation and development outputs.
 /tests/
+!/tests/
+/tests/*
+!/tests/podcasts_speed_test.lua
+!/tests/workflow_shelves_test.lua
 __pycache__/
 *.pyc
 /dist/

@@ -1,5 +1,5 @@
 {
-  "description": "Mood-based tone tuning on top of the parametric EQ, with backup and restore.",
+  "description": "Tone tuning on the parametric EQ, with sibilance peaks, stereo width, backup and restore. Older saved controls stay until you switch.",
   "category": "Audio",
   "author": "Compás"
 }

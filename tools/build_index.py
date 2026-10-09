@@ -17,6 +17,7 @@ tag, verifying its size and SHA-256 before it replaces anything.
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import re
@@ -24,6 +25,8 @@ import shutil
 import subprocess
 import tempfile
 import sys
+
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGINS_DIR = os.path.join(ROOT, "plugins")
@@ -36,8 +39,11 @@ MAX_INDEX_BYTES = 256 * 1024
 MAX_PLUGINS = 200
 MAX_FILES_PER_PLUGIN = 32  # the script included, as the player allows
 MAX_PREVIEW_BYTES = 65536
-MAX_PREVIEW_WIDTH = 240
-MAX_PREVIEW_HEIGHT = 400
+MAX_PREVIEW_SOURCE_BYTES = 8 * 1024 * 1024
+MAX_PREVIEW_SOURCE_WIDTH = 4096
+MAX_PREVIEW_SOURCE_HEIGHT = 4096
+MAX_PREVIEW_SOURCE_PIXELS = 16 * 1024 * 1024
+PREVIEW_SIZES = ((217, 325), (144, 216))
 
 # Used with fullmatch and re.ASCII so they mean what the player checks: a
 # plain "$" would allow a trailing newline and "\d" any Unicode digit.
@@ -165,8 +171,11 @@ def sha256_of(path):
 
 def baseline_jpeg_dimensions(path, where):
     """Read dimensions from a baseline JPEG without optional image libraries."""
-    with open(path, "rb") as f:
-        data = f.read()
+    if isinstance(path, bytes):
+        data = path
+    else:
+        with open(path, "rb") as f:
+            data = f.read()
     if len(data) < 4 or data[:2] != b"\xff\xd8" or data[-2:] != b"\xff\xd9":
         raise BuildError(f"{where}: preview must be a baseline JPEG")
     pos = 2
@@ -215,6 +224,57 @@ def baseline_jpeg_dimensions(path, where):
             return dimensions
         pos += segment_size
     raise BuildError(f"{where}: preview must be a valid baseline JPEG")
+
+
+def make_preview_variants(path, where, asset_prefix):
+    """Create deterministic, aspect-preserving JPEGs sized for Store cards."""
+    source_size = os.path.getsize(path)
+    if not source_size or source_size > MAX_PREVIEW_SOURCE_BYTES:
+        raise BuildError(f"{where}: preview source must be 1 to {MAX_PREVIEW_SOURCE_BYTES} bytes")
+    try:
+        with Image.open(path) as opened:
+            if opened.format not in ("JPEG", "PNG"):
+                raise BuildError(f"{where}: preview source must be a PNG or JPEG")
+            if getattr(opened, "n_frames", 1) != 1:
+                raise BuildError(f"{where}: animated previews are not supported")
+            width, height = opened.size
+            if (width < 1 or height < 1 or width > MAX_PREVIEW_SOURCE_WIDTH
+                    or height > MAX_PREVIEW_SOURCE_HEIGHT or width * height > MAX_PREVIEW_SOURCE_PIXELS):
+                raise BuildError(f"{where}: preview source dimensions {width}x{height} exceed source limits")
+            image = ImageOps.exif_transpose(opened).convert("RGB")
+    except BuildError:
+        raise
+    except (OSError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
+        raise BuildError(f"{where}: could not decode preview source: {exc}")
+
+    variants = []
+    for bound_w, bound_h in PREVIEW_SIZES:
+        variant = image.copy()
+        variant.thumbnail((bound_w, bound_h), Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        variant.save(output, format="JPEG", quality=85, subsampling=2, optimize=False,
+                     progressive=False)
+        data = output.getvalue()
+        if not data or len(data) > MAX_PREVIEW_BYTES:
+            raise BuildError(f"{where}: generated {bound_w}x{bound_h} preview exceeds {MAX_PREVIEW_BYTES} bytes")
+        width, height = baseline_jpeg_dimensions(data, where)
+        if (width, height) != variant.size:
+            raise BuildError(f"{where}: generated preview dimensions do not match the source thumbnail")
+        if variants and (width, height, data) == (
+                variants[-1]["width"], variants[-1]["height"], variants[-1]["data"]):
+            continue
+        asset = f"{asset_prefix}--preview-{bound_w}x{bound_h}.jpg"
+        if not ASSET_RE.fullmatch(asset) or len(asset) > 127:
+            raise BuildError(f"{where}: generated asset name {asset!r} is invalid")
+        variants.append({
+            "asset": asset,
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "size": len(data),
+            "width": width,
+            "height": height,
+            "data": data,
+        })
+    return variants
 
 
 def load_plugin(folder):
@@ -301,7 +361,7 @@ def load_plugin(folder):
         files.append((item, src_path))
 
     preview = None
-    preview_source = None
+    preview_sources = []
     preview_src = store.get("preview")
     if preview_src is not None:
         where = f"plugins/{folder}/{preview_src}"
@@ -316,22 +376,14 @@ def load_plugin(folder):
                 or os.path.commonpath([real_source, real_base]) != real_base
                 or not os.path.isfile(preview_source)):
             raise BuildError(f"{where}: preview file not found inside the plugin folder")
-        preview_size = os.path.getsize(preview_source)
-        if not preview_size or preview_size > MAX_PREVIEW_BYTES:
-            raise BuildError(f"{where}: preview must be 1 to {MAX_PREVIEW_BYTES} bytes")
-        width, height = baseline_jpeg_dimensions(preview_source, where)
-        if width > MAX_PREVIEW_WIDTH or height > MAX_PREVIEW_HEIGHT:
-            raise BuildError(f"{where}: preview dimensions {width}x{height} exceed {MAX_PREVIEW_WIDTH}x{MAX_PREVIEW_HEIGHT}")
-        preview_asset = folder + "--" + preview_src.replace("/", "--")
-        if not ASSET_RE.fullmatch(preview_asset) or len(preview_asset) > 127:
-            raise BuildError(f"{where}: asset name {preview_asset!r} has characters GitHub would rename")
-        preview = {
-            "asset": preview_asset,
-            "sha256": sha256_of(preview_source),
-            "size": preview_size,
-            "width": width,
-            "height": height,
-        }
+        generated = make_preview_variants(preview_source, where, folder)
+        preview = {key: generated[0][key] for key in ("asset", "sha256", "size", "width", "height")}
+        if len(generated) > 1:
+            preview["variants"] = [
+                {key: item[key] for key in ("asset", "sha256", "size", "width", "height")}
+                for item in generated[1:]
+            ]
+        preview_sources = [(item["asset"], item["data"]) for item in generated]
 
     publish = store.get("publish", True)
     if not isinstance(publish, bool):
@@ -351,7 +403,7 @@ def load_plugin(folder):
     }
     if preview is not None:
         plugin["preview"] = preview
-    return plugin, files, (preview["asset"], preview_source) if preview is not None else None
+    return plugin, files, preview_sources
 
 
 def build(tag):
@@ -365,7 +417,7 @@ def build(tag):
     plugins, sources, held = [], [], []
     ids, dests, assets = {}, {}, set()
     for folder in folders:
-        plugin, files, preview_source = load_plugin(folder)
+        plugin, files, preview_sources = load_plugin(folder)
         if plugin["id"] in ids:
             raise BuildError(f"plugins/{folder}: id {plugin['id']} is also used by plugins/{ids[plugin['id']]}")
         ids[plugin["id"]] = folder
@@ -384,12 +436,11 @@ def build(tag):
                 raise BuildError(f"plugins/{folder}: two files would both be released as {item['asset']}")
             assets.add(item["asset"])
             plugin_sources.append((item["asset"], src_path))
-        if preview_source:
-            preview_asset, preview_path = preview_source
+        for preview_asset, preview_data in preview_sources:
             if preview_asset in assets:
                 raise BuildError(f"plugins/{folder}: two files would both be released as {preview_asset}")
             assets.add(preview_asset)
-            plugin_sources.append((preview_asset, preview_path))
+            plugin_sources.append((preview_asset, preview_data))
         # Held plugins ("publish": false) are validated but not released.
         if plugin.pop("publish"):
             plugins.append(plugin)
@@ -426,8 +477,13 @@ def main():
         shutil.rmtree(args.out)
     os.makedirs(args.out)
     sums = []
-    for asset, src_path in sources:
-        shutil.copyfile(src_path, os.path.join(args.out, asset))
+    for asset, source in sources:
+        destination = os.path.join(args.out, asset)
+        if isinstance(source, bytes):
+            with open(destination, "wb") as f:
+                f.write(source)
+        else:
+            shutil.copyfile(source, destination)
     with open(os.path.join(args.out, "index.json"), "wb") as f:
         f.write(data)
     for name in sorted(os.listdir(args.out)):

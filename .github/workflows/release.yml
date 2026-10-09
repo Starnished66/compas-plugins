@@ -18,6 +18,8 @@ jobs:
         run: .github/scripts/setup-lua.sh
       - name: Compile every plugin
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
+      - name: Install preview image dependency
+        run: python3 -m pip install Pillow==12.3.0
       - name: Build the release assets
         run: python3 tools/build_index.py --tag "$GITHUB_REF_NAME" --out dist
       - name: Publish

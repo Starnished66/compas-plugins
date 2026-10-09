@@ -65,7 +65,7 @@ plugins/
 2. Raise `version` in `plugin.define()` whenever the plugin changes. The store offers an update only when the version is higher than the installed one.
 3. Set `api_min` to the plugin API version the plugin really needs. The store will not install a plugin on firmware older than that.
 4. Never change a published plugin's `id`. The store tracks installs by it, and the player keeps each plugin's saved settings under it.
-5. Check locally: `python3 tools/build_index.py --check`. It runs each plugin under Lua 5.5 to read its `plugin.define()`, so it needs the `lua` interpreter on the PATH (or its path in the `LUA` environment variable).
+5. Check locally: `python3 -m pip install Pillow==12.3.0 && python3 tools/build_index.py --check`. It runs each plugin under Lua 5.5 to read its `plugin.define()`, so it also needs the `lua` interpreter on the PATH (or its path in the `LUA` environment variable).
 
 ## Releasing
 
@@ -107,7 +107,7 @@ Built by `tools/build_index.py`; the player reads it from `https://github.com/St
 
 Each file is downloaded from `https://github.com/Starnished66/compas-plugins/releases/download/<tag>/<asset>`, and its size and SHA-256 are checked before it replaces anything on the card. Destinations are plain relative paths; nothing may be written to `.compas/` or as a firmware image.
 
-A plugin may set `"preview": "preview.jpg"` in `store.json`. This optional path must name a file inside that plugin folder. The builder accepts baseline JPEGs up to 65,536 bytes and 240×400 pixels, then adds a `preview` object to the plugin record with the release asset name, SHA-256, size, width, and height. Preview assets use the same `<Plugin>--<path>` naming and collision checks as install assets, and publish in the GitHub release without a `dest` or entry in `files`; they do not affect installed files or install size.
+A plugin may set `"preview": "preview.png"` (or a JPEG path) in `store.json`. The source stays in the repository; the builder accepts PNG/JPEG screenshots up to 8 MiB and 4096×4096 pixels, then creates aspect-preserving baseline JPEGs capped at 217×325 and 144×216 pixels. It does not crop or enlarge small sources. The plugin record's `preview` object describes the largest variant and its optional `variants` array describes smaller ones; the player selects the largest image that fits its card. Each entry includes the release asset name, SHA-256, size, width, and height. Generated files use deterministic `<Plugin>--preview-<width>x<height>.jpg` names and publish separately from install files, without a `dest` or entry in `files`; they do not affect installed files or install size. The builder uses Pillow 12.3.0 in CI and release jobs.
 
 ## License
 
