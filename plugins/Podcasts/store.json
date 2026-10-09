@@ -1,7 +1,7 @@
 {
   "description": "Search and subscribe to podcasts, download episodes, and resume where you left off.",
   "category": "Listening",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "icons/show.png",
@@ -39,5 +39,6 @@
       "src": "icons/link.png",
       "dest": ".plugin-assets/Podcasts/link.png"
     }
-  ]
+  ],
+  "publish": false
 }

@@ -1,5 +1,6 @@
 {
   "description": "Mood-based tone tuning on top of the parametric EQ, with backup and restore.",
   "category": "Audio",
-  "author": "Compás"
+  "author": "Comp\u00e1s",
+  "publish": false
 }

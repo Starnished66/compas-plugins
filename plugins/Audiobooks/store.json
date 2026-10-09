@@ -63,5 +63,6 @@
       "src": "icons/settings.png",
       "dest": ".plugin-assets/Audiobooks/settings.png"
     }
-  ]
+  ],
+  "publish": false
 }

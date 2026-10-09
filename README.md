@@ -69,6 +69,7 @@ plugins/
 - `category` is one of `Listening`, `Reading`, `Audio`, `Customization`, `Tools`, `Experimental`, `Developer`.
 - `files` lists extra files. `src` is relative to the plugin folder, `dest` is relative to the SD card root. The `.lua` file itself always goes to `.plugins/<Name>.lua` and is not listed.
 - `publish: false` holds a plugin back: it is still checked, but left out of releases until it is ready.
+- Audiobooks, Podcasts, and MSEB are present in source and checked in CI, but remain unpublished while they require API 16.
 - `keep: true` marks a file the user edits, such as a station list. The store installs it when it is missing and never overwrites or deletes it.
 
 ## Adding or updating a plugin
