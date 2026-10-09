@@ -1,0 +1,5 @@
+{
+  "description": "Play whole albums in random order while preserving their track order. Start in sequential mode; stops when you explicitly stop playback.",
+  "category": "Listening",
+  "author": "Compás"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "Fill missing cover.jpg files using MusicBrainz and the Cover Art Archive. Fetch the current album or enable automatic lookup.",
+  "category": "Tools",
+  "author": "Compás"
+}

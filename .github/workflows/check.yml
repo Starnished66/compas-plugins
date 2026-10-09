@@ -17,6 +17,8 @@ jobs:
         run: .github/scripts/setup-lua.sh
       - name: Compile every plugin
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
+      - name: Test API 15 music plugins
+        run: lua tests/music_plugins/run.lua
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
       - name: Validate the store index

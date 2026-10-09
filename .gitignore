@@ -10,3 +10,8 @@ __pycache__/
 *.pyc
 /dist/
 .claude/settings.local.json
+
+# Focused music-plugin tests and their local output.
+!/tests/music_plugins/
+!/tests/music_plugins/**
+/build_test/

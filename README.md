@@ -17,6 +17,10 @@ Open **Settings > Sound > Equalizer > Profiles > Download profiles** to reach Au
 
 The catalog is cached for offline searches. Downloads and catalog refreshes need a network connection. Existing profiles can be replaced explicitly or saved as another copy; incompatible profiles are rejected without changing saved files.
 
+## Lyrics, covers and album shuffle
+
+Lyrics Fetcher, Cover Art Fetcher and Album Shuffle support Plugin API 15. Fetchers offer manual lookup and optional automatic mode; Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
+
 ## Player layouts
 
 Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Player, Hiby's Graph Player, Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires Plugin API 15 or newer, which guarantees the current XML player-layout features and board-size variant discovery; all designs support tap-to-open lyrics, and Default Waveform, Gallery Waveform, Hibys Graph, Panorama, and Vinyl use waveform seeking.
