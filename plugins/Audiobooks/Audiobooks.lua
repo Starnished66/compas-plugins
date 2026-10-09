@@ -1,8 +1,7 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.5.0", api_min = 16 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.3.0", api_min = 15 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
--- Author/Title/files, Author/Series/Title/files, with optional disc folders,
--- or loose one-file books. Authors and Series shelves use these folder names.
+-- Author/Title/files, Author/Title/CD1/files, or loose one-file books.
 -- Progress, bookmarks, notes, chapter jumps, finished state, and a sleep
 -- timer are per book. Optional time skipping applies to both physical and
 -- Now Playing Next/Previous. Progress remains per file.
@@ -42,55 +41,25 @@ local last_saved_position, ticks = -1, 0
 local sleep_timer, sleep_chapter, sleep_book = nil, nil, nil
 local warned_mode = false
 local warned_state_full = false
-local warned_scan_limit = false
-local active_book_key
-local open_guard, last_seen, idle_flush_pending, sleep_pause = nil, nil, nil, nil
-local last_terminal_flush
+local open_guard, last_seen, sleep_pause = nil, nil, nil
 local bookmark_serial = 0 -- session identities, so a stale row never acts on another bookmark
 local open_book, open_library, open_legacy_library, remember_book
 local atomic_write
 local skip_by_30 = false
-local playback_speed = 1.0
-local speed_retry_pending = false
-local SPEEDS = { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0 }
-local function speed_supported()
-    return plugin.has_capability and plugin.has_capability("playback.speed")
-        and type(plugin.set_playback_speed) == "function"
-end
-local function apply_speed(value)
-    if not speed_supported() then return value == 1.0 end
-    local ok, accepted = pcall(plugin.set_playback_speed, ROOT, value)
-    return ok and accepted == true
-end
-local function current_audiobook_path()
-    local path = plugin.get_current_track_path()
-    return type(path) == "string" and path:sub(1, #ROOT + 1) == ROOT .. "/" and path or nil
-end
-local function speed_waiting_for_resume(path)
-    return (pending_seek and pending_seek.path == path) or (open_guard and open_guard.path == path)
-end
 
 local function read_settings()
     local f = io.open(SETTINGS_PATH, "r")
     if not f then
         return
     end
-    for _ = 1, 16 do
-        local line = f:read("*l")
-        if not line then break end
-        if line == "skip_by_30\t1" then skip_by_30 = true end
-        local value = tonumber(line:match("^playback_speed\t([%d%.]+)$"))
-        for _, speed in ipairs(SPEEDS) do
-            if value == speed then playback_speed = value end
-        end
-    end
+    local line = f:read("*l")
     f:close()
+    skip_by_30 = line == "skip_by_30\t1"
 end
 
 local function save_settings()
     return atomic_write(SETTINGS_PATH, function(f)
         f:write("skip_by_30\t", skip_by_30 and "1" or "0", "\n")
-        f:write("playback_speed\t", tostring(playback_speed), "\n")
     end)
 end
 
@@ -105,8 +74,7 @@ local function set_transport_skip(enabled)
     return ok
 end
 
-local open_settings
-open_settings = function(update_existing)
+local function open_settings()
     local available = plugin.has_capability and plugin.has_capability("playback.transport_skip")
     local rows = {
         {
@@ -133,51 +101,7 @@ open_settings = function(update_existing)
             end,
         },
     }
-    rows[#rows + 1] = {
-        type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
-        icon = ICON_SETTINGS, text_size = "medium",
-        on_select = function()
-            if not speed_supported() then
-                plugin.show_toast("Playback speed requires a newer player")
-                return
-            end
-            local choices = {}
-            for _, value in ipairs(SPEEDS) do
-                choices[#choices + 1] = tostring(value) .. "x"
-            end
-            plugin.show_list("Playback speed", choices, function(index)
-                local speed = SPEEDS[index]
-                if not speed then return end
-                local active_path = current_audiobook_path()
-                local defer_until_ready = active_path and speed_waiting_for_resume(active_path)
-                local previous = playback_speed
-                if active_path and not defer_until_ready and not apply_speed(speed) then
-                    plugin.show_toast("Speed is unavailable for this audio format")
-                    return
-                end
-                playback_speed = speed
-                if not save_settings() then
-                    playback_speed = previous
-                    if active_path then
-                        speed_retry_pending = defer_until_ready or not apply_speed(previous)
-                    else
-                        speed_retry_pending = true
-                    end
-                    plugin.show_toast("Could not save playback speed")
-                    return
-                end
-                speed_retry_pending = active_path == nil or defer_until_ready == true
-                -- Keep the speed chooser in front; refresh the covered parent
-                -- in place so Back returns to the updated label. `show_list`
-                -- has its own screen pool, separate from the two native
-                -- settings-list slots this flow already uses.
-                open_settings(true)
-                plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
-            end)
-        end,
-    }
-    plugin.show_settings_list("Audiobooks settings", rows,
-        update_existing and { update = true } or nil)
+    plugin.show_settings_list("Audiobooks settings", rows)
 end
 
 local function cap(s, n)
@@ -608,86 +532,73 @@ local function is_disc_name(name)
     return false
 end
 
--- Folder shelves recognize Author/Book and Author/Series/Book. Disc folders
--- stay chapters of a book. Progress keys remain relative paths; legacy saved
--- collections are retained instead of splitting or rewriting their state.
 local function scan_library()
     ensure_root()
-    local result, budget, partial = {}, 10000, false
-    local directories = {}
-    local function entries(dir)
-        if directories[dir] then return directories[dir] end
-        if budget <= 0 then partial = true; return {} end
-        local found, cut = safe_dir(dir)
-        local kept = {}
-        for _, entry in ipairs(found) do
-            if budget <= 0 then partial = true; break end
-            budget = budget - 1
-            kept[#kept + 1] = entry
+    local result, budget = {}, { n = 10000 }
+    local entries, scanned = safe_dir(ROOT), 0
+    for _, e in ipairs(entries) do
+        scanned = scanned + 1
+        budget.n = budget.n - 1
+        if scanned > MAX_ENTRIES or budget.n < 0 then
+            break
         end
-        partial = partial or cut
-        directories[dir] = kept
-        return kept
-    end
-    local function has_audio(dir, depth)
-        for _, entry in ipairs(entries(dir)) do
-            if not entry.dir and is_audio(entry.name) then return true end
-            if entry.dir and depth > 0 and has_audio(dir .. "/" .. entry.name, depth - 1) then return true end
-        end
-        return false
-    end
-    local function is_book(dir)
-        for _, entry in ipairs(entries(dir)) do
-            if not entry.dir and is_audio(entry.name) then return true end
-            if entry.dir and is_disc_name(entry.name) and has_audio(dir .. "/" .. entry.name, 1) then return true end
-        end
-        return false
-    end
-    local function add(key, title, author, series, loose)
-        if #result >= 5000 then partial = true; return end
-        result[#result + 1] = { key = key, title = title, author = author or "", series = series or "",
-            dir = loose and ROOT or ROOT .. "/" .. key, loose = loose, single = loose }
-    end
-    for _, root in ipairs(entries(ROOT)) do
-        if not root.dir then
-            if is_audio(root.name) then add(root.name, root.name:gsub("%.[^%.]+$", ""), "", "", true) end
-        else
-            local dir = ROOT .. "/" .. root.name
-            if is_book(dir) then
-                add(root.name, root.name)
-            else
-                for _, child in ipairs(entries(dir)) do
-                    if child.dir then
-                        local key = root.name .. "/" .. child.name
-                        local path = ROOT .. "/" .. key
-                        if is_book(path) then
-                            add(key, child.name, root.name)
-                        else
-                            local saved = state[key]
-                            if saved and (saved.file or saved.finished or #(saved.bookmarks or {}) > 0
-                                or #(saved.history or {}) > 0) and has_audio(path, 2) then
-                                -- Old releases treated this whole series as one book.
-                                add(key, child.name .. " (saved collection)", root.name, child.name)
-                            end
-                            for _, book in ipairs(entries(path)) do
-                                if book.dir and has_audio(path .. "/" .. book.name, 2) then
-                                    add(key .. "/" .. book.name, book.name, root.name, child.name)
-                                end
-                            end
-                        end
+        if e.dir then
+            local dir = ROOT .. "/" .. e.name
+            local children, dirs_only, has_audio = safe_dir(dir), true, false
+            for _, child in ipairs(children) do
+                budget.n = budget.n - 1
+                if budget.n < 0 then
+                    break
+                end
+                if child.dir then
+                    if contains_audio(dir .. "/" .. child.name, 1, budget) then
+                        has_audio = true
                     end
+                elseif is_audio(child.name) then
+                    has_audio, dirs_only = true, false
+                else
+                    dirs_only = false
                 end
             end
+            local disc_names = true
+            for _, child in ipairs(children) do
+                if child.dir and not is_disc_name(child.name) then
+                    disc_names = false
+                end
+            end
+            if has_audio and dirs_only and not disc_names and #children > 0 then
+                for _, child in ipairs(children) do
+                    if budget.n > 0 and child.dir and contains_audio(dir .. "/" .. child.name, 1, budget) then
+                        local key = e.name .. "/" .. child.name
+                        result[#result + 1] =
+                            { key = key, title = child.name, author = e.name, dir = dir .. "/" .. child.name }
+                    end
+                end
+            elseif has_audio then
+                result[#result + 1] = { key = e.name, title = e.name, author = "", dir = dir }
+            end
+        elseif is_audio(e.name) then
+            result[#result + 1] = {
+                key = e.name,
+                title = e.name:gsub("%.[^%.]+$", ""),
+                author = "",
+                dir = ROOT,
+                single = true,
+                loose = true,
+            }
+        end
+        if #result >= 5000 then
+            break
         end
     end
-    table.sort(result, function(a, b) return natural_less(a.title, b.title) end)
+    table.sort(result, function(a, b)
+        return natural_less(a.title, b.title)
+    end)
     books, book_by_key = result, {}
-    for _, book in ipairs(result) do book_by_key[book.key] = book end
-    saved_books_hydrated = false
-    if partial and not warned_scan_limit then
-        warned_scan_limit = true
-        plugin.show_toast("Library scan limit reached; Browse folders shows more")
+    for _, b in ipairs(result) do
+        book_by_key[b.key] = b
     end
+    saved_books_hydrated = false
 end
 
 -- Share the player's bounded image worker with EPUB; show our icon until ready.
@@ -1573,7 +1484,6 @@ local function book_list_label(book)
     local metadata = {}
     local author = book.author or ""
     if author ~= "" then metadata[#metadata + 1] = author end
-    if book.series and book.series ~= "" then metadata[#metadata + 1] = book.series end
     local progress = book_progress(book)
     if progress ~= "" then metadata[#metadata + 1] = progress end
     return book.title .. (#metadata > 0 and ("\n" .. table.concat(metadata, " · ")) or "")
@@ -1806,48 +1716,6 @@ local function split_group(title, group)
     end)
 end
 
--- Keep these on plain-list screens: Home and Book controls already use the
--- two settings-screen slots. Numbered ranges also bound large author lists.
-local function open_shelves(field, title)
-    if not books then scan_library() end
-    local groups, keys = {}, {}
-    for _, book in ipairs(books) do
-        local name = book[field] or ""
-        if name ~= "" then
-            local key = field == "series" and (book.author .. " / " .. name) or name
-            if not groups[key] then groups[key] = {}; keys[#keys + 1] = key end
-            groups[key][#groups[key] + 1] = book
-        end
-    end
-    table.sort(keys, natural_less)
-    if #keys == 0 then plugin.show_toast("No " .. title:lower() .. " folders found"); return end
-    local shelves = {}
-    for _, key in ipairs(keys) do
-        local group = groups[key]
-        for first = 1, #group, MAX_ROWS do
-            local slice = {}
-            for i = first, math.min(#group, first + MAX_ROWS - 1) do slice[#slice + 1] = group[i] end
-            shelves[#shelves + 1] = { label = key .. (#group > MAX_ROWS and (" · part " .. math.ceil(first / MAX_ROWS)) or ""), books = slice }
-        end
-    end
-    local function show_page(first)
-        local rows, actions = {}, {}
-        for i = first, math.min(#shelves, first + MAX_ROWS - 1) do
-            local shelf = shelves[i]
-            rows[#rows + 1] = list_row(shelf.label .. " (" .. #shelf.books .. ")", ICON_LIBRARY)
-            actions[#actions + 1] = function() split_group(shelf.label, shelf.books) end
-        end
-        plugin.show_list(title, rows, function(i) if actions[i] then actions[i]() end end)
-    end
-    if #shelves <= MAX_ROWS then show_page(1); return end
-    local rows, starts = {}, {}
-    for first = 1, #shelves, MAX_ROWS do
-        starts[#starts + 1] = first
-        rows[#rows + 1] = list_row(shelves[first].label .. " to " .. shelves[math.min(#shelves, first + MAX_ROWS - 1)].label, ICON_LIBRARY)
-    end
-    plugin.show_list(title, rows, function(i) if starts[i] then show_page(starts[i]) end end)
-end
-
 local function group_for(kind)
     local out = {}
     for _, b in ipairs(books or {}) do
@@ -1876,46 +1744,6 @@ local function book_from_saved_state(key, saved)
     return folder_book(key, saved.direct_only == true)
 end
 
-local function saved_file_exists(key, relative)
-    -- Checking the saved track directly avoids scanning the library or even
-    -- walking the book folder just to decide whether a Continue row is valid.
-    local path = relative == key and is_audio(key)
-        and (ROOT .. "/" .. relative) or (ROOT .. "/" .. key .. "/" .. relative)
-    local ok, f = pcall(io.open, path, "rb")
-    if not ok or not f then
-        return false
-    end
-    f:close()
-    return true
-end
-
-local function saved_progress_candidates()
-    local out = {}
-    -- Keep this metadata-only: the state reader caps it at 5000 records, and
-    -- checking media availability is deferred to the small visible page.
-    for key, saved in pairs(state) do
-        if type(saved) == "table" and not saved.finished
-            and type(saved.file) == "string" and saved.file ~= ""
-            and valid_relative_path(key) and valid_relative_path(saved.file) and is_audio(saved.file) then
-            out[#out + 1] = { key = key, saved = saved, last_played = tonumber(saved.last_played) or 0 }
-        end
-    end
-    table.sort(out, function(a, b)
-        if a.last_played ~= b.last_played then
-            return a.last_played > b.last_played
-        end
-        return a.key < b.key
-    end)
-    return out
-end
-
-local function available_saved_book(candidate)
-    if not candidate or not saved_file_exists(candidate.key, candidate.saved.file) then
-        return nil
-    end
-    return book_from_saved_state(candidate.key, candidate.saved)
-end
-
 local function hydrate_saved_books()
     if saved_books_hydrated then
         return
@@ -1928,54 +1756,22 @@ local function hydrate_saved_books()
     saved_books_hydrated = true
 end
 
-local CONTINUE_PAGE_SIZE = 17
-
-local function open_continue_list(page)
-    local entries = saved_progress_candidates()
-    local page_count = math.max(1, math.ceil(#entries / CONTINUE_PAGE_SIZE))
-    page = math.max(1, math.min(page_count, math.floor(tonumber(page) or 1)))
-    local first = (page - 1) * CONTINUE_PAGE_SIZE + 1
-    local last = math.min(#entries, first + CONTINUE_PAGE_SIZE - 1)
-    local rows = {}
-    local settings_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
-    local function add_row(label, icon, action, wrap)
-        local limit = wrap and settings_wrap and 511 or 95
-        rows[#rows + 1] = {
-            type = "row", label = cap(label, limit), icon = icon, text_size = "medium",
-            wrap = wrap == true and settings_wrap == true, on_select = action,
-        }
-    end
-    add_row("Continue listening · " .. #entries .. " saved books · " .. page .. "/" .. page_count,
-        ICON_IN_PROGRESS, function() end, true)
-    if page > 1 then
-        add_row("Previous page", ICON_LIBRARY, function() open_continue_list(page - 1) end)
-    end
-    local available = 0
-    for i = first, last do
-        local candidate = entries[i]
-        local book = available_saved_book(candidate)
-        if book then
-            available = available + 1
-            local label = book_list_label(book)
-            add_row(label, ICON_BOOK, function() resume_book(book) end, true)
+local function recent_saved_book()
+    local recent, recent_time
+    for key, saved in pairs(state) do
+        if saved.file and saved.file ~= "" and not saved.finished
+            and (not recent_time or (saved.last_played or 0) > recent_time) then
+            local book = book_from_saved_state(key, saved)
+            if book then
+                recent, recent_time = book, saved.last_played or 0
+            end
         end
     end
-    if page < page_count then
-        add_row("Next page", ICON_LIBRARY, function() open_continue_list(page + 1) end)
-    end
-    if available == 0 then
-        add_row("No available books on this page", ICON_BOOK, function() end)
-    end
-    plugin.show_settings_list("Continue listening", rows, { update = true })
+    return recent
 end
 
 local function open_library()
-    local saved_books = saved_progress_candidates()
-    local recent
-    for i = 1, math.min(#saved_books, CONTINUE_PAGE_SIZE) do
-        recent = available_saved_book(saved_books[i])
-        if recent then break end
-    end
+    local recent = recent_saved_book()
     local rows = {}
     local settings_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
     local function add_row(label, icon, action, wrap)
@@ -1995,15 +1791,8 @@ local function open_library()
             .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, ICON_BOOK, function() resume_book(recent) end, true)
     end
-    local continue_count = #saved_books
-    if continue_count > 0 then
-        add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
-            function() open_continue_list(1) end)
-    end
     add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
     add_row("All audiobooks · scan library", ICON_LIBRARY, open_legacy_library)
-    add_row("Authors", ICON_LIBRARY, function() open_shelves("author", "Authors") end)
-    add_row("Series", ICON_LIBRARY, function() open_shelves("series", "Series") end)
     add_row("Settings", ICON_SETTINGS, open_settings)
     plugin.show_settings_list("Audiobooks", rows)
 end
@@ -2021,11 +1810,13 @@ open_legacy_library = function()
             wrap = wrap and settings_wrap == true or false, on_select = action,
         }
     end
-    local saved_progress = saved_progress_candidates()
-    local recent
-    for i = 1, math.min(#saved_progress, CONTINUE_PAGE_SIZE) do
-        recent = available_saved_book(saved_progress[i])
-        if recent then break end
+    local recent, recent_time
+    for _, b in ipairs(books) do
+        local st = state[b.key]
+        if st and st.file and st.file ~= "" and not st.finished
+            and (not recent_time or (st.last_played or 0) > recent_time) then
+            recent, recent_time = b, st.last_played or 0
+        end
     end
     if recent then
         local continuation = {}
@@ -2037,17 +1828,10 @@ open_legacy_library = function()
             .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, cover_for(recent), function() resume_book(recent) end, true)
     end
-    local continue_count = #saved_progress
-    if continue_count > 0 then
-        add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
-            function() open_continue_list(1) end)
-    end
     add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
     add_row("All audiobooks (" .. #books .. ")", ICON_LIBRARY, function()
         split_group("All audiobooks", books)
     end)
-    add_row("Authors", ICON_LIBRARY, function() open_shelves("author", "Authors") end)
-    add_row("Series", ICON_LIBRARY, function() open_shelves("series", "Series") end)
     add_row("Settings", ICON_SETTINGS, open_settings)
     for _, spec in ipairs({
         { "In progress", "progress", ICON_IN_PROGRESS },
@@ -2480,13 +2264,6 @@ local function book_for_path(path)
     end
 
     hydrate_saved_books()
-    -- An explicitly opened legacy collection owns its entire queue. A deeper
-    -- shelf book must not silently steal that collection's progress/bookmarks.
-    local active = active_book_key and book_by_key[active_book_key]
-    if active then
-        local file = match(active)
-        if file then return active, file end
-    end
     local best_book, best_file, best_length
     for _, book in pairs(book_by_key) do
         local file, length = match(book)
@@ -2499,7 +2276,7 @@ end
 
 -- Stores a position for the book file; marks the book finished near the end
 -- of its last file unless the user set the flag by hand.
-local function record_position(book, file, pos, dur, terminal)
+local function record_position(book, file, pos, dur)
     local s = ensure_state(book.key)
     s.file, s.position, s.duration, s.last_played = file.name, pos, dur, os.time()
     if not s.finished and not s.finished_manual then
@@ -2508,10 +2285,7 @@ local function record_position(book, file, pos, dur, terminal)
             files[#files]
             and files[#files].path == file.path
             and dur > 0
-            and terminal ~= "manual_stop"
-            and terminal ~= "paused"
-            and (terminal == "natural_eof"
-                or (terminal == nil and ((dur > 30 and pos >= dur - 30) or pos / dur >= 0.97)))
+            and (pos >= dur - 30 or pos / dur >= 0.97)
         then
             s.finished = true
         end
@@ -2521,119 +2295,36 @@ local function record_position(book, file, pos, dur, terminal)
     save_state()
 end
 
-local function flush_terminal(book, file, pos, dur, terminal)
-    local previous = last_terminal_flush
-    if previous and previous.path == file.path and previous.terminal == terminal
-        and previous.pos == pos and previous.dur == dur then
-        return
-    end
-    last_terminal_flush = { path = file.path, terminal = terminal, pos = pos, dur = dur }
-    record_position(book, file, pos, dur, terminal)
-end
-
-local function progress_save(force, terminal_override)
+local function progress_save(force)
     local path = plugin.get_current_track_path()
     local book, file = book_for_path(path)
-    if force and not book and not path and last_seen then
-        path, book, file = last_seen.file.path, last_seen.book, last_seen.file
-    end
     if not book or (pending_seek and pending_seek.path == path) then
         return
     end
-    -- Independent legacy getters can still describe the old track after a
-    -- change. A coherent exact-path snapshot already carries that guarantee.
-    local has_progress = plugin.has_capability and plugin.has_capability("playback.progress")
-    if not has_progress and open_guard and open_guard.path == path then
+    -- Just after a track change the counters can still be the old track's.
+    if open_guard and open_guard.path == path then
         return
     end
-    local pos, dur, terminal
-    if has_progress then
-        local ok, sample = pcall(plugin.get_playback_progress, path)
-        if ok and type(sample) == "table" and finite(sample.position, 0, 10000000)
-            and finite(sample.duration, 0, 10000000) and sample.duration > 0 then
-            pos, dur, terminal = sample.position, sample.duration, sample.terminal
-            if terminal ~= "active" and terminal ~= "natural_eof" and terminal ~= "manual_stop" then
-                return
-            end
-            if force and sample.terminal == "active" and (sample.paused or terminal_override) then
-                terminal = terminal_override or "paused"
-            end
-            if not force and (not sample.playing or sample.paused or terminal ~= "active") then
-                return
-            end
-        elseif force and last_seen and (not path or path == last_seen.file.path) then
-            -- A pause/stop may race the terminal snapshot. Only the last
-            -- coherent active sample for this same path is safe to flush.
-            pos, dur, terminal = last_seen.pos, last_seen.dur, "manual_stop"
-            book, file = last_seen.book, last_seen.file
-        else
-            return
-        end
-    else
-        if not force and (not plugin.is_playing() or plugin.is_paused()) then
-            return
-        end
-        pos, dur = plugin.get_position(), plugin.get_duration()
-        terminal = terminal_override
+    if not force and (not plugin.is_playing() or plugin.is_paused()) then
+        return
     end
+    local pos, dur = plugin.get_position(), plugin.get_duration()
     if not finite(pos, 0, 10000000) or not finite(dur, 0, 10000000) then
         return
     end
     if not force and math.abs(pos - last_saved_position) < 1 then
         return
     end
-    if terminal == "manual_stop" then
-        flush_terminal(book, file, pos, dur, terminal)
-    else
-        record_position(book, file, pos, dur, terminal)
-    end
-end
-
-local function matches_previous_track(path, previous, pos, dur)
-    return previous and previous.file.path ~= path
-        and finite(pos, 0, 10000000) and finite(dur, 0, 10000000)
-        and math.abs(pos - previous.pos) < 1.5
-        and math.abs(dur - previous.dur) < 1.5
+    record_position(book, file, pos, dur)
 end
 
 -- The firmware sends no "stopped" at the natural end of a queue: the last
 -- position seen while playing is checkpointed when playback goes idle.
 local function track_playback()
-    local path = plugin.get_current_track_path()
-    if plugin.has_capability and plugin.has_capability("playback.progress") then
-        if not path then
-            if last_seen then
-                record_position(last_seen.book, last_seen.file, last_seen.pos, last_seen.dur, "manual_stop")
-                last_seen, idle_flush_pending = nil, nil
-            end
-            return
-        end
-        if pending_seek and pending_seek.path == path then return end
-        local ok, sample = pcall(plugin.get_playback_progress, path)
-        if not ok or type(sample) ~= "table"
-            or not finite(sample.position, 0, 10000000)
-            or not finite(sample.duration, 0, 10000000) or sample.duration <= 0 then
-            return
-        end
-        local book, file = book_for_path(path)
-        if not book or not file then return end
-        if sample.terminal == "active" then
-            if sample.playing and not sample.paused then
-                last_terminal_flush = nil
-                last_seen = { book = book, file = file, pos = sample.position, dur = sample.duration }
-            elseif sample.paused or not sample.playing then
-                flush_terminal(book, file, sample.position, sample.duration, "paused")
-            end
-        elseif sample.terminal == "natural_eof" or sample.terminal == "manual_stop" then
-            flush_terminal(book, file, sample.position, sample.duration, sample.terminal)
-            last_seen, idle_flush_pending = nil, nil
-        end
-        return
-    end
-
     local playing = plugin.is_playing()
     local paused = plugin.is_paused()
     if playing and not paused then
+        local path = plugin.get_current_track_path()
         local guarded = (pending_seek and pending_seek.path == path)
             or (open_guard and open_guard.path == path)
         local book, file = book_for_path(path)
@@ -2643,26 +2334,12 @@ local function track_playback()
                 last_seen = { book = book, file = file, pos = pos, dur = dur }
             end
         end
-    elseif not playing and not paused then
-        local path = plugin.get_current_track_path()
-        local pending = idle_flush_pending
-        if pending and path == pending.path and counters_trusted(path) then
-            local pos, dur = plugin.get_position(), plugin.get_duration()
-            if finite(pos, 0, 10000000) and finite(dur, 0, 10000000) and dur > 0
-                and not matches_previous_track(path, pending.previous_seen, pos, dur) then
-                record_position(pending.book, pending.file, pos, dur)
-                idle_flush_pending = nil
-                last_seen = nil
-                return
-            end
-        end
+    elseif not playing and not paused and last_seen then
         local seen = last_seen
-        if seen and (path == nil or path == seen.file.path) then
+        last_seen = nil
+        local path = plugin.get_current_track_path()
+        if path == nil or path == seen.file.path then
             record_position(seen.book, seen.file, seen.pos, seen.dur)
-            last_seen = nil
-            idle_flush_pending = nil
-        elseif pending and path ~= pending.path then
-            idle_flush_pending = nil
         end
     end
 end
@@ -2677,32 +2354,10 @@ local function service_open_guard()
         open_guard = nil
         return
     end
-    if plugin.has_capability and plugin.has_capability("playback.progress") then
-        local ok, sample = pcall(plugin.get_playback_progress, open_guard.path)
-        if ok and type(sample) == "table" and sample.terminal then
-            open_guard = nil
-            last_saved_position = -1
-        end
-        return
-    end
-    local position, duration = plugin.get_position(), plugin.get_duration()
-    -- The track-start notification can precede the audio thread's counter
-    -- update. If the values still match the last sample from a different
-    -- file, keep waiting instead of saving that old position under this path.
-    local same_as_previous = matches_previous_track(open_guard.path, open_guard.previous_seen, position, duration)
-    if open_guard.tries >= 2 and duration > 0 and position <= 30 and not same_as_previous then
+    if open_guard.tries >= 2 and plugin.get_duration() > 0 and plugin.get_position() <= 30 then
         open_guard = nil
         last_saved_position = -1
     end
-end
-
-local function service_playback_speed()
-    if not speed_retry_pending then return end
-    if not speed_supported() then return end
-    local path = current_audiobook_path()
-    if not path then return end
-    if speed_waiting_for_resume(path) then return end
-    speed_retry_pending = not apply_speed(playback_speed)
 end
 
 local function handle_sleep_tick()
@@ -2760,9 +2415,6 @@ local function handle_sleep_tick()
 end
 
 local function handle_track_started()
-    last_terminal_flush = nil
-    speed_retry_pending = true
-    local previous_seen = last_seen
     last_saved_position = -1
     last_seen = nil
     local started = plugin.get_current_track_path()
@@ -2771,11 +2423,6 @@ local function handle_track_started()
         sleep_pause = nil
     end
     local path = plugin.get_current_track_path()
-    if pending_seek and pending_seek.path == path and pending_seek.book_key then
-        active_book_key = pending_seek.book_key
-    elseif not path or path:sub(1, #ROOT + 1) ~= ROOT .. "/" then
-        active_book_key = nil
-    end
     if pending_seek and pending_seek.path ~= path then
         pending_seek = nil
     end
@@ -2810,16 +2457,11 @@ local function handle_track_started()
         sleep_book, sleep_chapter = nil, nil
     end
     -- Track position/duration may still describe the previous file here.
-    local ours, file = book_for_path(path)
-    if ours and file and not (pending_seek and pending_seek.path == path) then
-        open_guard = { path = path, tries = 0, previous_seen = previous_seen }
-        idle_flush_pending = { path = path, book = ours, file = file, previous_seen = previous_seen }
+    local ours = book_for_path(path)
+    if ours and not (pending_seek and pending_seek.path == path) then
+        open_guard = { path = path, tries = 0 }
     else
         open_guard = nil
-        idle_flush_pending = nil
-    end
-    if path and current_audiobook_path() == path and speed_retry_pending and not speed_waiting_for_resume(path) then
-        speed_retry_pending = not apply_speed(playback_speed)
     end
 end
 
@@ -2847,17 +2489,14 @@ if not read_state_file(STATE_PATH, false) then
         save_state()
     end
 end
-speed_retry_pending = true
 
 plugin.on("track_started", handle_track_started)
 plugin.on("paused", function()
-    progress_save(true, "paused")
+    progress_save(true)
     last_seen = nil
 end)
 plugin.on("stopped", function()
-    idle_flush_pending = nil
-    progress_save(true, "manual_stop")
-    active_book_key = nil
+    progress_save(true)
     last_seen = nil
     sleep_pause = nil
     sleep_book, sleep_timer, sleep_chapter = nil, nil, nil
@@ -2867,7 +2506,6 @@ plugin.set_interval(1, function()
     service_covers()
     service_seek()
     service_open_guard()
-    service_playback_speed()
     service_sleep_pause()
     handle_sleep_tick()
     track_playback()

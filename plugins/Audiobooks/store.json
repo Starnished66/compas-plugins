@@ -1,5 +1,5 @@
 {
-  "description": "Browse audiobooks by author and series folders, continue saved books, adjust playback speed, and use bookmarks, chapters, time skipping, and a sleep timer.",
+  "description": "Browse nested audiobook folders on demand, with resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer.",
   "category": "Listening",
   "author": "Comp\u00e1s",
   "files": [

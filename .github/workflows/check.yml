@@ -17,10 +17,6 @@ jobs:
         run: .github/scripts/setup-lua.sh
       - name: Compile every plugin
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
-      - name: Test podcast and audiobook speed handoff
-        run: lua tests/podcasts_speed_test.lua plugins/Podcasts/Podcasts.lua plugins/Audiobooks/Audiobooks.lua
-      - name: Test audiobook shelves and podcast offline workflows
-        run: lua tests/workflow_shelves_test.lua plugins/Audiobooks/Audiobooks.lua plugins/Podcasts/Podcasts.lua
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
       - name: Validate the store index

@@ -1,13 +1,12 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.4.0", api_min = 2 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.2.1", api_min = 2 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
 -- subscriptions.opml is the export/source list, .catalog caches feeds,
 -- .progress.tsv stores resume state, and show folders hold downloaded audio.
 -- HTTP playback is limited to MP3 and has no seek or resume; local downloads
--- support the player's formats, resume, and optional playback speed. Speed
--- applies only inside this plugin's download directory. The catalog keeps
--- 40 newest episodes per show. Chapters are not provided.
+-- support the player's formats and resume. The catalog keeps 40 newest
+-- episodes per show. Playback speed and chapters are not provided.
 
 local ROOT = plugin.sd_root() .. "/Podcasts"
 local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Podcasts"
@@ -26,7 +25,6 @@ local LIST_WRAP = plugin.has_capability("ui.list_wrap")
 local CATALOG = ROOT .. "/.catalog"
 local SUBSCRIPTIONS = ROOT .. "/subscriptions.opml"
 local PROGRESS = ROOT .. "/.progress.tsv"
-local SETTINGS = ROOT .. "/.settings"
 local USER_AGENT = "CompasPodcasts/1.0"
 local MAX_SUBSCRIPTIONS = 300 -- keeps Home well inside show_list's 500-row limit
 local MAX_OPML_BYTES = 1048576
@@ -48,11 +46,8 @@ local progress_partial = false
 local cancelled_files = {}
 local stream_generation = 0
 local last_saved_position, interval_handle = -1, nil
-local playback_speed, speed_retry_pending = 1.0, false
-local SPEEDS = { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0 }
 local fetch_feed, feed_response, confirm_unsubscribe, open_episode
 local enqueue_download, cancel_download, resolve_redirect
-local open_settings
 local has_required_capabilities = plugin.has_capability("network.http.async")
     and plugin.has_capability("network.http.download")
     and plugin.has_capability("filesystem.mkdir")
@@ -110,102 +105,6 @@ local function atomic_write(path, writer)
     end
     os.remove(tmp)
     return false
-end
-
-local function speed_supported()
-    return plugin.has_capability and plugin.has_capability("playback.speed")
-        and type(plugin.set_playback_speed) == "function"
-end
-
-local function current_download_path()
-    local path = plugin.get_current_track_path()
-    if type(path) ~= "string" or not path_to_key[path] then
-        return nil
-    end
-    if path:sub(1, #ROOT + 1) ~= ROOT .. "/" then
-        return nil
-    end
-    return path
-end
-
-local function apply_speed(value)
-    if not speed_supported() then
-        return value == 1.0
-    end
-    local ok, accepted = pcall(plugin.set_playback_speed, ROOT, value)
-    return ok and accepted == true
-end
-
-local function read_settings()
-    local f = io.open(SETTINGS, "r")
-    if not f then return end
-    for _ = 1, 8 do
-        local line = f:read("*l")
-        if not line then break end
-        local value = tonumber(line:match("^playback_speed\t([%d%.]+)$"))
-        for _, speed in ipairs(SPEEDS) do
-            if value == speed then playback_speed = value end
-        end
-    end
-    f:close()
-end
-
-local function save_settings()
-    return atomic_write(SETTINGS, function(f)
-        f:write("playback_speed\t", tostring(playback_speed), "\n")
-    end)
-end
-
-open_settings = function(update_existing)
-    local function choose_speed()
-        if not speed_supported() then
-            plugin.show_toast("Playback speed requires a newer player")
-            return
-        end
-        local choices = {}
-        for _, value in ipairs(SPEEDS) do
-            choices[#choices + 1] = tostring(value) .. "x"
-        end
-        plugin.show_list("Playback speed", choices, function(choice)
-            local speed = SPEEDS[choice]
-            if not speed then return end
-            local current_path = current_download_path()
-            local defer_until_resume = current_path and pending_seek and not pending_seek.failed and pending_seek.path == current_path
-            if current_path and not defer_until_resume and not apply_speed(speed) then
-                plugin.show_toast("Speed is unavailable for this audio format")
-                return
-            end
-            local previous = playback_speed
-            playback_speed = speed
-            if not save_settings() then
-                playback_speed = previous
-                if current_path then
-                    speed_retry_pending = defer_until_resume == true or not apply_speed(previous)
-                else
-                    speed_retry_pending = true
-                end
-                plugin.show_toast("Could not save playback speed")
-                return
-            end
-            speed_retry_pending = current_path == nil or defer_until_resume == true
-            open_settings(true)
-            plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
-        end)
-    end
-    local row = {
-        type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
-        icon = ICON.manage, text_size = "medium", on_select = choose_speed,
-    }
-    if type(plugin.show_settings_list) == "function" then
-        plugin.show_settings_list("Podcasts settings", { row },
-            update_existing and { update = true } or nil)
-    else
-        -- API-min-2 builds predate the settings-list helper. They also lack
-        -- playback.speed, so retain a tappable row that explains the limit.
-        plugin.show_list("Podcasts settings", { row.label }, function(index)
-            if index == 1 then choose_speed() end
-        end)
-    end
 end
 
 local function valid_url(url)
@@ -1535,9 +1434,6 @@ open_episode = function(show, episode)
             end
             current.last_played = os.time()
             save_progress()
-            -- Keep the saved point guarded even if native playback refuses
-            -- to restart and no track_started event follows.
-            pending_seek = { path = path, position = current.position or 0, tries = 0 }
             plugin.play_file(path)
         end, ICON.play)
     end
@@ -1598,10 +1494,6 @@ open_episode = function(show, episode)
                 plugin.show_toast("Download is no longer available")
                 return
             end
-            if plugin.get_current_track_path() == path then
-                plugin.show_toast("Stop this episode before deleting its download")
-                return
-            end
             if not os.remove(path) then
                 plugin.show_toast("Could not delete download. Try again.")
                 return
@@ -1609,7 +1501,6 @@ open_episode = function(show, episode)
             local current = state()
             current.path = ""
             current.position = 0
-            path_to_key[path] = nil
             save_progress()
             plugin.show_toast("Download deleted")
         end, ICON.remove)
@@ -2208,23 +2099,14 @@ local function show_download_list(title, list, with_show, keep_order)
 end
 
 -- A flat list while it fits one screen; beyond that, one row per show.
-local function open_downloads(filter, heading)
+local function open_downloads()
     local list = downloaded_entries()
-    if filter then
-        local selected = {}
-        for _, row in ipairs(list) do
-            if filter(row.progress) then selected[#selected + 1] = row end
-        end
-        list = selected
-    end
-    heading = heading or "Downloads"
     if #list == 0 then
-        plugin.show_toast(filter and (heading == "Not played" and "No unplayed downloads" or "No played downloads")
-            or "No downloads yet. Open an episode and choose Download.")
+        plugin.show_toast("No downloads yet. Open an episode and choose Download.")
         return
     end
     if #list <= MAX_LIST_ROWS then
-        show_download_list(heading .. " (" .. #list .. ")", list, true)
+        show_download_list("Downloads (" .. #list .. ")", list, true)
         return
     end
     -- One group per show; a show with more than a screenful is split by
@@ -2286,7 +2168,7 @@ local function open_downloads(filter, heading)
             show_download_list(group.title, group.rows, false)
         end)
     end
-    local title = heading .. " (" .. #list .. ")"
+    local title = "Downloads (" .. #list .. ")"
     if #keys <= MAX_LIST_ROWS then
         show_groups(title, keys)
         return
@@ -2321,57 +2203,6 @@ local function open_downloads(filter, heading)
     plugin.show_list(title, labels, function(index)
         show_download_list(labels[index].label, pages[index], true, true)
     end)
-end
-
-local function open_download_manager(update_existing)
-    if type(plugin.show_settings_list) ~= "function" then
-        open_downloads()
-        return
-    end
-    local entries = downloaded_entries()
-    local played, unfinished = 0, 0
-    for _, row in ipairs(entries) do
-        if row.progress.played then played = played + 1 else unfinished = unfinished + 1 end
-    end
-    local armed, deadline = false, 0
-    local rows = {
-        { type = "row", label = "All downloads (" .. #entries .. ")", icon = ICON.download,
-            on_select = function() open_downloads() end },
-        { type = "row", label = "Not played (" .. unfinished .. ")", icon = ICON.play,
-            on_select = function() open_downloads(function(p) return not p.played end, "Not played") end },
-        { type = "row", label = "Played (" .. played .. ")", icon = ICON.check,
-            on_select = function() open_downloads(function(p) return p.played end, "Played") end },
-        { type = "row", label = "Delete played downloads", icon = ICON.remove,
-            on_select = function()
-                if not armed or os.time() > deadline then
-                    armed, deadline = true, os.time() + 8
-                    plugin.show_toast("Tap again within 8 seconds to delete played downloads")
-                    return
-                end
-                armed = false
-                local removed, kept = 0, 0
-                local current_path = plugin.get_current_track_path()
-                -- Re-read at confirmation: never trust a stale page snapshot.
-                for _, row in ipairs(downloaded_entries()) do
-                    local p, path = row.progress, row.path
-                    if p.played then
-                        if path == current_path or path:sub(1, #ROOT + 1) ~= ROOT .. "/"
-                            or not os.remove(path) then
-                            kept = kept + 1
-                        else
-                            path_to_key[path] = nil
-                            p.path, p.position = "", 0
-                            removed = removed + 1
-                        end
-                    end
-                end
-                local saved = save_progress()
-                open_download_manager(true)
-                plugin.show_toast("Deleted " .. removed .. "; kept " .. kept
-                    .. (saved and "" or "; progress could not be saved"))
-            end },
-    }
-    plugin.show_settings_list("Manage downloads", rows, update_existing and { update = true } or nil)
 end
 
 local function continue_episode(entries)
@@ -2454,12 +2285,8 @@ local function open_home()
     end
     rows[#rows + 1] = { label = "Discover podcasts", icon = ICON.search }
     actions[#actions + 1] = start_search
-    rows[#rows + 1] = { label = "Manage downloads", icon = ICON.download }
-    actions[#actions + 1] = open_download_manager
     rows[#rows + 1] = { label = "Manage subscriptions", icon = ICON.manage }
     actions[#actions + 1] = open_manage_subscriptions
-    rows[#rows + 1] = { label = "Settings", icon = ICON.manage }
-    actions[#actions + 1] = open_settings
     plugin.show_list("Podcasts", rows, function(index)
         actions[index]()
     end)
@@ -2475,12 +2302,10 @@ local function save_playback(force)
         return
     end
     -- Until the resume seek lands, the reported position is not ours to save.
-    local position, duration = plugin.get_position(), plugin.get_duration()
     if pending_seek and pending_seek.path == path then
-        if not pending_seek.failed or position < pending_seek.position then return end
-        -- Listening forward past the saved point can safely advance progress.
-        pending_seek = nil
+        return
     end
+    local position, duration = plugin.get_position(), plugin.get_duration()
     if not force and math.abs(position - last_saved_position) < 1 then
         return
     end
@@ -2497,8 +2322,6 @@ end
 load_subscriptions()
 sort_subscriptions()
 load_progress()
-read_settings()
-speed_retry_pending = true
 if has_required_capabilities then
     plugin.mkdir(ROOT)
     plugin.mkdir(CATALOG)
@@ -2520,13 +2343,9 @@ local function service_pending_seek()
     if not pending_seek then
         return
     end
-    if pending_seek.failed then return end
     pending_seek.tries = pending_seek.tries + 1
     if pending_seek.tries > 15 then
-        -- Keep the guard: saving an unconfirmed engine position here would
-        -- replace the user's saved resume point with the beginning of the file.
-        pending_seek.failed = true
-        plugin.show_toast("Resume did not complete. Retry Resume from the episode.")
+        pending_seek = nil
         return
     end
     if plugin.get_current_track_path() ~= pending_seek.path or plugin.get_duration() <= 0 then
@@ -2551,7 +2370,6 @@ end
 plugin.on("track_started", function()
     stream_generation = stream_generation + 1
     last_saved_position = -1
-    speed_retry_pending = true
     local path = plugin.get_current_track_path()
     local k = path and path_to_key[path]
     if pending_seek and pending_seek.path ~= path then
@@ -2566,13 +2384,6 @@ plugin.on("track_started", function()
     -- No save here: the position and duration can still be the previous
     -- track's. The tick saves once the new one is really playing.
     service_pending_seek()
-    if k and current_download_path() == path then
-        if pending_seek and not pending_seek.failed and pending_seek.path == path then
-            speed_retry_pending = true
-        else
-            speed_retry_pending = not apply_speed(playback_speed)
-        end
-    end
 end)
 plugin.on("paused", function()
     save_playback(true)
@@ -2583,12 +2394,6 @@ end)
 local ticks = 0
 interval_handle = plugin.set_interval(1, function()
     service_pending_seek()
-    if speed_retry_pending and (not pending_seek or pending_seek.failed) then
-        local path = current_download_path()
-        if path and speed_supported() then
-            speed_retry_pending = not apply_speed(playback_speed)
-        end
-    end
     run_deferred()
     service_downloads()
     for i = #cancelled_files, 1, -1 do
