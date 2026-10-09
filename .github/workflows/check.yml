@@ -19,6 +19,8 @@ jobs:
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
       - name: Test API 15 music plugins
         run: lua tests/music_plugins/run.lua
+      - name: Test API 15 ListenBrainz and Radio Browser plugins
+        run: lua tests/service_plugins/run.lua
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
       - name: Validate the store index

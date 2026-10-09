@@ -14,4 +14,6 @@ __pycache__/
 # Focused music-plugin tests and their local output.
 !/tests/music_plugins/
 !/tests/music_plugins/**
+!/tests/service_plugins/
+!/tests/service_plugins/**
 /build_test/

@@ -1,0 +1,5 @@
+{
+  "description": "Scrobbles plays to ListenBrainz with a user token. Keeps an offline queue until each listen is accepted.",
+  "category": "Listening",
+  "author": "Compás"
+}
