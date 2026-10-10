@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.cover_art_fetcher",
     name = "Cover Art Fetcher",
-    version = "1.0.0",
+    version = "1.0.1",
     api_min = 15,
 })
 
@@ -28,6 +28,9 @@ local pending_dest = {}
 local generation = 0
 local fail_memory = {}
 local last_auto_key = nil
+local active_job = nil
+local MANUAL_TOAST_MS = 30000
+local MANUAL_REFRESH_SECONDS = 25
 
 local function trim(s)
     return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
@@ -132,6 +135,23 @@ end
 local function notify(message, is_auto)
     if is_auto then return end
     plugin.show_toast(message)
+end
+
+local function notify_job(job, message)
+    if not job or (job.is_auto and not job.manual_requested) then return end
+    plugin.show_toast(message, MANUAL_TOAST_MS)
+end
+
+local function set_stage(job, stage)
+    if not job then return end
+    job.stage = stage
+    job.next_status_refresh = os.time() + MANUAL_REFRESH_SECONDS
+    notify_job(job, stage)
+end
+
+local function active_status(job)
+    local stage = job and job.stage or "Cover fetch in progress"
+    return "Cover fetch already in progress — " .. stage
 end
 
 local function artist_credit_name(release)
@@ -323,23 +343,24 @@ local pump_queue, run_job
 local function finish_job(job, ok, message)
     pending_dest[job.dest] = nil
     busy = false
+    if active_job == job then active_job = nil end
     if ok then
         plugin.refresh_library()
-        notify("Saved cover.jpg", job.is_auto)
+        notify_job(job, "Saved cover.jpg")
     else
         if message == "no-art" or message == "no-match" or message == "offline" then
             remember_fail(job.key)
         end
         if message == "no-match" then
-            notify("Could not match this album conservatively", job.is_auto)
+            notify_job(job, "Could not match this album conservatively")
         elseif message == "no-art" then
-            notify("No cover art for this release", job.is_auto)
+            notify_job(job, "No cover art for this release")
         elseif message == "exists" then
-            notify("cover.jpg already present", job.is_auto)
+            notify_job(job, "cover.jpg already present")
         elseif message == "offline" then
-            notify("Cover fetch failed (network)", job.is_auto)
+            notify_job(job, "Cover fetch failed (network)")
         elseif message then
-            notify(message, job.is_auto)
+            notify_job(job, message)
         end
     end
     pump_queue()
@@ -382,6 +403,7 @@ local function promote_cover(job, staging, gen)
 end
 
 local function download_image(job, image_url, gen)
+    set_stage(job, "Downloading and saving cover…")
     local staging = job.dest .. ".compas-fetch"
     os.remove(staging)
     pending_dest[job.dest] = gen
@@ -408,6 +430,7 @@ end
 local function resolve_and_download(job, thumb_url, gen)
     -- download_file_async does not follow redirects. CAA may 307, chain, or
     -- already point at a 200 archive.org thumbnail. Probe with HEAD only.
+    set_stage(job, "Resolving cover image…")
     local seen = {}
     local redirects = 0
 
@@ -474,6 +497,7 @@ local function resolve_and_download(job, thumb_url, gen)
 end
 
 local function fetch_caa(job, mbid, gen)
+    set_stage(job, "Checking Cover Art Archive…")
     local url = "https://coverartarchive.org/release/" .. mbid .. "/"
     local handle, err = http_json(url, 5, function(status, body, req_err)
         if pending_dest[job.dest] ~= gen then return end
@@ -497,12 +521,14 @@ end
 run_job = function(job)
     if file_exists(job.dest) then
         busy = false
-        notify("cover.jpg already present", job.is_auto)
+        if active_job == job then active_job = nil end
+        notify_job(job, "cover.jpg already present")
         pump_queue()
         return
     end
     generation = generation + 1
     local gen = generation
+    active_job = job
     pending_dest[job.dest] = gen
     mb_next_ok = os.time() + MB_INTERVAL
 
@@ -512,6 +538,7 @@ run_job = function(job)
     local url = "https://musicbrainz.org/ws/2/release/?query=" .. url_encode(query)
         .. "&fmt=json&limit=8"
 
+    set_stage(job, "Looking up MusicBrainz…")
     local handle, err = http_json(url, 3, function(status, body, req_err)
         if pending_dest[job.dest] ~= gen then return end
         if req_err or status ~= 200 or type(body) ~= "string" then
@@ -541,21 +568,46 @@ pump_queue = function()
         return
     end
     busy = true
+    active_job = job
     run_job(job)
 end
 
 local function enqueue(job)
     if not job or not job.dest then return end
     if file_exists(job.dest) then
-        notify("cover.jpg already present", job.is_auto)
+        notify_job(job, "cover.jpg already present")
         return
     end
     if failed_recently(job.key) and job.is_auto then return end
-    if pending_dest[job.dest] then return end
-    for _, q in ipairs(queue) do
-        if q.dest == job.dest then return end
+    if pending_dest[job.dest] then
+        if not job.is_auto and active_job and active_job.dest == job.dest then
+            local was_manual = active_job.manual_requested
+            active_job.manual_requested = true
+            if was_manual then
+                notify_job(active_job, active_status(active_job))
+            else
+                notify_job(active_job, active_job.stage or "Cover fetch in progress")
+            end
+        end
+        return
+    end
+    for _, queued in ipairs(queue) do
+        if queued.dest == job.dest then
+            if not job.is_auto then
+                if queued.manual_requested then
+                    plugin.show_toast("Cover fetch already queued", MANUAL_TOAST_MS)
+                else
+                    queued.manual_requested = true
+                    set_stage(queued, "Cover fetch queued")
+                end
+            end
+            return
+        end
     end
     queue[#queue + 1] = job
+    if not job.is_auto and (busy or os.time() < mb_next_ok) then
+        set_stage(job, "Cover fetch queued")
+    end
     pump_queue()
 end
 
@@ -572,6 +624,7 @@ local function fetch_current(is_auto)
         return
     end
     job.is_auto = is_auto and true or false
+    job.manual_requested = not job.is_auto
     if is_auto and last_auto_key == job.key then return end
     if is_auto then last_auto_key = job.key end
     enqueue(job)
@@ -584,6 +637,20 @@ plugin.on("track_started", function(_, _, _, _, provider)
 end)
 
 plugin.set_interval(1, function()
+    local visible_job = active_job and active_job.manual_requested and active_job or nil
+    if not visible_job then
+        for _, queued in ipairs(queue) do
+            if queued.manual_requested then
+                visible_job = queued
+                break
+            end
+        end
+    end
+    if visible_job and visible_job.stage
+        and os.time() >= (visible_job.next_status_refresh or 0) then
+        visible_job.next_status_refresh = os.time() + MANUAL_REFRESH_SECONDS
+        notify_job(visible_job, visible_job.stage)
+    end
     if not busy then pump_queue() end
 end)
 

@@ -113,6 +113,7 @@ function harness.new(opts)
     local self = {
         sd_root_path = sd,
         toasts = {},
+        toast_durations = {},
         http_calls = {},
         downloads = {},
         play_lists = {},
@@ -149,7 +150,10 @@ function harness.new(opts)
     end
     function plugin.sd_root() return self.sd_root_path end
     function plugin.has_capability(name) return self.capabilities[name] == true end
-    function plugin.show_toast(msg) self.toasts[#self.toasts + 1] = msg end
+    function plugin.show_toast(msg, duration_ms)
+        self.toasts[#self.toasts + 1] = msg
+        self.toast_durations[#self.toasts] = duration_ms or 5000
+    end
     function plugin.get_now_playing()
         local t = self.now_playing
         if t[1] == nil then return nil end

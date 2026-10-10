@@ -281,6 +281,124 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(exists(dest), "cover saved after flush")
     end
 
+    local function has_toast(h, fragment)
+        for _, message in ipairs(h.toasts) do
+            if message:find(fragment, 1, true) then return true end
+        end
+        return false
+    end
+
+    do
+        local h, M = setup(root .. "/manual-progress", { defer_http = true, http_impl = router("ok") })
+        M.fetch_current(false)
+        assert_true(has_toast(h, "Looking up MusicBrainz"), "manual fetch immediately reports MusicBrainz lookup")
+        assert_eq(h.toast_durations[1], 30000, "manual status toast uses maximum visible duration")
+        M.fetch_current(false)
+        assert_true(has_toast(h, "already in progress"), "duplicate active request has specific feedback")
+        h.flush()
+        assert_true(has_toast(h, "Checking Cover Art Archive"), "manual status reports archive phase")
+        assert_true(has_toast(h, "Resolving cover image"), "manual status reports image resolution phase")
+        assert_true(has_toast(h, "Downloading and saving cover"), "manual status reports download/save phase")
+        assert_true(has_toast(h, "Saved cover.jpg"), "manual completion toast remains visible")
+        assert_true(exists(root .. "/manual-progress/Music/Dummy/cover.jpg"), "manual fetch saves cover")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-failure", {
+            defer_http = true,
+            http_impl = router("offline"),
+        })
+        M.fetch_current(false)
+        assert_true(has_toast(h, "Looking up MusicBrainz"), "failed manual fetch has immediate status")
+        h.flush()
+        assert_true(has_toast(h, "Cover fetch failed (network)"), "manual failure is reported")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-refresh", { defer_http = true, http_impl = router("ok") })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.fetch_current(false)
+        local initial_count = #h.toasts
+        now = now + 26
+        h.tick_intervals()
+        os.time = original_time
+        assert_true(#h.toasts > initial_count, "long manual phase refreshes its visible status")
+        assert_eq(h.toast_durations[#h.toast_durations], 30000, "refreshed status remains visible for 30 seconds")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-queue", { defer_http = true, http_impl = router("ok") })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.fetch_current(false)
+        local second_dir = root .. "/manual-queue/Music/Other"
+        os.execute("mkdir -p '" .. second_dir .. "'")
+        h.current_path = second_dir .. "/02.flac"
+        h.now_playing = { "Song", "The Artist", "Other", 180 }
+        M.fetch_current(false)
+        assert_true(has_toast(h, "Cover fetch queued"), "manual request behind active work reports queued")
+        M.fetch_current(false)
+        assert_true(has_toast(h, "Cover fetch already queued"), "duplicate queued request has specific feedback")
+        local queued_count = 0
+        for _, message in ipairs(h.toasts) do
+            if message == "Cover fetch queued" then queued_count = queued_count + 1 end
+        end
+        now = now + 26
+        h.tick_intervals()
+        os.time = original_time
+        local refreshed_count = 0
+        for _, message in ipairs(h.toasts) do
+            if message == "Cover fetch queued" then refreshed_count = refreshed_count + 1 end
+        end
+        assert_eq(refreshed_count, queued_count, "queued status does not overwrite active manual progress")
+        assert_eq(h.toasts[#h.toasts], "Looking up MusicBrainz…", "active manual status takes refresh priority")
+    end
+
+    do
+        local h, M = setup(root .. "/auto-quiet", { defer_http = true, http_impl = router("ok") })
+        M.state.auto = true
+        h.emit("track_started")
+        assert_eq(#h.toasts, 0, "automatic fetch remains quiet")
+        M.fetch_current(false)
+        assert_true(has_toast(h, "Looking up MusicBrainz"), "manual tap joining automatic job reports its actual stage")
+        assert_eq(#h.http_calls, 1, "manual tap joining auto job does not duplicate lookup")
+        h.flush()
+        assert_true(has_toast(h, "Saved cover.jpg"), "joined manual request receives completion")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-queued-behind-auto", {
+            defer_http = true,
+            http_impl = router("ok"),
+        })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.state.auto = true
+        h.emit("track_started")
+        assert_eq(#h.toasts, 0, "automatic job stays quiet before a manual queue request")
+
+        local second_dir = root .. "/manual-queued-behind-auto/Music/Other"
+        os.execute("mkdir -p '" .. second_dir .. "'")
+        h.current_path = second_dir .. "/02.flac"
+        h.now_playing = { "Song", "The Artist", "Other", 180 }
+        M.fetch_current(false)
+        assert_eq(h.toasts[#h.toasts], "Cover fetch queued", "manual job queued behind auto job is announced")
+        local count_before_refresh = #h.toasts
+
+        now = now + 26
+        h.tick_intervals()
+        os.time = original_time
+        assert_true(#h.toasts > count_before_refresh, "queued manual status refreshes behind automatic work")
+        assert_eq(h.toasts[#h.toasts], "Cover fetch queued", "refresh shows queued manual status")
+        for _, message in ipairs(h.toasts) do
+            assert_eq(message, "Cover fetch queued", "automatic phase remains quiet while manual work waits")
+        end
+    end
+
     do
         local h, M, dest = setup(root .. "/stale", { defer_http = true })
         M.fetch_current(false)
