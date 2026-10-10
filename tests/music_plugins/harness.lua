@@ -148,6 +148,10 @@ function harness.new(opts)
         deferred = {},
         next_handle = 1,
         library_refresh_count = 0,
+        refresh_results = {},
+        lists = {},
+        cancelled = {},
+        active_requests = {},
         http_impl = opts.http_impl,
         download_impl = opts.download_impl,
     }
@@ -178,6 +182,9 @@ function harness.new(opts)
     end
     function plugin.refresh_library()
         self.library_refresh_count = self.library_refresh_count + 1
+        -- Tests may queue native refusals ({ false, "rate_limited" }).
+        local scripted = table.remove(self.refresh_results, 1)
+        if scripted then return scripted[1], scripted[2] end
         return true, "started"
     end
     function plugin.play_list(paths, start_index)
@@ -276,15 +283,28 @@ function harness.new(opts)
         self.settings_screens[#self.settings_screens + 1] = { title = title, items = items }
     end
     function plugin.show_list(title, items, on_select)
-        return 1
+        self.lists[#self.lists + 1] = { title = title, items = items, on_select = on_select }
+        return #self.lists
     end
-    function plugin.cancel(_) return true end
+    -- Native contract (PLUGINS.md, plugin.cancel): returns whether the request
+    -- was still running, and its callback is then never called. Progress for a
+    -- cancelled download is unavailable at once.
+    function plugin.cancel(handle)
+        if not self.active_requests[handle] then return false end
+        self.active_requests[handle] = nil
+        self.active_downloads[handle] = nil
+        self.cancelled[handle] = true
+        return true
+    end
 
     function plugin.http_request(options, callback)
         self.http_calls[#self.http_calls + 1] = options
         local handle = self.next_handle
         self.next_handle = self.next_handle + 1
+        self.active_requests[handle] = true
         local function deliver()
+            if self.cancelled[handle] then return end
+            self.active_requests[handle] = nil
             if self.http_impl then
                 local status, body, err, headers = self.http_impl(options)
                 callback(status, body, err, headers)
@@ -311,10 +331,13 @@ function harness.new(opts)
         self.next_handle = self.next_handle + 1
         download.handle = handle
         self.active_downloads[handle] = true
+        self.active_requests[handle] = true
         if opts.download_progress_fixture then
             self.download_progress[handle] = opts.download_progress_fixture
         end
         local function deliver()
+            if self.cancelled[handle] then return end
+            self.active_requests[handle] = nil
             if self.download_impl then
                 local path, err = self.download_impl(url, dest, verify_tls)
                 callback(path, err)
