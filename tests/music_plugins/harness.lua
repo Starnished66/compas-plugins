@@ -114,6 +114,12 @@ function harness.new(opts)
         sd_root_path = sd,
         toasts = {},
         toast_durations = {},
+        progress_cards = {},
+        progress_events = {},
+        active_progress = nil,
+        next_progress_handle = 1,
+        download_progress = {},
+        active_downloads = {},
         http_calls = {},
         downloads = {},
         play_lists = {},
@@ -124,9 +130,11 @@ function harness.new(opts)
         capabilities = {
             ["network.http.async"] = true,
             ["network.http.download"] = true,
+            ["network.http.download_progress"] = opts.api_version == 16,
             ["data.json"] = true,
             ["library.paged"] = true,
             ["library.refresh"] = true,
+            ["ui.progress"] = opts.api_version == 16,
         },
         now_playing = { nil, nil, nil, 0 },
         current_path = nil,
@@ -146,7 +154,7 @@ function harness.new(opts)
     local plugin = {}
 
     function plugin.define(def)
-        assert(def.api_min == 15, "Music plugin must declare API 15")
+        assert(def.api_min == (opts.api_version or 15), "Music plugin API version mismatch")
     end
     function plugin.sd_root() return self.sd_root_path end
     function plugin.has_capability(name) return self.capabilities[name] == true end
@@ -224,6 +232,39 @@ function harness.new(opts)
         self.intervals[id] = { seconds = seconds, cb = cb }
         return id
     end
+    function plugin.show_progress(title, message, fraction)
+        local handle = self.next_progress_handle
+        self.next_progress_handle = handle + 1
+        local card = { handle = handle, title = title, message = message, fraction = fraction }
+        self.progress_cards[handle] = card
+        self.active_progress = handle
+        self.progress_events[#self.progress_events + 1] = {
+            action = "show", handle = handle, title = title, message = message, fraction = fraction,
+        }
+        return handle
+    end
+    function plugin.update_progress(handle, message, fraction)
+        if self.active_progress ~= handle then return false end
+        local card = self.progress_cards[handle]
+        if not card then return false end
+        card.message, card.fraction = message, fraction
+        self.progress_events[#self.progress_events + 1] = {
+            action = "update", handle = handle, title = card.title, message = message, fraction = fraction,
+        }
+        return true
+    end
+    function plugin.close_progress(handle)
+        if self.active_progress ~= handle then return false end
+        self.progress_events[#self.progress_events + 1] = { action = "close", handle = handle }
+        self.active_progress = nil
+        return true
+    end
+    function plugin.get_download_progress(handle)
+        if not self.active_downloads[handle] then return nil end
+        local value = self.download_progress[handle]
+        if not value then return nil end
+        return { downloaded = value.downloaded, total = value.total }
+    end
     function plugin.register_list_item(list_id, label, on_open)
         self.list_items[#self.list_items + 1] = { list_id = list_id, label = label, on_open = on_open }
     end
@@ -260,9 +301,15 @@ function harness.new(opts)
             callback = verify_tls
             verify_tls = true
         end
-        self.downloads[#self.downloads + 1] = { url = url, dest = dest, verify_tls = verify_tls }
+        local download = { url = url, dest = dest, verify_tls = verify_tls }
+        self.downloads[#self.downloads + 1] = download
         local handle = self.next_handle
         self.next_handle = self.next_handle + 1
+        download.handle = handle
+        self.active_downloads[handle] = true
+        if opts.download_progress_fixture then
+            self.download_progress[handle] = opts.download_progress_fixture
+        end
         local function deliver()
             if self.download_impl then
                 local path, err = self.download_impl(url, dest, verify_tls)
@@ -270,6 +317,7 @@ function harness.new(opts)
             else
                 callback(nil, "download failed")
             end
+            self.active_downloads[handle] = nil
         end
         if opts.defer_http then
             self.deferred[#self.deferred + 1] = deliver
@@ -279,7 +327,13 @@ function harness.new(opts)
         return handle
     end
 
-    self.plugin = require("api15_surface")(plugin)
+    if opts.api_version ~= 16 then
+        plugin.show_progress = nil
+        plugin.update_progress = nil
+        plugin.close_progress = nil
+        plugin.get_download_progress = nil
+    end
+    self.plugin = require(opts.api_version == 16 and "api16_surface" or "api15_surface")(plugin)
 
     function self.emit(event, ...)
         for _, cb in ipairs(self.events[event] or {}) do
@@ -298,8 +352,22 @@ function harness.new(opts)
         end
     end
 
+    function self.flush_one_batch()
+        local batch = self.deferred
+        self.deferred = {}
+        for _, fn in ipairs(batch) do fn() end
+    end
+
     function self.tick_intervals()
         for _, t in ipairs(self.intervals) do t.cb() end
+    end
+
+    function self.dismiss_progress()
+        self.active_progress = nil
+    end
+
+    function self.set_download_progress(handle, downloaded, total)
+        self.download_progress[handle] = { downloaded = downloaded, total = total or 0 }
     end
 
     function self.load(plugin_path)

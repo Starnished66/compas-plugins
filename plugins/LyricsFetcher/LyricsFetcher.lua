@@ -1,8 +1,8 @@
 plugin.define({
     id = "example.lyrics_fetcher",
     name = "Lyrics Fetcher",
-    version = "1.0.0",
-    api_min = 15,
+    version = "1.1.0",
+    api_min = 16,
 })
 
 -- Fetches synced LRC lyrics from LRCLIB (no API key) for local tracks that
@@ -107,6 +107,28 @@ local function notify(message, is_auto)
     plugin.show_toast(message)
 end
 
+local function show_progress(job, message, fraction, reopen)
+    if not job or not job.manual_requested or not plugin.has_capability("ui.progress") then return false end
+    if job.progress_handle and plugin.update_progress(job.progress_handle, message, fraction) then return true end
+    if job.progress_handle then job.progress_handle = nil end
+    if job.progress_attempted and not reopen then return false end
+    job.progress_attempted = true
+    job.progress_handle = plugin.show_progress("Fetching lyrics", message, fraction)
+    return job.progress_handle ~= nil
+end
+
+local function close_progress(job)
+    if job and job.progress_handle then
+        plugin.close_progress(job.progress_handle)
+        job.progress_handle = nil
+    end
+end
+
+local function notify_job(job, message)
+    if not job or not job.manual_requested then return end
+    plugin.show_toast(message)
+end
+
 local function atomic_write_lrc(dest, text)
     if file_exists(dest) then return false, "exists" end
     if type(text) ~= "string" or #text == 0 or #text > MAX_LRC_BYTES then
@@ -174,18 +196,35 @@ end
 
 local finish_fetch
 
-local function start_http(track, is_auto, attempt)
+local function start_http(track, is_auto, attempt, progress_job)
     local dest = track.dest
     if not dest then return end
-    if pending[dest] then return end
+    if pending[dest] then
+        local existing = pending[dest]
+        if not is_auto then
+            existing.manual_requested = true
+            show_progress(existing, existing.stage or "Looking up lyrics…", nil, true)
+        end
+        return
+    end
     if file_exists(dest) then
+        close_progress(progress_job)
         notify("Lyrics already present", is_auto)
         return
     end
 
     generation = generation + 1
     local gen = generation
-    pending[dest] = { gen = gen, path = track.path, dest = dest }
+    local job = progress_job or { path = track.path, dest = dest, is_auto = is_auto }
+    job.gen, job.path, job.dest = gen, track.path, dest
+    if progress_job then
+        job.is_auto = is_auto
+    else
+        job.manual_requested = not is_auto
+    end
+    job.stage = attempt > 0 and "Retrying lyrics lookup…" or "Looking up lyrics…"
+    pending[dest] = job
+    show_progress(job, job.stage, nil, false)
 
     local handle, start_err = plugin.http_request({
         url = build_url(track),
@@ -203,7 +242,8 @@ local function start_http(track, is_auto, attempt)
 
     if not handle then
         pending[dest] = nil
-        notify("Could not start lyrics request: " .. (start_err or "unknown error"), is_auto)
+        close_progress(job)
+        notify_job(job, "Could not start lyrics request: " .. (start_err or "unknown error"))
     end
 end
 
@@ -224,51 +264,71 @@ finish_fetch = function(track, is_auto, attempt, gen, status, body, err, headers
         local wait = BACKOFF_SEC
         local ra = tonumber(header(headers, "Retry-After"))
         if ra and ra > 0 then wait = math.min(30, math.max(1, math.floor(ra))) end
-        retry_job = { track = track, is_auto = is_auto, attempt = attempt + 1 }
+        job.stage = "Retrying lyrics lookup…"
+        show_progress(job, job.stage, nil, false)
+        if retry_job and retry_job.progress_job ~= job then
+            close_progress(retry_job.progress_job)
+        end
+        retry_job = { track = track, is_auto = is_auto, attempt = attempt + 1, progress_job = job }
         retry_at = os.time() + wait
         return
     end
 
     pending[dest] = nil
 
-    if plugin.get_current_track_path() ~= track.path then return end
-    if file_exists(dest) then return end
+    if plugin.get_current_track_path() ~= track.path then
+        close_progress(job)
+        return
+    end
+    if file_exists(dest) then
+        close_progress(job)
+        return
+    end
 
     if err then
-        notify("Lyrics fetch failed: " .. err, is_auto)
+        close_progress(job)
+        notify_job(job, "Lyrics fetch failed: " .. err)
         return
     end
     if status == 404 then
-        notify("No synced lyrics found", is_auto)
+        close_progress(job)
+        notify_job(job, "No synced lyrics found")
         return
     end
     if status ~= 200 or type(body) ~= "string" then
-        notify("Lyrics fetch failed (HTTP " .. tostring(status) .. ")", is_auto)
+        close_progress(job)
+        notify_job(job, "Lyrics fetch failed (HTTP " .. tostring(status) .. ")")
         return
     end
 
     local record = plugin.json_decode(body)
     if not record then
-        notify("Lyrics response was not JSON", is_auto)
+        close_progress(job)
+        notify_job(job, "Lyrics response was not JSON")
         return
     end
     local lrc, why = extract_synced(record)
     if not lrc then
         if why == "instrumental" then
-            notify("Track is instrumental", is_auto)
+            close_progress(job)
+            notify_job(job, "Track is instrumental")
         else
-            notify("No synced lyrics in result", is_auto)
+            close_progress(job)
+            notify_job(job, "No synced lyrics in result")
         end
         return
     end
 
+    job.stage = "Saving lyrics…"
+    show_progress(job, job.stage, nil, false)
     local ok, write_err = atomic_write_lrc(dest, lrc)
+    close_progress(job)
     if ok then
-        notify("Saved lyrics", is_auto)
+        notify_job(job, "Saved lyrics")
     elseif write_err == "exists" then
-        notify("Lyrics already present", is_auto)
+        notify_job(job, "Lyrics already present")
     else
-        notify("Could not save lyrics", is_auto)
+        notify_job(job, "Could not save lyrics")
     end
 end
 
@@ -286,11 +346,36 @@ local function fetch_current(is_auto)
         notify("Cannot write lyrics for this path", is_auto)
         return
     end
+    if retry_job then
+        if retry_job.track.path == track.path then
+            if not is_auto then
+                retry_job.is_auto = false
+            end
+            if not is_auto and retry_job.progress_job then
+                retry_job.progress_job.manual_requested = true
+                show_progress(retry_job.progress_job, retry_job.progress_job.stage or "Retrying lyrics lookup…", nil, true)
+            end
+            return
+        end
+        close_progress(retry_job.progress_job)
+        retry_job = nil
+    end
     start_http(track, is_auto and true or false, 0)
 end
 
 plugin.on("track_started", function(_, _, _, _, provider)
+    local path = plugin.get_current_track_path()
+    if retry_job and retry_job.progress_job then
+        close_progress(retry_job.progress_job)
+        retry_job.progress_job.manual_requested = false
+    end
     retry_job = nil
+    for _, job in pairs(pending) do
+        if job.path ~= path then
+            close_progress(job)
+            job.manual_requested = false
+        end
+    end
     if not state.auto then return end
     if provider and provider ~= "" then return end
     fetch_current(true)
@@ -301,8 +386,11 @@ plugin.set_interval(1, function()
     if os.time() < retry_at then return end
     local job = retry_job
     retry_job = nil
-    if plugin.get_current_track_path() ~= job.track.path then return end
-    start_http(job.track, job.is_auto, job.attempt)
+    if plugin.get_current_track_path() ~= job.track.path then
+        close_progress(job.progress_job)
+        return
+    end
+    start_http(job.track, job.is_auto, job.attempt, job.progress_job)
 end)
 
 local function open_about()

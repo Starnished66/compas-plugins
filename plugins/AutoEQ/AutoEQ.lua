@@ -1,8 +1,8 @@
 plugin.define({
     id = "compas.autoeq",
     name = "AutoEQ",
-    version = "1.0",
-    api_min = 14,
+    version = "1.1.0",
+    api_min = 16,
 })
 
 -- AutoEQ profile browser for the recommended catalog maintained by jaakkopasanen/AutoEq.
@@ -26,8 +26,34 @@ local catalog = nil
 local catalog_error = nil
 local task_handle = nil
 local task_generation = 0
+local task_progress = nil
+local task_progress_generation = nil
 local active_screen = nil
 local download_profile
+
+local function close_task_progress(generation)
+    if task_progress and (not generation or task_progress_generation == generation) then
+        plugin.close_progress(task_progress)
+        task_progress = nil
+        task_progress_generation = nil
+    end
+end
+
+local function show_task_progress(generation, title, message)
+    if not plugin.has_capability("ui.progress") then return end
+    close_task_progress()
+    task_progress = plugin.show_progress(title, message)
+    task_progress_generation = task_progress and generation or nil
+end
+
+local function update_task_progress(generation, message)
+    if not task_progress or task_progress_generation ~= generation then return end
+    if not plugin.update_progress(task_progress, message) then
+        -- A dismissed card remains dismissed until the user starts another task.
+        task_progress = nil
+        task_progress_generation = nil
+    end
+end
 
 local function trim(s)
     return (s:gsub("^%s+", ""):gsub("%s+$", ""))
@@ -131,6 +157,7 @@ local function ensure_catalog()
 end
 
 local function cancel_task()
+    close_task_progress()
     task_generation = task_generation + 1
     if task_handle then plugin.cancel(task_handle); task_handle = nil end
 end
@@ -138,7 +165,8 @@ end
 local function begin_catalog_request(on_ready, screen_handle)
     cancel_task()
     local generation = task_generation
-    plugin.show_toast("Loading AutoEQ catalog…")
+    show_task_progress(generation, "AutoEQ catalog", "Loading catalog…")
+    if not task_progress then plugin.show_toast("Loading AutoEQ catalog…") end
     local handle, err = plugin.http_request({
         url = CATALOG_URL, method = "GET", verify_tls = true,
         max_response_bytes = MAX_CATALOG_BYTES,
@@ -147,6 +175,7 @@ local function begin_catalog_request(on_ready, screen_handle)
     }, function(status, body, request_error)
         if generation ~= task_generation then return end
         task_handle = nil
+        close_task_progress(generation)
         local screen_is_active = not screen_handle or plugin.is_list_showing(screen_handle)
         if request_error or not status or status < 200 or status >= 300 then
             catalog_error = request_error or ("HTTP " .. tostring(status or "error"))
@@ -173,6 +202,7 @@ local function begin_catalog_request(on_ready, screen_handle)
         if on_ready and screen_is_active then on_ready(false) end
     end)
     if not handle then
+        close_task_progress(generation)
         catalog_error = err or "request could not start"
         local screen_is_active = not screen_handle or plugin.is_list_showing(screen_handle)
         if ensure_catalog() then
@@ -345,6 +375,7 @@ download_profile = function(model, destination, detail_handle, allow_replace)
     local generation = task_generation
     local path = model.path
     if not valid_catalog_path(path) then plugin.show_toast("Invalid AutoEQ catalog path"); return end
+    show_task_progress(generation, "AutoEQ profile", "Downloading profile…")
     -- Profile files are in each linked model directory and share its final path segment.
     local url = RAW_PREFIX .. encode_path(path .. "/" .. path:match("([^/]+)$") .. "%20ParametricEQ.txt")
     local handle, err = plugin.http_request({
@@ -356,19 +387,27 @@ download_profile = function(model, destination, detail_handle, allow_replace)
         if generation ~= task_generation then return end
         task_handle = nil
         if request_error or not status or status < 200 or status >= 300 then
+            close_task_progress(generation)
             if not detail_handle or plugin.is_list_showing(detail_handle) then plugin.show_toast("Profile download failed: " .. tostring(request_error or status)) end
             return
         end
+        update_task_progress(generation, "Validating and saving profile…")
         local ok, save_error = write_profile(model, destination, body, allow_replace)
         if not ok then
+            close_task_progress(generation)
             if not detail_handle or plugin.is_list_showing(detail_handle) then plugin.show_toast("Profile not saved: " .. tostring(save_error)) end
             return
         end
+        close_task_progress(generation)
         if not detail_handle or plugin.is_list_showing(detail_handle) then plugin.show_toast("Saved. Select it in Equalizer → Profiles") end
     end)
-    if not handle then plugin.show_toast("Profile download could not start: " .. tostring(err)); return end
+    if not handle then
+        close_task_progress(generation)
+        plugin.show_toast("Profile download could not start: " .. tostring(err))
+        return
+    end
     task_handle = handle
-    plugin.show_toast("Downloading AutoEQ profile…")
+    if not task_progress then plugin.show_toast("Downloading AutoEQ profile…") end
 end
 
 local function show_results(query, matches, page)

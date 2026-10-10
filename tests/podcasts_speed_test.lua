@@ -29,19 +29,68 @@ progress:write(table.concat({
 }, "\t"), "\n")
 progress:close()
 
-local captured, interval, current_path, current_position = { settings = {}, stack = {}, settings_pushes = 0 }, nil, nil, 0
+local captured, interval, current_path, current_position = {
+    settings = {}, stack = {}, settings_pushes = 0,
+    progress_events = {}, active_progress = nil, next_progress_handle = 1,
+    download_progress = {}, active_download_handles = {},
+}, nil, nil, 0
 local plugin = {
     define = function() end,
     sd_root = function() return root end,
     has_capability = function(name)
         return name == "playback.speed" or name == "network.http.async"
             or name == "network.http.download" or name == "filesystem.mkdir"
+            or name == "ui.progress" or name == "network.http.download_progress"
     end,
     set_playback_speed = function(directory, speed)
         captured[#captured + 1] = { directory = directory, speed = speed }
         return true
     end,
-    mkdir = function() return true end,
+    mkdir = function(path) os.execute("mkdir -p '" .. path .. "'"); return true end,
+    show_progress = function(title, message, fraction)
+        local handle = captured.next_progress_handle
+        captured.next_progress_handle = handle + 1
+        captured.active_progress = handle
+        captured.progress_events[#captured.progress_events + 1] = {
+            action = "show", handle = handle, title = title, message = message, fraction = fraction,
+        }
+        return handle
+    end,
+    update_progress = function(handle, message, fraction)
+        if captured.active_progress ~= handle then return false end
+        captured.progress_events[#captured.progress_events + 1] = {
+            action = "update", handle = handle, message = message, fraction = fraction,
+        }
+        return true
+    end,
+    close_progress = function(handle)
+        if captured.active_progress ~= handle then return false end
+        captured.progress_events[#captured.progress_events + 1] = { action = "close", handle = handle }
+        captured.active_progress = nil
+        return true
+    end,
+    get_download_progress = function(handle)
+        if not captured.active_download_handles[handle] then return nil end
+        return captured.download_progress[handle]
+    end,
+    http_request = function(options, callback)
+        captured.http_calls = (captured.http_calls or 0) + 1
+        local handle = captured.http_calls
+        callback(200, "", nil, {})
+        return handle
+    end,
+    download_file_async = function(url, dest, verify_tls, callback)
+        local handle = captured.next_progress_handle + 100
+        captured.download_handle = handle
+        captured.download_callback = callback
+        captured.download_dest = dest
+        captured.active_download_handles[handle] = true
+        captured.finish_download = function(path, err)
+            callback(path, err)
+            captured.active_download_handles[handle] = nil
+        end
+        return handle
+    end,
     show_list = function(title, items, callback)
         captured.last_list = { title = title, items = items, callback = callback }
         captured.stack[#captured.stack + 1] = { title = title, kind = "list", screen = captured.last_list }
@@ -74,7 +123,11 @@ plugin.md5 = function() return "0123456789abcdef0123456789abcdef" end
 
 local function load_plugin()
     captured.settings, captured.stack, captured.settings_pushes = {}, {}, 0
+    _G.COMPAS_PLUGIN_TEST = true
     assert(loadfile(plugin_file))()
+    _G.COMPAS_PLUGIN_TEST = nil
+    captured.under_test = _G.COMPAS_PLUGIN_UNDER_TEST
+    _G.COMPAS_PLUGIN_UNDER_TEST = nil
 end
 local function open_speed_chooser(expected_label)
     captured.open_home()
@@ -139,6 +192,49 @@ assert(captured[1].speed == 1.5)
 
 local restored = assert(io.open(root .. "/Podcasts/.settings", "r")):read("*a")
 assert(restored:find("playback_speed\t1%.5\n"))
+
+-- Manual podcast downloads display URL resolution and transfer progress. A
+-- missing content length stays indeterminate; reported bytes drive the bar.
+load_plugin()
+local podcast_test = assert(captured.under_test)
+local show = { key = "manual-progress-feed", title = "Manual Progress Show" }
+local episode = {
+    guid = "manual-progress-guid", url = "https://example.test/manual.mp3",
+    title = "Manual progress", date = "", epoch = 0, mime = "audio/mpeg",
+}
+podcast_test.enqueue_download(show, episode)
+assert(captured.active_progress ~= nil, "manual podcast download opens progress")
+local saw_resolve = false
+for _, event in ipairs(captured.progress_events) do
+    if event.message == "Resolving episode URL…" then saw_resolve = true end
+end
+assert(saw_resolve, "download progress reports URL resolution")
+interval()
+local handle = assert(captured.download_handle)
+captured.download_progress[handle] = { downloaded = 10, total = 0 }
+interval()
+assert(captured.progress_events[#captured.progress_events].fraction == nil,
+    "unknown podcast download size stays indeterminate")
+captured.download_progress[handle] = { downloaded = 45, total = 100 }
+interval()
+assert(captured.progress_events[#captured.progress_events].fraction == 0.45,
+    "podcast bar uses reported bytes")
+local downloaded = assert(io.open(captured.download_dest, "wb")); downloaded:write("audio"); downloaded:close()
+captured.finish_download(captured.download_dest, nil)
+assert(captured.active_progress == nil, "successful podcast download closes progress")
+assert(plugin.get_download_progress(handle) == nil, "completed podcast download handle is stale")
+
+-- The failure path also closes the modeless card.
+local failed_episode = {
+    guid = "manual-progress-failure", url = "https://example.test/fail.mp3",
+    title = "Failure", date = "", epoch = 0, mime = "audio/mpeg",
+}
+podcast_test.enqueue_download(show, failed_episode)
+interval()
+local failed_handle = assert(captured.download_handle)
+captured.finish_download(nil, "network")
+assert(captured.active_progress == nil, "failed podcast download closes progress")
+assert(plugin.get_download_progress(failed_handle) == nil, "failed download handle is stale")
 
 -- API-min-2 players without settings-list support still expose a row that
 -- reports the missing speed capability instead of calling a missing API.

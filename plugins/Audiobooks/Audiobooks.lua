@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.5.0", api_min = 16 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.6.0", api_min = 16 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Series/Title/files, with optional disc folders,
@@ -1584,8 +1584,6 @@ local function list_row(label, icon)
     return { label = cap(label, wrap and 511 or 159), icon = icon, wrap = wrap == true }
 end
 
-local BROWSE_TITLE, BROWSE_PAGE_SIZE = "Browse folders", 17
-
 remember_book = function(book)
     local previous = book_by_key[book.key]
     if previous and (previous.dir ~= book.dir or previous.loose ~= book.loose
@@ -1609,10 +1607,13 @@ local function folder_book(relative, direct_only)
     local book = {
         key = relative,
         title = parts[#parts],
-        author = #parts > 1 and parts[#parts - 1] or "",
+        author = #parts > 1 and parts[1] or "",
         dir = ROOT .. "/" .. relative,
-        direct_only = direct_only ~= false,
+        direct_only = direct_only == true,
     }
+    if #parts >= 3 then
+        book.series = parts[2]
+    end
     return remember_book(book)
 end
 
@@ -1626,128 +1627,28 @@ local function file_book(relative)
         key = relative,
         file_rel = relative,
         title = filename:gsub("%.[^%.]+$", ""),
-        author = #parts > 1 and parts[#parts - 1] or "",
+        author = #parts > 1 and parts[1] or "",
         dir = ROOT,
         loose = true,
         single = true,
     })
 end
 
-local function browsed_file_book(relative)
-    local parts = path_parts(relative)
-    if not parts or not is_audio(parts[#parts]) then
-        return nil
-    end
-    if #parts == 1 then
-        return file_book(relative)
-    end
-    local parent = table.concat(parts, "/", 1, #parts - 1)
-    local book = folder_book(parent)
-    if book then
-        book.initial_file = parts[#parts]
-    end
-    return book
-end
-
-local function browse_row(label, icon, action, wrap)
-    local supports_wrap = plugin.has_capability and plugin.has_capability("ui.settings_list_wrap")
-    return {
-        type = "row",
-        label = cap(label, wrap and supports_wrap and 511 or 95),
-        icon = icon,
-        text_size = "medium",
-        wrap = wrap == true and supports_wrap == true,
-        on_select = action,
-    }
-end
-
--- Rebuild the same settings-list screen in place for every directory/page.
--- This keeps unlimited folder depth out of show_list's four-screen stack.
-local function browse_directory(relative, page)
-    relative = relative or ""
-    page = math.max(1, math.floor(tonumber(page) or 1))
-    if relative ~= "" and not valid_relative_path(relative) then
-        plugin.show_toast("That folder path is too long or invalid")
+local function open_audiobooks_folder(folder)
+    if not (plugin.has_capability and plugin.has_capability("ui.file_manager")) then
+        plugin.show_toast("File Manager is not supported on this device")
         return
     end
-    local directory = relative == "" and ROOT or (ROOT .. "/" .. relative)
-    local entries, cut = safe_dir(directory)
-    table.sort(entries, function(a, b)
-        if a.dir ~= b.dir then
-            return a.dir
-        end
-        return natural_less(a, b)
-    end)
-
-    local visible = {}
-    local direct_audio = 0
-    for _, entry in ipairs(entries) do
-        if entry.dir or is_audio(entry.name) then
-            visible[#visible + 1] = entry
-            if not entry.dir then
-                direct_audio = direct_audio + 1
-            end
-        end
+    folder = folder or ROOT
+    pcall(plugin.mkdir, ROOT)
+    local ok, res, err = pcall(plugin.open_file_manager, folder)
+    if not ok then
+        plugin.show_toast("Could not open File Manager")
+        return
     end
-    local pages = math.max(1, math.ceil(#visible / BROWSE_PAGE_SIZE))
-    page = math.min(page, pages)
-    local first = (page - 1) * BROWSE_PAGE_SIZE + 1
-    local last = math.min(#visible, first + BROWSE_PAGE_SIZE - 1)
-    local label_path = relative == "" and "Audiobooks" or ("Audiobooks/" .. relative)
-    local rows = {
-        browse_row(label_path .. " · " .. page .. "/" .. pages, ICON_LIBRARY, function() end, true),
-    }
-    if relative ~= "" then
-        local parent = relative:match("^(.*)/[^/]+$") or ""
-        rows[#rows + 1] = browse_row("Up one folder", ICON_HISTORY, function()
-            browse_directory(parent, 1)
-        end)
+    if not res then
+        plugin.show_toast(err or "Could not open folder in File Manager")
     end
-    if direct_audio > 0 and relative ~= "" then
-        rows[#rows + 1] = browse_row("Book controls · " .. direct_audio .. " audio files", ICON_BOOK, function()
-            local book = folder_book(relative)
-            if book then open_book(book, { path = relative, page = page }) end
-        end)
-    end
-    if page > 1 then
-        rows[#rows + 1] = browse_row("Previous page", ICON_LIBRARY, function()
-            browse_directory(relative, page - 1)
-        end)
-    end
-    for i = first, last do
-        local entry = visible[i]
-        local child_relative = relative == "" and entry.name or (relative .. "/" .. entry.name)
-        if #child_relative <= 512 and valid_relative_path(child_relative) then
-            if entry.dir then
-                rows[#rows + 1] = browse_row(entry.name .. "/", ICON_LIBRARY, function()
-                    browse_directory(child_relative, 1)
-                end)
-            else
-                rows[#rows + 1] = browse_row(entry.name, ICON_PLAY, function()
-                    local book = browsed_file_book(child_relative)
-                    if book then open_book(book, { path = relative, page = page }) end
-                end)
-            end
-        else
-            rows[#rows + 1] = browse_row(entry.name .. " · path too long", ICON_LIBRARY, function()
-                plugin.show_toast("This path is too long to save audiobook progress")
-            end)
-        end
-    end
-    if page < pages then
-        rows[#rows + 1] = browse_row("Next page", ICON_LIBRARY, function()
-            browse_directory(relative, page + 1)
-        end)
-    end
-    if cut then
-        rows[#rows + 1] = browse_row("First 2000 entries only", ICON_LIBRARY, function()
-            plugin.show_toast("This folder has more than 2000 entries")
-        end)
-    end
-    if #visible == 0 then
-        rows[#rows + 1] = browse_row("No folders or audio files here", ICON_BOOK, function() end)
-    end
-    plugin.show_settings_list(BROWSE_TITLE, rows, { update = true })
 end
 
 local function split_group(title, group)
@@ -2000,7 +1901,7 @@ local function open_library()
         add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
             function() open_continue_list(1) end)
     end
-    add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
+    add_row("Browse folders", ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
     add_row("All audiobooks · scan library", ICON_LIBRARY, open_legacy_library)
     add_row("Authors", ICON_LIBRARY, function() open_shelves("author", "Authors") end)
     add_row("Series", ICON_LIBRARY, function() open_shelves("series", "Series") end)
@@ -2042,7 +1943,7 @@ open_legacy_library = function()
         add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
             function() open_continue_list(1) end)
     end
-    add_row("Browse folders", ICON_LIBRARY, function() browse_directory("", 1) end)
+    add_row("Browse folders", ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
     add_row("All audiobooks (" .. #books .. ")", ICON_LIBRARY, function()
         split_group("All audiobooks", books)
     end)
@@ -2348,7 +2249,7 @@ local function sleep_menu(book)
     end)
 end
 
-open_book = function(book, return_to_browser)
+open_book = function(book)
     remember_book(book)
     local s = ensure_state(book.key)
     local rows = {}
@@ -2360,11 +2261,9 @@ open_book = function(book, return_to_browser)
         }
     end
     local heading = book.title .. (book.author ~= "" and ("\n" .. book.author) or "")
-    if return_to_browser then
-        add_row("Back to folder", ICON_HISTORY, function()
-            browse_directory(return_to_browser.path, return_to_browser.page)
-        end)
-    end
+    add_row("Open folder in File Manager", ICON_LIBRARY, function()
+        open_audiobooks_folder(book.dir or ROOT)
+    end)
     add_row(heading, cover_for(book), function() end, true)
     if book.initial_file then
         add_row("Play selected file", ICON_PLAY, function()
@@ -2421,8 +2320,7 @@ open_book = function(book, return_to_browser)
             if not save_state() then plugin.show_toast("Finished state could not be saved") end
         end,
     }
-    plugin.show_settings_list(return_to_browser and BROWSE_TITLE or "Book controls", rows,
-        return_to_browser and { update = true } or nil)
+    plugin.show_settings_list("Book controls", rows)
 end
 
 local function service_seek()
@@ -2492,6 +2390,40 @@ local function book_for_path(path)
         local file, length = match(book)
         if file and (not best_length or length > best_length) then
             best_book, best_file, best_length = book, file, length
+        end
+    end
+    if best_book then
+        return best_book, best_file
+    end
+
+    -- If not yet in book_by_key (e.g. played via native File Manager without
+    -- prior library scan or saved state), derive the book from the file path.
+    local rel = path:sub(#ROOT + 2)
+    if valid_relative_path(rel) and is_audio(rel) then
+        local parts = path_parts(rel)
+        if parts then
+            if #parts == 1 then
+                best_book = file_book(rel)
+                if best_book then
+                    best_file = { name = rel, path = path }
+                end
+            else
+                local parent_idx = #parts - 1
+                if parent_idx > 1 and is_disc_name(parts[parent_idx]) then
+                    parent_idx = parent_idx - 1
+                end
+                local book_rel = table.concat(parts, "/", 1, parent_idx)
+                best_book = folder_book(book_rel, false)
+                if best_book then
+                    local prefix = best_book.dir .. "/"
+                    if path:sub(1, #prefix) == prefix then
+                        local file_rel = path:sub(#prefix + 1)
+                        if valid_relative_path(file_rel) and is_audio(file_rel) then
+                            best_file = { name = file_rel, path = path }
+                        end
+                    end
+                end
+            end
         end
     end
     return best_book, best_file

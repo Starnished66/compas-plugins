@@ -27,6 +27,7 @@ jobs:
           lua tests/kids_mode_test.lua
       - name: Test API 16 v1.1 plugins
         run: |
+          lua tests/autoeq_test.lua
           lua tests/track_inspector/run.lua
           lua tests/volume_plugins/run.lua
           lua tests/context_plugins/run.lua
@@ -36,6 +37,8 @@ jobs:
         run: lua tests/podcasts_speed_test.lua plugins/Podcasts/Podcasts.lua plugins/Audiobooks/Audiobooks.lua
       - name: Test audiobook shelves and podcast offline workflows
         run: lua tests/workflow_shelves_test.lua plugins/Audiobooks/Audiobooks.lua plugins/Podcasts/Podcasts.lua
+      - name: Test native File Manager plugin integration
+        run: lua tests/native_file_manager_regression_test.lua plugins/Audiobooks/Audiobooks.lua plugins/Podcasts/Podcasts.lua
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
       - name: Validate the store index

@@ -2,5 +2,5 @@
   "description": "Applies parametric EQ profiles automatically based on folder, artist, or genre context.",
   "category": "Audio",
   "author": "Compás",
-  "publish": false
+  "publish": true
 }

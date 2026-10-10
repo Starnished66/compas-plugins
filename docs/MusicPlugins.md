@@ -1,6 +1,6 @@
 # Music plugins
 
-These plugins require **Plugin API 15** and are compatible with Compás v1.0.1. Copy the Lua file to the SD card's `.plugins` folder and refresh plugins.
+The music plugins listed here are published for Compás v1.1. Lyrics Fetcher, Cover Art Fetcher, AutoEQ, Podcasts, Audiobooks, and MSEB require **Plugin API 16**; Album Shuffle, ListenBrainz Scrobbler, and Net Radio support API 15. Install them through Plugin Manager or copy the published plugin files to the SD card's `.plugins` folder and refresh plugins. Radio Browser remains deprecated and unpublished because its search feature is part of Net Radio.
 
 | Plugin | Location | Behavior |
 | --- | --- | --- |
@@ -9,6 +9,14 @@ These plugins require **Plugin API 15** and are compatible with Compás v1.0.1. 
 | Album Shuffle | Settings > Playback & Controls | Start while playback mode is **sequential**. Plays a random whole album in track order, then another at the natural end or when Next is pressed at the queue boundary. Explicit Stop or selecting an unrelated track ends the session. |
 | ListenBrainz Scrobbler | Settings > Playback & Controls | Opt-in scrobble with a ListenBrainz user token. The token is kept in plugin secrets. Qualified listens are stored before they are sent. |
 | Net Radio | Stream Media | Play saved stations from `Radio.txt` or search Radio Browser and save direct streams as favorites. |
+| AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Search the recommended headphone catalog and download compatible parametric EQ profiles. |
+| Podcasts | Stream Media | Search and subscribe, download episodes, and resume playback. File Manager opens the podcast storage folder. Version 1.6.0. |
+| Audiobooks | Books | Browse audiobook files, resume playback, manage bookmarks and chapters, and use the sleep timer. File Manager opens audiobook folders. Version 3.6.0. |
+| MSEB | Settings > Sound | Mood-based tone tuning on top of the parametric EQ, with backup and restore. |
+
+### API 16 behavior
+
+Lyrics Fetcher 1.1.0, Cover Art Fetcher 1.1.0, and AutoEQ 1.1.0 are published API16 packages. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Cover and podcast downloads show a percentage only when the native download API reports a known byte total. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
 
 Fetchers preserve existing sidecars and use verified HTTPS. No API key is needed. Album matching uses album artist where available, including compilation albums. Lyrics are looked up using title, artist, album and duration. Automatic lookups send those tags to the relevant service.
 
@@ -38,13 +46,12 @@ Search by station name. Each request asks for 20 stations, skips broken entries,
 
 Checked against the registered Lua bindings and event handlers in the released [Compás v1.0.1 source](https://github.com/Starnished66/compas-player/tree/e2a029f8e99a67300c6bce635d381d8a0bfd9ed2). Its plugin API version is 15.
 
-- Lyrics Fetcher uses asynchronous HTTP, JSON decoding, the current track metadata, intervals and standard sandboxed file operations.
-- Cover Art Fetcher uses asynchronous HTTP including HEAD, response headers, TLS, file downloads, paged library metadata and library refresh. The API 15 HTTP implementation skips response bodies for HEAD.
+- The released Compás v1.0.1 packages used API15 functions. The v1.1 Lyrics Fetcher and Cover Art Fetcher packages use API16 progress-card support; Cover Art Fetcher also reads native download byte progress when available.
 - Album Shuffle uses paged album/song lookup, album track lists, list playback, current path/mode, playback state and the `track_started`, `stopped`, and `queue_exhausted` events. Natural completion uses two idle polls because `queue_exhausted` covers boundary navigation.
 - ListenBrainz Scrobbler uses `plugin.secrets`, `plugin.storage`, async HTTPS with request headers, TLS, timeouts and the response-header table, JSON, playback events, position, and a one-second-or-slower interval. All of those are in API 15.
 - Net Radio uses the stream-media tile, async HTTPS, JSON, `plugin.play_list`, and normal file reads and appends. AAC and AAC+ use the existing `#.aac` / `#.aacp` hints and `audio/aac` content type. No API 16 function and no native change is required.
 
-No API 16 functions or native code changes are required. None of these plugins is deferred for v1.1.
+The API16 packages require Compás v1.1 or newer. Radio Browser remains `publish:false`; use Net Radio for station search and keep `Radio.txt` for saved stations.
 
 ## Validation
 

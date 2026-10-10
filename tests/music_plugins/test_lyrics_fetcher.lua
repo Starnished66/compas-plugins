@@ -35,6 +35,7 @@ local function setup(dir, extra)
     os.execute("mkdir -p '" .. dir .. "/.plugins' '" .. dir .. "/Music/Album'")
     local h = harness.new({
         sd_root = dir,
+        api_version = 16,
         defer_http = extra.defer_http,
         http_impl = extra.http_impl,
     })
@@ -80,6 +81,190 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(h.http_calls[1].verify_tls == true, "tls verified")
         assert_true(h.http_calls[1].url:find("lrclib.net/api/get", 1, true) ~= nil, "lrclib get")
         assert_true(h.http_calls[1].url:find("track_name=", 1, true) ~= nil, "encoded title")
+        assert_eq(h.progress_events[1].message, "Looking up lyrics…", "manual lookup opens progress")
+        assert_eq(h.progress_events[#h.progress_events].action, "close", "lyrics success closes progress")
+    end
+
+    -- A dismissed manual card is not reopened by background work, but an
+    -- intentional second tap reopens the same request without duplicating it.
+    do
+        local h, M = setup(root .. "/progress-dismiss", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil, "manual lyrics lookup has progress handle")
+        local requests = #h.http_calls
+        h.dismiss_progress()
+        h.tick_intervals()
+        assert_eq(h.active_progress, nil, "tick does not reopen dismissed progress")
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil, "intentional repeated tap reopens progress")
+        assert_eq(#h.http_calls, requests, "reopening progress does not duplicate request")
+        h.flush()
+        assert_eq(h.active_progress, nil, "completion closes reopened progress")
+    end
+
+    -- When the user changes tracks before a response arrives, the stale manual
+    -- request closes its progress card and does not announce an old result.
+    do
+        local h, M, audio = setup(root .. "/stale-track", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.fetch_current(false)
+        h.current_path = audio .. ".other"
+        h.flush()
+        assert_eq(h.active_progress, nil, "stale track response closes progress")
+        assert_eq(h.toasts[#h.toasts], nil, "stale track response is quiet")
+    end
+
+    do
+        local calls = 0
+        local h, M = setup(root .. "/manual-retry", {
+            defer_http = true,
+            http_impl = function()
+                calls = calls + 1
+                if calls == 1 then return 503, "", nil, { ["Retry-After"] = "2" } end
+                return 200, LRCLIB_OK, nil, {}
+            end,
+        })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.fetch_current(false)
+        h.flush()
+        assert_true(h.active_progress ~= nil, "retry keeps manual progress open")
+        local saw_retry = false
+        for _, event in ipairs(h.progress_events) do
+            if event.message == "Retrying lyrics lookup…" then saw_retry = true end
+        end
+        assert_true(saw_retry, "manual retry phase is visible")
+        now = now + 3
+        h.tick_intervals()
+        assert_eq(#h.http_calls, 2, "retry starts after Retry-After")
+        h.flush()
+        os.time = original_time
+        assert_eq(h.active_progress, nil, "retry success closes progress")
+        assert_true(read_file(root .. "/manual-retry/Music/Album/track.lrc") ~= nil, "retry saves lyrics")
+    end
+
+    do
+        local calls = 0
+        local h, M = setup(root .. "/auto-retry-joined", {
+            defer_http = true,
+            http_impl = function()
+                calls = calls + 1
+                if calls == 1 then return 503, "", nil, { ["Retry-After"] = "2" } end
+                return 200, LRCLIB_OK, nil, {}
+            end,
+        })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.state.auto = true
+        h.emit("track_started")
+        h.flush()
+        assert_eq(h.active_progress, nil, "automatic retry initially stays quiet")
+        local requests = #h.http_calls
+        M.fetch_current(true)
+        assert_eq(#h.progress_events, 0, "automatic retry join stays quiet")
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil, "manual fetch joins and reopens same-track retry")
+        now = now + 3
+        h.tick_intervals()
+        assert_eq(#h.http_calls, requests + 1, "joined retry continues once after backoff")
+        h.flush()
+        os.time = original_time
+        assert_eq(h.active_progress, nil, "joined retry closes progress on success")
+    end
+
+    do
+        local calls = 0
+        local h, M = setup(root .. "/retry-replaced", {
+            defer_http = true,
+            http_impl = function()
+                calls = calls + 1
+                if calls == 1 then return 503, "", nil, { ["Retry-After"] = "30" } end
+                return 200, LRCLIB_OK, nil, {}
+            end,
+        })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.fetch_current(false)
+        h.flush()
+        assert_true(h.active_progress ~= nil, "manual retry owns a progress card")
+        local previous_handle = h.active_progress
+        local other_path = root .. "/retry-replaced/Music/Album/other.flac"
+        write_file(other_path, "audio")
+        h.current_path = other_path
+        h.now_playing = { "Other song", "Other artist", "Other album", 180 }
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil and h.active_progress ~= previous_handle,
+            "new track replaces old retry progress with its own request")
+        now = now + 31
+        h.tick_intervals()
+        assert_eq(#h.http_calls, 2, "replaced retry does not fire alongside new lookup")
+        h.flush()
+        os.time = original_time
+    end
+
+    do
+        local calls = 0
+        local h, M = setup(root .. "/retry-track-changed-no-event", {
+            defer_http = true,
+            http_impl = function()
+                calls = calls + 1
+                if calls == 1 then return 503, "", nil, { ["Retry-After"] = "2" } end
+                return 200, LRCLIB_OK, nil, {}
+            end,
+        })
+        local original_time = os.time
+        local now = original_time()
+        os.time = function() return now end
+        M.fetch_current(false)
+        h.flush()
+        assert_true(h.active_progress ~= nil, "pending retry has visible manual progress")
+        h.current_path = "/different/current/track.flac"
+        now = now + 3
+        h.tick_intervals()
+        os.time = original_time
+        assert_eq(h.active_progress, nil, "retry timer closes progress after track changes without event")
+        assert_eq(#h.http_calls, 1, "stale retry does not start HTTP request")
+    end
+
+    do
+        local h, M, audio, dest = setup(root .. "/retry-sidecar-race", {
+            defer_http = true,
+            http_impl = function() return 503, "", nil, { ["Retry-After"] = "2" } end,
+        })
+        M.fetch_current(false)
+        h.flush()
+        assert_true(h.active_progress ~= nil, "retry has progress before existing sidecar appears")
+        write_file(dest, "[00:00.00] user lyrics\n")
+        local calls = #h.http_calls
+        local original_time = os.time
+        local now = original_time() + 3
+        os.time = function() return now end
+        h.tick_intervals()
+        os.time = original_time
+        assert_eq(h.active_progress, nil, "existing sidecar closes retry progress")
+        assert_eq(#h.http_calls, calls, "existing sidecar skips retry request")
+    end
+
+    do
+        local h, M = setup(root .. "/auto-quiet", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.state.auto = true
+        h.emit("track_started")
+        assert_eq(h.active_progress, nil, "automatic lyrics lookup does not show progress")
+        assert_eq(#h.toasts, 0, "automatic lyrics lookup stays quiet")
+        h.flush()
+        assert_eq(h.active_progress, nil, "automatic completion remains quiet")
+        assert_eq(#h.toasts, 0, "automatic completion has no popup")
     end
 
     -- existing sidecar is not replaced

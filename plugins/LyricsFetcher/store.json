@@ -1,5 +1,6 @@
 {
   "description": "Fetch synced lyrics from LRCLIB and save missing .lrc sidecars. Manual lookup and optional automatic fetching for local tracks.",
   "category": "Tools",
-  "author": "Compás"
+  "author": "Compás",
+  "publish": true
 }

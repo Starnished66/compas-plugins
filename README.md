@@ -19,7 +19,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Lyrics Fetcher, Cover Art Fetcher and Album Shuffle support Plugin API 15. Fetchers offer manual lookup and optional automatic mode; Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
+Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards, with measured download percentages for covers when the byte total is known; automatic fetching stays quiet. Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
 
 ## ListenBrainz and Net Radio
 
@@ -57,21 +57,25 @@ Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Pl
 
 ## v1.1 plugins (API 16)
 
-These sources are held with `publish: false` until the v1.1 release. Manual
-installation requires firmware with API 16 and the corresponding native
-capabilities.
+These packages are published for Compás v1.1 and require Plugin API 16.
 
 | Plugin | Where to open it | Behavior |
 | --- | --- | --- |
+| AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Catalog and profile download status in a dismissible progress card. |
+| Cover Art Fetcher | Settings > Library | Manual search and download progress, including measured percentages when the image size is known. |
+| Lyrics Fetcher | Settings > Library | Manual lookup, retry and save status in a dismissible progress card. |
 | Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
 | Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |
 | Volume Limiter | Settings > Sound | Quietly pulls software volume down to a configured ceiling. Volume events arrive at the firmware's notification cadence. |
 | AutoEQ Context | Settings > Sound | Selects local `.peq` profiles by folder, artist, or genre. Applies and restores runtime EQ without saving each track change. |
 | Output-Aware Sound | Settings > Sound | Selects a local `.peq` profile for wired, USB DAC, or Bluetooth output, including codec-specific Bluetooth rules. |
+| MSEB | Settings > Sound | Mood-based tone tuning on top of the parametric EQ, with backup and restore. |
 | Album Playback Rules | Settings > Playback & Controls | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
 | A-B Repeat | Settings > Playback & Controls | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
 | ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
 | Jellyfin & Emby | Stream Media | Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
+| Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Version 3.6.0. |
+| Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Version 1.6.0. |
 
 Automatic EQ tools preserve later manual changes. If another tool changes EQ,
 automation suspends rather than continually overwriting it; use the plugin's
@@ -107,7 +111,7 @@ plugins/
 - `category` is one of `Listening`, `Reading`, `Audio`, `Customization`, `Tools`, `Experimental`, `Developer`.
 - `files` lists extra files. `src` is relative to the plugin folder, `dest` is relative to the SD card root. The `.lua` file itself always goes to `.plugins/<Name>.lua` and is not listed.
 - `publish: false` holds a plugin back: it is still checked, but left out of releases until it is ready.
-- Audiobooks, Podcasts, and MSEB are present in source and checked in CI, but remain unpublished while they require API 16.
+- Radio Browser is deprecated and unpublished; its API 15 search feature is merged into Net Radio. Existing users can disable or remove `.plugins/RadioBrowser.lua` and refresh plugins; keep `Radio.txt`.
 - `keep: true` marks a file the user edits, such as a station list. The store installs it when it is missing and never overwrites or deletes it.
 
 ## Adding or updating a plugin

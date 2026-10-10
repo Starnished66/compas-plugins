@@ -1,5 +1,5 @@
 {
-  "description": "Search and subscribe to podcasts, download episodes, and resume where you left off.",
+  "description": "Search and subscribe to podcasts, manage downloads with File Manager, and resume where you left off.",
   "category": "Listening",
   "author": "Comp\u00e1s",
   "files": [
@@ -40,5 +40,5 @@
       "dest": ".plugin-assets/Podcasts/link.png"
     }
   ],
-  "publish": false
+  "publish": true
 }

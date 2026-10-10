@@ -2,5 +2,5 @@
   "description": "Applies custom playback settings (gapless, crossfade, ReplayGain, play order) matched by playing track album tags.",
   "category": "Listening",
   "author": "Compás",
-  "publish": false
+  "publish": true
 }

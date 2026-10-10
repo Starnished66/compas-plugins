@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.4.0", api_min = 16 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.6.0", api_min = 16 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
@@ -40,6 +40,23 @@ local MAX_NEW_PER_SHOW = 5
 local subscriptions, catalogs, progress = {}, {}, {}
 local fetching, search_running = {}, false
 local queue, active_download = {}, nil
+local function update_download_progress(item, message, fraction)
+    if not item or not plugin.has_capability("ui.progress") then return false end
+    if item.progress_handle and plugin.update_progress(item.progress_handle, message, fraction) then return true end
+    if item.progress_handle then item.progress_handle = nil end
+    if item.progress_attempted then return false end
+    item.progress_attempted = true
+    item.progress_handle = plugin.show_progress("Podcast download", message, fraction)
+    return item.progress_handle ~= nil
+end
+
+local function close_download_progress(item)
+    if item and item.progress_handle then
+        plugin.close_progress(item.progress_handle)
+        item.progress_handle = nil
+    end
+end
+
 local path_to_key, pending_seek = {}, nil
 local progress_dirty = false
 -- Set when the history file was larger than one read: it is then never
@@ -119,10 +136,21 @@ end
 
 local function current_download_path()
     local path = plugin.get_current_track_path()
-    if type(path) ~= "string" or not path_to_key[path] then
+    if type(path) ~= "string" then
         return nil
     end
     if path:sub(1, #ROOT + 1) ~= ROOT .. "/" then
+        return nil
+    end
+    if not path_to_key[path] then
+        for key, p in pairs(progress) do
+            if p.path == path then
+                path_to_key[path] = key
+                break
+            end
+        end
+    end
+    if not path_to_key[path] then
         return nil
     end
     return path
@@ -1991,6 +2019,8 @@ local function fail_download(item)
     if active_download == item then
         active_download = nil
     end
+    item.download_handle = nil
+    close_download_progress(item)
     plugin.show_toast("Could not download episode. Try again.")
 end
 
@@ -2006,6 +2036,7 @@ end
 
 local function begin_transfer(item)
     item.waiting = false
+    update_download_progress(item, "Downloading episode…", nil)
     local handle, request_err = start_request(
         plugin.download_file_async,
         item.final_url,
@@ -2016,7 +2047,9 @@ local function begin_transfer(item)
                 return
             end
             active_download = nil
+            item.download_handle = nil
             if download_err then
+                close_download_progress(item)
                 plugin.show_toast("Could not download episode. Try again.")
                 return
             end
@@ -2024,7 +2057,9 @@ local function begin_transfer(item)
             -- Kept with the file so it stays listed after it leaves the 40-episode catalog.
             p.path, p.position = path, 0
             p.title, p.date, p.epoch = item.episode.title, item.episode.date, item.episode.epoch or 0
-            if save_progress() then
+            local saved = save_progress()
+            close_download_progress(item)
+            if saved then
                 plugin.show_toast("Episode downloaded")
             else
                 plugin.show_toast("Episode downloaded, but progress could not be saved")
@@ -2032,6 +2067,7 @@ local function begin_transfer(item)
         end
     )
     item.handle = handle
+    item.download_handle = handle
     if not handle then
         if pool_busy(request_err) then
             busy_retry(item)
@@ -2043,6 +2079,7 @@ end
 
 local function begin_resolve(item)
     item.waiting = false
+    update_download_progress(item, "Resolving episode URL…", nil)
     resolve_redirect(item.episode.url, function(final_url, err)
         if active_download ~= item then
             return
@@ -2078,6 +2115,7 @@ local function service_downloads()
         return
     end
     active_download = item
+    update_download_progress(item, "Preparing episode download…", nil)
     local dir, dest = download_dest(item.show, item.episode)
     item.dest = dest
     -- A file already there (say, a download whose state was lost) is never
@@ -2107,7 +2145,11 @@ enqueue_download = function(show, episode)
         plugin.show_toast("Download limit reached. Delete some downloads first.")
         return
     end
-    queue[#queue + 1] = { show = show, episode = episode, key = progress_key(show, episode) }
+    local item = { show = show, episode = episode, key = progress_key(show, episode) }
+    queue[#queue + 1] = item
+    if active_download then
+        plugin.show_toast("Episode download queued")
+    end
     service_downloads()
 end
 
@@ -2115,6 +2157,7 @@ cancel_download = function(key)
     for i, item in ipairs(queue) do
         if item.key == key then
             table.remove(queue, i)
+            close_download_progress(item)
             plugin.show_toast("Download cancelled")
             return
         end
@@ -2124,6 +2167,8 @@ cancel_download = function(key)
             plugin.cancel(active_download.handle)
         end
         active_download.cancelled = true
+        active_download.download_handle = nil
+        close_download_progress(active_download)
         -- The transfer may have finished just before the cancel; its file is
         -- removed from the tick unless something claims it meanwhile.
         if active_download.dest and not active_download.dest_existed then
@@ -2323,6 +2368,22 @@ local function open_downloads(filter, heading)
     end)
 end
 
+local function open_podcasts_downloads()
+    if not (plugin.has_capability and plugin.has_capability("ui.file_manager")) then
+        plugin.show_toast("File Manager is not supported on this device")
+        return
+    end
+    pcall(plugin.mkdir, ROOT)
+    local ok, res, err = pcall(plugin.open_file_manager, ROOT)
+    if not ok then
+        plugin.show_toast("Could not open File Manager")
+        return
+    end
+    if not res then
+        plugin.show_toast(err or "Could not open Podcasts in File Manager")
+    end
+end
+
 local function open_download_manager(update_existing)
     if type(plugin.show_settings_list) ~= "function" then
         open_downloads()
@@ -2335,6 +2396,8 @@ local function open_download_manager(update_existing)
     end
     local armed, deadline = false, 0
     local rows = {
+        { type = "row", label = "Downloads folder (File Manager)", icon = ICON.download,
+            on_select = open_podcasts_downloads },
         { type = "row", label = "All downloads (" .. #entries .. ")", icon = ICON.download,
             on_select = function() open_downloads() end },
         { type = "row", label = "Not played (" .. unfinished .. ")", icon = ICON.play,
@@ -2421,8 +2484,8 @@ local function open_home()
             plugin.play_file(cont.path)
         end
     end
-    rows[#rows + 1] = { label = "Downloads (" .. #entries .. ")", icon = ICON.download }
-    actions[#actions + 1] = open_downloads
+    rows[#rows + 1] = { label = "Downloads (File Manager)", icon = ICON.download }
+    actions[#actions + 1] = open_podcasts_downloads
     if #subscriptions > 0 then
         sort_subscriptions()
         -- New counts come from progress state, so Home never loads every catalog.
@@ -2554,6 +2617,15 @@ plugin.on("track_started", function()
     speed_retry_pending = true
     local path = plugin.get_current_track_path()
     local k = path and path_to_key[path]
+    if not k and path and path:sub(1, #ROOT + 1) == ROOT .. "/" then
+        for key, p in pairs(progress) do
+            if p.path == path then
+                path_to_key[path] = key
+                k = key
+                break
+            end
+        end
+    end
     if pending_seek and pending_seek.path ~= path then
         pending_seek = nil
     end
@@ -2591,6 +2663,16 @@ interval_handle = plugin.set_interval(1, function()
     end
     run_deferred()
     service_downloads()
+    local download = active_download
+    if download and download.download_handle and plugin.has_capability("network.http.download_progress") then
+        local progress = plugin.get_download_progress(download.download_handle)
+        if type(progress) == "table" then
+            local total = tonumber(progress.total) or 0
+            local downloaded = tonumber(progress.downloaded) or 0
+            local fraction = total > 0 and math.max(0, math.min(1, downloaded / total)) or nil
+            update_download_progress(download, "Downloading episode…", fraction)
+        end
+    end
     for i = #cancelled_files, 1, -1 do
         local entry = cancelled_files[i]
         entry.ticks = entry.ticks + 1
@@ -2622,3 +2704,11 @@ plugin.register_stream_media_tile("Podcasts", function()
     end
     open_home()
 end, "stream_media/podcasts_row.png")
+
+if rawget(_G, "COMPAS_PLUGIN_TEST") then
+    _G.COMPAS_PLUGIN_UNDER_TEST = {
+        enqueue_download = enqueue_download,
+        active_download = function() return active_download end,
+        queue = queue,
+    }
+end

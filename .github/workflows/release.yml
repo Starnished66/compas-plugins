@@ -22,14 +22,14 @@ jobs:
         run: python3 -m pip install Pillow==12.3.0
       - name: Build the release assets
         run: python3 tools/build_index.py --tag "$GITHUB_REF_NAME" --out dist
-      - name: Keep API 16 plugins deferred until v1.1
+      - name: Reject unsupported plugin API versions
         run: |
           python3 - <<'PY'
           import json
           index = json.load(open("dist/index.json"))
-          deferred = [p["name"] for p in index["plugins"] if p["api_min"] > 15]
-          if deferred:
-              raise SystemExit("API 16 plugins must remain unpublished: " + ", ".join(deferred))
+          unsupported = [p["name"] for p in index["plugins"] if p["api_min"] > 16]
+          if unsupported:
+              raise SystemExit("Plugins require an unsupported API version (>16): " + ", ".join(unsupported))
           PY
       - name: Publish
         env:

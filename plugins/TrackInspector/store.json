@@ -2,5 +2,5 @@
   "description": "Inspects audio playback format, signal path, DSP status, and audio file headers.",
   "category": "Audio",
   "author": "Comp\u00e1s",
-  "publish": false
+  "publish": true
 }

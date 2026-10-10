@@ -1,8 +1,8 @@
 plugin.define({
     id = "example.cover_art_fetcher",
     name = "Cover Art Fetcher",
-    version = "1.0.1",
-    api_min = 15,
+    version = "1.1.0",
+    api_min = 16,
 })
 
 -- Fills a missing album-folder cover.jpg from MusicBrainz + Cover Art Archive.
@@ -29,7 +29,6 @@ local generation = 0
 local fail_memory = {}
 local last_auto_key = nil
 local active_job = nil
-local MANUAL_TOAST_MS = 30000
 local MANUAL_REFRESH_SECONDS = 25
 
 local function trim(s)
@@ -137,16 +136,52 @@ local function notify(message, is_auto)
     plugin.show_toast(message)
 end
 
+local function progress_available()
+    return plugin.has_capability("ui.progress")
+end
+
+local function open_job_progress(job, message, fraction)
+    if not job or (job.is_auto and not job.manual_requested) or not progress_available() then return false end
+    if job.progress_handle and plugin.update_progress(job.progress_handle, message, fraction) then
+        return true
+    end
+    job.progress_handle = nil
+    job.progress_attempted = true
+    job.progress_handle = plugin.show_progress("Fetching cover art", message, fraction)
+    return job.progress_handle ~= nil
+end
+
+local function update_job_progress(job, message, fraction)
+    if not job or (job.is_auto and not job.manual_requested) or not progress_available() then return false end
+    if job.progress_handle and plugin.update_progress(job.progress_handle, message, fraction) then
+        return true
+    end
+    job.progress_handle = nil
+    if not job.progress_attempted then
+        job.progress_attempted = true
+        job.progress_handle = plugin.show_progress("Fetching cover art", message, fraction)
+        return job.progress_handle ~= nil
+    end
+    return false
+end
+
+local function close_job_progress(job)
+    if job and job.progress_handle then
+        plugin.close_progress(job.progress_handle)
+        job.progress_handle = nil
+    end
+end
+
 local function notify_job(job, message)
     if not job or (job.is_auto and not job.manual_requested) then return end
-    plugin.show_toast(message, MANUAL_TOAST_MS)
+    plugin.show_toast(message)
 end
 
 local function set_stage(job, stage)
     if not job then return end
     job.stage = stage
     job.next_status_refresh = os.time() + MANUAL_REFRESH_SECONDS
-    notify_job(job, stage)
+    update_job_progress(job, stage, nil)
 end
 
 local function active_status(job)
@@ -344,6 +379,7 @@ local function finish_job(job, ok, message)
     pending_dest[job.dest] = nil
     busy = false
     if active_job == job then active_job = nil end
+    close_job_progress(job)
     if ok then
         plugin.refresh_library()
         notify_job(job, "Saved cover.jpg")
@@ -420,6 +456,7 @@ local function download_image(job, image_url, gen)
         end
         promote_cover(job, path, gen)
     end)
+    job.download_handle = handle
     if not handle then
         os.remove(staging)
         finish_job(job, false, "offline")
@@ -522,6 +559,7 @@ run_job = function(job)
     if file_exists(job.dest) then
         busy = false
         if active_job == job then active_job = nil end
+        close_job_progress(job)
         notify_job(job, "cover.jpg already present")
         pump_queue()
         return
@@ -563,7 +601,13 @@ pump_queue = function()
     if #queue == 0 then return end
     if os.time() < mb_next_ok then return end
     local job = table.remove(queue, 1)
-    if pending_dest[job.dest] or file_exists(job.dest) then
+    if pending_dest[job.dest] then
+        pump_queue()
+        return
+    end
+    if file_exists(job.dest) then
+        close_job_progress(job)
+        notify_job(job, "cover.jpg already present")
         pump_queue()
         return
     end
@@ -584,9 +628,9 @@ local function enqueue(job)
             local was_manual = active_job.manual_requested
             active_job.manual_requested = true
             if was_manual then
-                notify_job(active_job, active_status(active_job))
+                open_job_progress(active_job, active_status(active_job), nil)
             else
-                notify_job(active_job, active_job.stage or "Cover fetch in progress")
+                open_job_progress(active_job, active_job.stage or "Cover fetch in progress", nil)
             end
         end
         return
@@ -595,7 +639,16 @@ local function enqueue(job)
         if queued.dest == job.dest then
             if not job.is_auto then
                 if queued.manual_requested then
-                    plugin.show_toast("Cover fetch already queued", MANUAL_TOAST_MS)
+                    local active_visible = false
+                    if active_job and active_job.manual_requested and active_job.progress_handle then
+                        active_visible = plugin.update_progress(
+                            active_job.progress_handle, active_job.stage or "Cover fetch in progress", nil)
+                        if not active_visible then active_job.progress_handle = nil end
+                    end
+                    if not active_visible then
+                        open_job_progress(queued, queued.stage or "Cover fetch queued", nil)
+                    end
+                    plugin.show_toast("Cover fetch already queued")
                 else
                     queued.manual_requested = true
                     set_stage(queued, "Cover fetch queued")
@@ -606,7 +659,13 @@ local function enqueue(job)
     end
     queue[#queue + 1] = job
     if not job.is_auto and (busy or os.time() < mb_next_ok) then
-        set_stage(job, "Cover fetch queued")
+        job.stage = "Cover fetch queued"
+        job.next_status_refresh = os.time() + MANUAL_REFRESH_SECONDS
+        if not (active_job and active_job.manual_requested) then
+            update_job_progress(job, job.stage, nil)
+        else
+            plugin.show_toast(job.stage)
+        end
     end
     pump_queue()
 end
@@ -649,7 +708,18 @@ plugin.set_interval(1, function()
     if visible_job and visible_job.stage
         and os.time() >= (visible_job.next_status_refresh or 0) then
         visible_job.next_status_refresh = os.time() + MANUAL_REFRESH_SECONDS
-        notify_job(visible_job, visible_job.stage)
+        update_job_progress(visible_job, visible_job.stage, nil)
+    end
+    local download_job = active_job
+    if download_job and download_job.manual_requested and download_job.download_handle
+        and plugin.has_capability("network.http.download_progress") then
+        local progress = plugin.get_download_progress(download_job.download_handle)
+        if type(progress) == "table" then
+            local total = tonumber(progress.total) or 0
+            local downloaded = tonumber(progress.downloaded) or 0
+            local fraction = total > 0 and math.max(0, math.min(1, downloaded / total)) or nil
+            update_job_progress(download_job, "Downloading and saving cover…", fraction)
+        end
     end
     if not busy then pump_queue() end
 end)

@@ -173,6 +173,7 @@ local function setup(dir, extra)
     write_file(audio, "audio")
     local h = harness.new({
         sd_root = dir,
+        api_version = 16,
         defer_http = extra.defer_http,
         http_impl = extra.http_impl or router("ok"),
         download_impl = extra.download_impl or function(url, dest)
@@ -288,19 +289,60 @@ return function(assert_eq, assert_true, assert_false)
         return false
     end
 
+    local function has_progress(h, fragment)
+        for _, event in ipairs(h.progress_events) do
+            if event.message and event.message:find(fragment, 1, true) then return true end
+        end
+        return false
+    end
+
     do
         local h, M = setup(root .. "/manual-progress", { defer_http = true, http_impl = router("ok") })
         M.fetch_current(false)
-        assert_true(has_toast(h, "Looking up MusicBrainz"), "manual fetch immediately reports MusicBrainz lookup")
-        assert_eq(h.toast_durations[1], 30000, "manual status toast uses maximum visible duration")
+        assert_true(has_progress(h, "Looking up MusicBrainz"), "manual fetch immediately reports MusicBrainz lookup")
         M.fetch_current(false)
-        assert_true(has_toast(h, "already in progress"), "duplicate active request has specific feedback")
+        assert_true(has_progress(h, "already in progress"), "duplicate active request has specific feedback")
         h.flush()
-        assert_true(has_toast(h, "Checking Cover Art Archive"), "manual status reports archive phase")
-        assert_true(has_toast(h, "Resolving cover image"), "manual status reports image resolution phase")
-        assert_true(has_toast(h, "Downloading and saving cover"), "manual status reports download/save phase")
+        assert_true(has_progress(h, "Checking Cover Art Archive"), "manual status reports archive phase")
+        assert_true(has_progress(h, "Resolving cover image"), "manual status reports image resolution phase")
+        assert_true(has_progress(h, "Downloading and saving cover"), "manual status reports download/save phase")
         assert_true(has_toast(h, "Saved cover.jpg"), "manual completion toast remains visible")
         assert_true(exists(root .. "/manual-progress/Music/Dummy/cover.jpg"), "manual fetch saves cover")
+        assert_eq(h.active_progress, nil, "success closes manual progress card")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-download-progress", { defer_http = true, http_impl = router("ok") })
+        M.fetch_current(false)
+        h.flush_one_batch() -- MusicBrainz
+        h.flush_one_batch() -- Cover Art Archive
+        h.flush_one_batch() -- image redirect HEAD
+        h.flush_one_batch() -- final HEAD, starts download
+        local handle = assert(h.downloads[1].handle)
+        h.set_download_progress(handle, 200, 0)
+        h.tick_intervals()
+        assert_eq(h.progress_events[#h.progress_events].fraction, nil, "unknown image size stays indeterminate")
+        h.set_download_progress(handle, 250, 1000)
+        h.tick_intervals()
+        assert_eq(h.progress_events[#h.progress_events].fraction, 0.25, "image transfer uses reported byte fraction")
+        h.flush()
+        assert_eq(h.active_progress, nil, "completed image transfer closes progress")
+        assert_eq(h.plugin.get_download_progress(handle), nil, "finished handles are no longer queryable")
+    end
+
+    do
+        local h, M = setup(root .. "/manual-dismiss", { defer_http = true, http_impl = router("ok") })
+        M.fetch_current(false)
+        local first_handle = h.active_progress
+        local request_count = #h.http_calls
+        h.dismiss_progress()
+        assert_eq(h.plugin.update_progress(first_handle, "stale", nil), false, "dismissed progress handle is stale")
+        h.tick_intervals()
+        assert_eq(h.active_progress, nil, "polling does not reopen dismissed manual progress")
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil and h.active_progress ~= first_handle, "intentional tap reopens dismissed progress")
+        assert_eq(#h.http_calls, request_count, "reopening does not duplicate active lookup")
+        h.flush()
     end
 
     do
@@ -309,9 +351,10 @@ return function(assert_eq, assert_true, assert_false)
             http_impl = router("offline"),
         })
         M.fetch_current(false)
-        assert_true(has_toast(h, "Looking up MusicBrainz"), "failed manual fetch has immediate status")
+        assert_true(has_progress(h, "Looking up MusicBrainz"), "failed manual fetch has immediate status")
         h.flush()
         assert_true(has_toast(h, "Cover fetch failed (network)"), "manual failure is reported")
+        assert_eq(h.active_progress, nil, "failure closes manual progress card")
     end
 
     do
@@ -320,12 +363,12 @@ return function(assert_eq, assert_true, assert_false)
         local now = original_time()
         os.time = function() return now end
         M.fetch_current(false)
-        local initial_count = #h.toasts
+        local initial_count = #h.progress_events
         now = now + 26
         h.tick_intervals()
         os.time = original_time
-        assert_true(#h.toasts > initial_count, "long manual phase refreshes its visible status")
-        assert_eq(h.toast_durations[#h.toast_durations], 30000, "refreshed status remains visible for 30 seconds")
+        assert_true(#h.progress_events > initial_count, "long manual phase refreshes its visible status")
+        assert_eq(h.active_progress ~= nil, true, "manual status card remains visible")
     end
 
     do
@@ -339,22 +382,42 @@ return function(assert_eq, assert_true, assert_false)
         h.current_path = second_dir .. "/02.flac"
         h.now_playing = { "Song", "The Artist", "Other", 180 }
         M.fetch_current(false)
-        assert_true(has_toast(h, "Cover fetch queued"), "manual request behind active work reports queued")
+        assert_true(has_toast(h, "Cover fetch queued"), "manual request behind active manual work reports queued")
         M.fetch_current(false)
         assert_true(has_toast(h, "Cover fetch already queued"), "duplicate queued request has specific feedback")
         local queued_count = 0
-        for _, message in ipairs(h.toasts) do
-            if message == "Cover fetch queued" then queued_count = queued_count + 1 end
+        for _, event in ipairs(h.progress_events) do
+            if event.message == "Cover fetch queued" then queued_count = queued_count + 1 end
         end
         now = now + 26
         h.tick_intervals()
         os.time = original_time
         local refreshed_count = 0
-        for _, message in ipairs(h.toasts) do
-            if message == "Cover fetch queued" then refreshed_count = refreshed_count + 1 end
+        for _, event in ipairs(h.progress_events) do
+            if event.message == "Cover fetch queued" then refreshed_count = refreshed_count + 1 end
         end
         assert_eq(refreshed_count, queued_count, "queued status does not overwrite active manual progress")
-        assert_eq(h.toasts[#h.toasts], "Looking up MusicBrainz…", "active manual status takes refresh priority")
+        assert_eq(h.progress_events[#h.progress_events].message, "Looking up MusicBrainz…", "active manual status takes refresh priority")
+    end
+
+    do
+        local h, M = setup(root .. "/queued-cover-already-present", { defer_http = true, http_impl = router("ok") })
+        M.fetch_current(false)
+        local second_dir = root .. "/queued-cover-already-present/Music/Other"
+        os.execute("mkdir -p '" .. second_dir .. "'")
+        h.current_path = second_dir .. "/02.flac"
+        h.now_playing = { "Song", "The Artist", "Other", 180 }
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil, "queued manual job has a progress card")
+        write_file(second_dir .. "/cover.jpg", "already here")
+        local original_time = os.time
+        local now = original_time() + 10
+        os.time = function() return now end
+        h.tick_intervals()
+        h.flush()
+        os.time = original_time
+        assert_eq(h.active_progress, nil, "skipped existing-cover queue item closes its progress")
+        assert_true(has_toast(h, "cover.jpg already present"), "skipped manual queue item reports existing cover")
     end
 
     do
@@ -363,7 +426,7 @@ return function(assert_eq, assert_true, assert_false)
         h.emit("track_started")
         assert_eq(#h.toasts, 0, "automatic fetch remains quiet")
         M.fetch_current(false)
-        assert_true(has_toast(h, "Looking up MusicBrainz"), "manual tap joining automatic job reports its actual stage")
+        assert_true(has_progress(h, "Looking up MusicBrainz"), "manual tap joining automatic job reports its actual stage")
         assert_eq(#h.http_calls, 1, "manual tap joining auto job does not duplicate lookup")
         h.flush()
         assert_true(has_toast(h, "Saved cover.jpg"), "joined manual request receives completion")
@@ -386,16 +449,22 @@ return function(assert_eq, assert_true, assert_false)
         h.current_path = second_dir .. "/02.flac"
         h.now_playing = { "Song", "The Artist", "Other", 180 }
         M.fetch_current(false)
-        assert_eq(h.toasts[#h.toasts], "Cover fetch queued", "manual job queued behind auto job is announced")
-        local count_before_refresh = #h.toasts
+        assert_true(has_progress(h, "Cover fetch queued"), "manual job queued behind auto job is announced")
+        local queued_handle = h.active_progress
+        h.dismiss_progress()
+        M.fetch_current(false)
+        assert_true(h.active_progress ~= nil and h.active_progress ~= queued_handle,
+            "intentional duplicate tap reopens dismissed queued progress")
+        assert_eq(#h.http_calls, 1, "reopening queued progress does not duplicate lookup")
+        local count_before_refresh = #h.progress_events
 
         now = now + 26
         h.tick_intervals()
         os.time = original_time
-        assert_true(#h.toasts > count_before_refresh, "queued manual status refreshes behind automatic work")
-        assert_eq(h.toasts[#h.toasts], "Cover fetch queued", "refresh shows queued manual status")
-        for _, message in ipairs(h.toasts) do
-            assert_eq(message, "Cover fetch queued", "automatic phase remains quiet while manual work waits")
+        assert_true(#h.progress_events > count_before_refresh, "queued manual status refreshes behind automatic work")
+        assert_eq(h.progress_events[#h.progress_events].message, "Cover fetch queued", "explicitly reopened queued status stays visible")
+        for _, event in ipairs(h.progress_events) do
+            assert_eq(event.message, "Cover fetch queued", "automatic phase remains quiet while manual work waits")
         end
     end
 
@@ -524,6 +593,7 @@ return function(assert_eq, assert_true, assert_false)
         write_file(beta, "b")
         local h = harness.new({
             sd_root = dir,
+            api_version = 16,
             http_impl = function() error("identity test must not HTTP") end,
         })
         h.current_path = beta

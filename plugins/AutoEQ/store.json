@@ -1,4 +1,5 @@
 {
+  "publish": true,
   "description": "Searches the AutoEQ recommended headphone catalog and saves compatible parametric EQ profiles to PEQ_Profiles.",
   "category": "Audio",
   "author": "Compás",

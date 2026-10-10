@@ -5,7 +5,7 @@ local root = os.tmpname(); os.remove(root)
 assert(os.execute("mkdir -p '" .. root .. "/.plugins'"))
 local dirs, screens, lists, events = {}, {}, {}, {}
 local home, tick, current, position = nil, nil, nil, 0
-local audiobook_mode, refuse_play = true, false
+local audiobook_mode, refuse_play, opened_folder = true, false, nil
 local function fixture(relative, contents)
     local path = root .. "/" .. relative
     assert(os.execute("mkdir -p '" .. path:match("^(.*)/[^/]+$") .. "'"))
@@ -27,9 +27,10 @@ end
 local plugin = {
     define = function() end, sd_root = function() return root end,
     has_capability = function(name) return (audiobook_mode and name == "playback.progress") or name == "network.http.async" or name == "network.http.download"
-        or name == "filesystem.mkdir" end,
+        or name == "filesystem.mkdir" or name == "ui.file_manager" end,
     list_dir = function(path) return dirs[path] or {} end,
     mkdir = function() return true end,
+    open_file_manager = function(folder) opened_folder = folder; return true end,
     register_list_item = function(_, _, cb) home = cb end,
     register_stream_media_tile = function(_, cb) home = cb end,
     show_settings_list = function(title, rows) screens[title] = rows end,
@@ -73,6 +74,9 @@ fixture("Audiobooks/Loose.mp3")
 local state = "P\tWriter/Saga\tBook 2/CD1/01.mp3\t120\t900\t0\t1000\nB\tWriter/Saga\tBook 2/CD1/01.mp3\t125\tbookmark\n"
 fixture(".plugins/.audiobooks_state_v3", state)
 load_plugin(audiobook_file); home()
+opened_folder = nil
+row(screens.Audiobooks, "Browse folders").on_select()
+assert(opened_folder == root .. "/Audiobooks", "Audiobooks Browse folders opens native File Manager at sd_root()/Audiobooks")
 row(screens.Audiobooks, "Authors").on_select()
 select_list("Writer")
 local list = lists[#lists]
@@ -138,8 +142,15 @@ fixture("Podcasts/.progress.tsv", table.concat(lines, "\n") .. "\n")
 audiobook_mode = false
 current, position, events, lists = active, 0, {}, {}
 load_plugin(podcast_file); home()
+opened_folder = nil
+select_list("Downloads")
+assert(opened_folder == root .. "/Podcasts", "Podcasts main Downloads opens native File Manager at sd_root()/Podcasts")
+home()
 select_list("Manage downloads")
 local manager = screens["Manage downloads"]
+opened_folder = nil
+row(manager, "Downloads folder (File Manager)").on_select()
+assert(opened_folder == root .. "/Podcasts", "Manage downloads row opens native File Manager at sd_root()/Podcasts")
 assert(row(manager, "Played (2)")); assert(row(manager, "Not played (1)"))
 local cleanup = row(manager, "Delete played downloads").on_select
 cleanup(); local f = assert(io.open(played)); f:close() -- first tap does not delete

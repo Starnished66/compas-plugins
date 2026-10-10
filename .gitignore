@@ -33,3 +33,10 @@ __pycache__/
 !/tests/jellyfin_emby/**
 
 !/tests/kids_mode_test.lua
+
+# Deferred API16 AutoEQ progress regressions.
+!tests/autoeq_test.lua
+!/tests/fixturesAutoEQ/
+!/tests/fixturesAutoEQ/**
+
+!/tests/native_file_manager_regression_test.lua

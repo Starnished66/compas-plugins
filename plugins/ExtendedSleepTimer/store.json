@@ -2,5 +2,5 @@
   "description": "A longer sleep timer that remembers its duration, supports an optional quiet bedtime fade-out, and stops playback when it ends.",
   "category": "Listening",
   "author": "Compás",
-  "publish": false
+  "publish": true
 }

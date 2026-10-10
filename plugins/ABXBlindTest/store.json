@@ -2,5 +2,5 @@
   "description": "Blind ABX listening test with randomized X for matched audio files and parametric EQ profiles.",
   "category": "Audio",
   "author": "Compás",
-  "publish": false
+  "publish": true
 }
