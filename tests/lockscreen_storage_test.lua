@@ -133,4 +133,19 @@ do
   equal(#legacy_off.lock_screens, 0, "legacy off must stay disabled on wake")
 end
 
+-- Compatibility with installs that wrote boolean-like strings before native
+-- storage rejected Lua booleans. Explicit saved state takes precedence over
+-- the older mode key, including an explicit false value.
+do
+  local old_true = boot({ enabled = "true" })
+  equal(row(settings(old_true), "Lock screen").value, true, "saved true should enable without a mode")
+  wake(old_true)
+  equal(old_true.lock_screens[1].mode, "album_art", "true without a saved background defaults to album art")
+
+  local old_false = boot({ enabled = "false", mode = "clock" })
+  equal(row(settings(old_false), "Lock screen").value, false, "saved false should override legacy clock mode")
+  wake(old_false)
+  equal(#old_false.lock_screens, 0, "saved false should suppress wake despite legacy mode")
+end
+
 print("Lock Screen string storage tests passed")

@@ -35,8 +35,8 @@ local get_background
 
 local function is_enabled()
   local saved = plugin.storage.get(KEY_ENABLED)
-  if saved == "1" then return true end
-  if saved == "0" then return false end
+  if saved == "1" or saved == "true" then return true end
+  if saved == "0" or saved == "false" then return false end
   return legacy_mode() ~= "off"
 end
 
