@@ -23,7 +23,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards, with measured download percentages for covers when the byte total is known; automatic fetching stays quiet. Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
+Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
 
 ## ListenBrainz and Net Radio
 
@@ -66,7 +66,7 @@ These packages are published for Compás v1.1 and require Plugin API 16.
 | Plugin | Where to open it | Behavior |
 | --- | --- | --- |
 | AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Catalog and profile download status in a dismissible progress card. |
-| Cover Art Fetcher | Settings > Library | Manual search and download progress, including measured percentages when the image size is known. |
+| Cover Art Fetcher | Settings > Library | Manual search and download stages, persistent download history, and confirmed revert to backups. |
 | Lyrics Fetcher | Settings > Library | Manual lookup, retry and save status in a dismissible progress card. |
 | Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
 | Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |

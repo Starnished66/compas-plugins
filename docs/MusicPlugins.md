@@ -1,13 +1,13 @@
 # Music plugins
 
-The music plugins listed here are published for Compás v1.1, except Cover Art Fetcher. Lyrics Fetcher, AutoEQ, Podcasts, Audiobooks, and MSEB require **Plugin API 16**; Album Shuffle, ListenBrainz Scrobbler, and Net Radio support API 15. Install them through Plugin Manager or copy the published plugin files to the SD card's `.plugins` folder and refresh plugins. Radio Browser remains deprecated and unpublished because its search feature is part of Net Radio.
+The music plugins listed here are published for Compás v1.1. Lyrics Fetcher, AutoEQ, Podcasts, Audiobooks, and MSEB require **Plugin API 16**; Album Shuffle, ListenBrainz Scrobbler, and Net Radio support API 15. Install them through Plugin Manager or copy the published plugin files to the SD card's `.plugins` folder and refresh plugins. Radio Browser remains deprecated and unpublished because its search feature is part of Net Radio.
 
-Cover Art Fetcher is retired from the store: it is held (`publish: false`) and is not part of the current store release. Version 1.1.4 in this repository is an unpublished API 16 source update, described below for reference; it is not offered through Plugin Manager.
+Cover Art Fetcher 1.1.4 is available through Plugin Manager. It saves album-specific artwork and records new downloads for confirmed, reversible rollback.
 
 | Plugin | Location | Behavior |
 | --- | --- | --- |
 | Lyrics Fetcher | Settings > Library | Fetch synced lyrics for the current local track from LRCLIB, saving a missing `.lrc` beside the track. Automatic fetching is off by default. |
-| Cover Art Fetcher (held, unpublished 1.1.4) | Settings > Library | Match the current album on MusicBrainz and download a small front-cover JPEG from the Cover Art Archive as `<album title>.jpg` beside the track. Automatic fetching is off by default. **Downloaded covers** records every saved cover so it can be reverted; **Repair shared folder artwork** renames a shared generic cover only after confirmation. |
+| Cover Art Fetcher | Settings > Library | Match the current album on MusicBrainz and download a small front-cover JPEG from the Cover Art Archive as `<album title>.jpg` beside the track. Automatic fetching is off by default. **Downloaded covers** records every saved cover so it can be reverted; **Repair shared folder artwork** renames a shared generic cover only after confirmation. |
 | Album Shuffle | Settings > Playback & Controls | Start while playback mode is **sequential**. Plays a random whole album in track order, then another at the natural end or when Next is pressed at the queue boundary. Explicit Stop or selecting an unrelated track ends the session. |
 | ListenBrainz Scrobbler | Settings > Playback & Controls | Opt-in scrobble with a ListenBrainz user token. The token is kept in plugin secrets. Qualified listens are stored before they are sent. |
 | Net Radio | Stream Media | Play saved stations from `Radio.txt` or search Radio Browser and save direct streams as favorites. |
@@ -18,7 +18,7 @@ Cover Art Fetcher is retired from the store: it is held (`publish: false`) and i
 
 ### API 16 behavior
 
-Lyrics Fetcher 1.1.2 and AutoEQ 1.1.0 are published API16 packages; Cover Art Fetcher 1.1.4 is an API16 package that is held and unpublished. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Podcast downloads show a percentage only when the native download API reports a known byte total. Cover Art Fetcher fetches its small image with a size-capped request that reports no byte progress, so its phases stay indeterminate. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
+Lyrics Fetcher 1.1.2 and AutoEQ 1.1.0 are published API16 packages; Cover Art Fetcher 1.1.4 is a published API16 package. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Podcast downloads show a percentage only when the native download API reports a known byte total. Cover Art Fetcher fetches its small image with a size-capped request that reports no byte progress, so its phases stay indeterminate. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
 
 Fetchers preserve existing sidecars and use verified HTTPS. No API key is needed. Album matching uses album artist where available, including compilation albums. Lyrics are looked up using title, artist, album and duration. Automatic lookups send those tags to the relevant service.
 
@@ -58,7 +58,7 @@ Search by station name. Each request asks for 20 stations, skips broken entries,
 
 Checked against the registered Lua bindings and event handlers in the released [Compás v1.0.1 source](https://github.com/Starnished66/compas-player/tree/e2a029f8e99a67300c6bce635d381d8a0bfd9ed2). Its plugin API version is 15.
 
-- The released Compás v1.0.1 packages used API15 functions. The v1.1 Lyrics Fetcher package and the held Cover Art Fetcher source use API16 progress-card support; Cover Art Fetcher 1.1.3 and later do not use `download_file_async` or download byte progress; 1.1.4 also uses `plugin.storage` (`storage.namespaced`) and `plugin.md5` (`crypto.md5`) for its download records.
+- The released Compás v1.0.1 packages used API15 functions. The v1.1 Lyrics Fetcher package and Cover Art Fetcher use API16 progress-card support; Cover Art Fetcher 1.1.3 and later do not use `download_file_async` or download byte progress; 1.1.4 also uses `plugin.storage` (`storage.namespaced`) and `plugin.md5` (`crypto.md5`) for its download records.
 - Album Shuffle uses paged album/song lookup, album track lists, list playback, current path/mode, playback state and the `track_started`, `stopped`, and `queue_exhausted` events. Natural completion uses two idle polls because `queue_exhausted` covers boundary navigation.
 - ListenBrainz Scrobbler uses `plugin.secrets`, `plugin.storage`, async HTTPS with request headers, TLS, timeouts and the response-header table, JSON, playback events, position, and a one-second-or-slower interval. All of those are in API 15.
 - Net Radio uses the stream-media tile, async HTTPS, JSON, `plugin.play_list`, and normal file reads and appends. AAC and AAC+ use the existing `#.aac` / `#.aacp` hints and `audio/aac` content type. No API 16 function and no native change is required.
