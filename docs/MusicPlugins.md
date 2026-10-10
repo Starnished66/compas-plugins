@@ -5,7 +5,7 @@ The music plugins listed here are published for Compás v1.1. Lyrics Fetcher, Co
 | Plugin | Location | Behavior |
 | --- | --- | --- |
 | Lyrics Fetcher | Settings > Library | Fetch synced lyrics for the current local track from LRCLIB, saving a missing `.lrc` beside the track. Automatic fetching is off by default. |
-| Cover Art Fetcher | Settings > Library | Match the current album on MusicBrainz and download a small front-cover JPEG from the Cover Art Archive as `cover.jpg`. Automatic fetching is off by default. |
+| Cover Art Fetcher | Settings > Library | Match the current album on MusicBrainz and download a small front-cover JPEG from the Cover Art Archive as `<album title>.jpg` beside the track. Automatic fetching is off by default. |
 | Album Shuffle | Settings > Playback & Controls | Start while playback mode is **sequential**. Plays a random whole album in track order, then another at the natural end or when Next is pressed at the queue boundary. Explicit Stop or selecting an unrelated track ends the session. |
 | ListenBrainz Scrobbler | Settings > Playback & Controls | Opt-in scrobble with a ListenBrainz user token. The token is kept in plugin secrets. Qualified listens are stored before they are sent. |
 | Net Radio | Stream Media | Play saved stations from `Radio.txt` or search Radio Browser and save direct streams as favorites. |
@@ -16,9 +16,13 @@ The music plugins listed here are published for Compás v1.1. Lyrics Fetcher, Co
 
 ### API 16 behavior
 
-Lyrics Fetcher 1.1.0, Cover Art Fetcher 1.1.0, and AutoEQ 1.1.0 are published API16 packages. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Cover and podcast downloads show a percentage only when the native download API reports a known byte total. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
+Lyrics Fetcher 1.1.0, Cover Art Fetcher 1.1.1, and AutoEQ 1.1.0 are published API16 packages. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Cover and podcast downloads show a percentage only when the native download API reports a known byte total. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
 
 Fetchers preserve existing sidecars and use verified HTTPS. No API key is needed. Album matching uses album artist where available, including compilation albums. Lyrics are looked up using title, artist, album and duration. Automatic lookups send those tags to the relevant service.
+
+Cover Art Fetcher saves album-specific sidecars because a generic `cover.jpg` also applies to other albums in a shared folder or to albums below that folder. Album names use the player's filename substitutions. It refuses ambiguous filenames, generic artwork/cache names, and tracks whose indexed tags do not match playback. Two bounded, paged library checks keep only one page in memory; libraries over 100,000 tracks are refused. Automatic mode checks each new album/folder once, rather than rescanning on every track.
+
+Existing images, including `cover.jpg` written by earlier versions, are preserved. Fetch the affected albums again to add their individual sidecars; these take precedence over generic folder artwork when no track-specific sidecar is present. The old generic file can still affect albums that have not been fetched. Inspect it before removing it with File Manager, then update the music database. Embedded artwork remains unavailable to Lua.
 
 Newly saved lyrics are loaded when the track is played again; fetching does not restart playback.
 

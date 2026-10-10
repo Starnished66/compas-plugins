@@ -78,6 +78,7 @@ local CAA_BACK_ONLY = [[{
 }]]
 
 local ARCHIVE_500 = "https://archive.org/download/mbid-76df3287-6cda-33eb-8e9a-044b5e15ffdd/mbid-76df3287-6cda-33eb-8e9a-044b5e15ffdd-829521842-500.jpg"
+local ARCHIVE_SECOND = "https://archive.org/download/mbid-cccccccc-cccc-cccc-cccc-cccccccccccc/mbid-cccccccc-cccc-cccc-cccc-cccccccccccc-123456-500.jpg"
 local CAA_500 = "http://coverartarchive.org/release/76df3287-6cda-33eb-8e9a-044b5e15ffdd/829521842-500.jpg"
 local CAA_500_HTTPS = "https://coverartarchive.org/release/76df3287-6cda-33eb-8e9a-044b5e15ffdd/829521842-500.jpg"
 
@@ -109,7 +110,15 @@ local function router(kind)
             if kind == "nomatch" then
                 return 200, '{"count":0,"releases":[]}', nil, {}
             end
+            if url:find("Second%%20Album") then
+                return 200, (MB_OK:gsub("76df3287%-6cda%-33eb%-8e9a%-044b5e15ffdd", "cccccccc-cccc-cccc-cccc-cccccccccccc")
+                    :gsub('"Dummy"', '"Second Album"')), nil, {}
+            end
             return 200, MB_OK, nil, {}
+        end
+        if url:find("coverartarchive.org/release/cccccccc-cccc-cccc-cccc-cccccccccccc", 1, true) and url:sub(-1) == "/" then
+            return 200, (CAA_JSON:gsub("76df3287%-6cda%-33eb%-8e9a%-044b5e15ffdd", "cccccccc-cccc-cccc-cccc-cccccccccccc")
+                :gsub("829521842", "123456")), nil, {}
         end
         if url:find("coverartarchive.org/release/76df3287", 1, true) and url:sub(-1) == "/" then
             if kind == "direct200" then
@@ -153,6 +162,9 @@ local function router(kind)
             if kind == "invalid" then
                 return 307, "", nil, { Location = "ftp://example.invalid/cover.jpg" }
             end
+            if url:find("coverartarchive.org", 1, true) and url:find("123456-500.jpg", 1, true) then
+                return 307, "", nil, { Location = ARCHIVE_SECOND }
+            end
             if url:find("coverartarchive.org", 1, true) and url:find("829521842-500.jpg", 1, true) then
                 return 307, "", nil, {
                     Location = "http://archive.org/download/mbid-76df3287-6cda-33eb-8e9a-044b5e15ffdd/mbid-76df3287-6cda-33eb-8e9a-044b5e15ffdd-829521842-500.jpg",
@@ -191,7 +203,8 @@ local function setup(dir, extra)
         album_artist = extra.album_artist or "The Artist",
     }
     local M = h.load("plugins/CoverArtFetcher/CoverArtFetcher.lua")
-    return h, M, dir .. "/Music/Dummy/cover.jpg", audio
+    local album_name = (extra.album or "Dummy"):gsub('"', "'"):gsub('[%*/:<>?\\|]', "_")
+    return h, M, dir .. "/Music/Dummy/" .. album_name .. ".jpg", audio
 end
 
 return function(assert_eq, assert_true, assert_false)
@@ -202,7 +215,7 @@ return function(assert_eq, assert_true, assert_false)
         local h, M, dest = setup(root .. "/ok")
         M.fetch_current(false)
         local body = read_file(dest)
-        assert_true(body ~= nil, "cover.jpg written")
+        assert_true(body ~= nil, "album-title.jpg written")
         assert_eq(body:byte(1), 0xFF, "jpeg magic")
         assert_eq(body:byte(2), 0xD8, "jpeg magic 2")
         assert_eq(h.library_refresh_count, 1, "refresh_library after success")
@@ -215,7 +228,7 @@ return function(assert_eq, assert_true, assert_false)
         end
         assert_true(saw_ua, "MusicBrainz User-Agent")
         assert_eq(h.downloads[1].verify_tls, true, "tls on image")
-        assert_true(h.downloads[1].dest:find("cover.jpg.compas-fetch", 1, true) ~= nil, "staging dest")
+        assert_true(h.downloads[1].dest:find("Dummy.jpg.compas-fetch", 1, true) ~= nil, "staging dest")
         local head_n, get_image = 0, 0
         for _, req in ipairs(h.http_calls) do
             if req.method == "HEAD" then head_n = head_n + 1 end
@@ -231,8 +244,149 @@ return function(assert_eq, assert_true, assert_false)
         local h, M, dest = setup(root .. "/exists")
         write_file(dest, "already")
         M.fetch_current(false)
-        assert_eq(read_file(dest), "already", "did not replace cover.jpg")
+        assert_eq(read_file(dest), "already", "did not replace album-title.jpg")
         assert_eq(#h.http_calls, 0, "no traffic when cover exists")
+    end
+
+    do
+        local h, M, dest = setup(root .. "/legacy-generic")
+        local generic = root .. "/legacy-generic/Music/Dummy/cover.jpg"
+        write_file(generic, "user generic cover")
+        M.fetch_current(false)
+        assert_eq(read_file(generic), "user generic cover", "legacy generic cover is preserved")
+        assert_true(exists(dest), "album-specific sidecar is still fetched")
+    end
+
+    do
+        local count = 0
+        local h, M = setup(root .. "/shared-folder", {
+            download_impl = function(_, dest)
+                count = count + 1
+                write_file(dest, JPEG .. tostring(count))
+                return dest, nil
+            end,
+        })
+        local shared = root .. "/shared-folder/Music/Dummy"
+        M.fetch_current(false)
+        local first = read_file(shared .. "/Dummy.jpg")
+        h.current_path = shared .. "/02.flac"
+        write_file(h.current_path, "audio")
+        h.now_playing = { "Song two", "The Artist", "Second Album", 180 }
+        h.songs[2] = { id = 2, path = h.current_path, title = "Song two", artist = "The Artist", album = "Second Album", album_artist = "The Artist" }
+        local original_time = os.time
+        local now = original_time() + 2
+        os.time = function() return now end
+        M.fetch_current(false)
+        h.tick_intervals()
+        os.time = original_time
+        assert_true(exists(shared .. "/Second Album.jpg"), "second album in shared folder gets its own sidecar")
+        assert_true(first ~= read_file(shared .. "/Second Album.jpg"), "shared-folder album covers have distinct bytes")
+        assert_eq(#h.downloads, 2, "both shared-folder albums download artwork")
+        assert_true(h.downloads[1].url ~= h.downloads[2].url, "shared-folder albums resolve distinct CAA thumbnails")
+    end
+
+    do
+        local h, M = setup(root .. "/sanitized-collision", { album = "A/B", artist = "Alpha" })
+        h.songs[2] = { id = 2, path = root .. "/sanitized-collision/Music/Dummy/02.flac", title = "Other", artist = "Beta", album = "A:B", album_artist = "Beta" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "different artists with colliding sanitized title are refused")
+        assert_false(exists(root .. "/sanitized-collision/Music/Dummy/A_B.jpg"), "collision writes no sidecar")
+    end
+
+    do
+        local h, M = setup(root .. "/same-artist-sanitized-collision", { album = "A/B", artist = "Alpha" })
+        h.songs[2] = { id = 2, path = root .. "/same-artist-sanitized-collision/Music/Dummy/02.flac", title = "Other", artist = "Alpha", album = "A:B", album_artist = "Alpha" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "same artist titles with same sanitized filename are refused")
+    end
+
+    do
+        local h, M = setup(root .. "/parent-child-collision", { album = "Shared Title", artist = "Alpha" })
+        local child = root .. "/parent-child-collision/Music/Dummy/Disc 1/02.flac"
+        os.execute("mkdir -p '" .. root .. "/parent-child-collision/Music/Dummy/Disc 1'")
+        h.songs[2] = { id = 2, path = child, title = "Other", artist = "Beta", album = "Shared Title", album_artist = "Beta" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "same sidecar title across parent and child folders is refused")
+    end
+
+    do
+        local h, M = setup(root .. "/track-basename-collision", { album = "Title", artist = "Alpha" })
+        h.songs[2] = { id = 2, path = root .. "/track-basename-collision/Music/Dummy/Title.mp3", title = "Title", artist = "Beta", album = "Other", album_artist = "Beta" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "album filename colliding with another track basename is refused")
+    end
+
+    do
+        local h, M = setup(root .. "/reserved-name", { album = "cover", artist = "Alpha" })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "generic native sidecar basename is refused")
+        assert_false(exists(root .. "/reserved-name/Music/Dummy/cover.jpg"), "generic cover.jpg is not written")
+    end
+
+    do
+        local h, M = setup(root .. "/native-cache-name", { album = "Album.72x72", artist = "Alpha" })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "native resized-cache basename is refused")
+    end
+
+    do
+        local h, M = setup(root .. "/sibling-disc-collision", { album = "Shared", artist = "Alpha" })
+        local base = root .. "/sibling-disc-collision/Music/Dummy"
+        h.current_path = base .. "/CD1/01.flac"
+        h.songs[1].path = h.current_path
+        h.songs[2] = { id = 2, path = base .. "/Disc 2/02.flac", artist = "Beta", album = "Shared", album_artist = "Beta" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "sibling disc artwork fallback cannot share different albums")
+    end
+
+    do
+        local h, M = setup(root .. "/case-collision", { album = "A/B", artist = "Alpha" })
+        h.songs[2] = { id = 2, path = root .. "/case-collision/Music/Dummy/02.flac", artist = "Alpha", album = "a:b", album_artist = "Alpha" }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "case insensitive sidecar filename collisions are refused")
+    end
+
+    do
+        local h, M = setup(root .. "/uppercase-cache-name", { album = "Album.72X72" })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "case insensitive sized artwork alias is refused")
+    end
+
+    do
+        local h, M = setup(root .. "/incomplete-library")
+        h.plugin.library_get_songs = function() return { h.songs[1] }, 2 end
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "incomplete library scan writes no artwork")
+    end
+
+    do
+        local h, M = setup(root .. "/changing-path")
+        local path, calls = h.current_path, 0
+        h.plugin.get_current_track_path = function()
+            calls = calls + 1
+            return calls == 1 and path or path .. ".different"
+        end
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "changing path snapshot writes no artwork")
+    end
+
+    do
+        local h, M = setup(root .. "/metadata-mismatch")
+        h.now_playing = { "Song", "Other Artist", "Other Album", 180 }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "current path with inconsistent playback tags is refused")
+        assert_false(exists(root .. "/metadata-mismatch/Music/Dummy/Dummy.jpg"), "metadata mismatch writes nothing")
+    end
+
+    do
+        local h, M = setup(root .. "/deferred-track-change", { defer_http = true })
+        M.fetch_current(false)
+        h.current_path = root .. "/deferred-track-change/Music/Other/02.flac"
+        os.execute("mkdir -p '" .. root .. "/deferred-track-change/Music/Other'")
+        h.now_playing = { "Other Song", "Other Artist", "Other Album", 180 }
+        h.flush()
+        assert_true(exists(root .. "/deferred-track-change/Music/Dummy/Dummy.jpg"), "pending job saves to captured album path")
+        assert_false(exists(root .. "/deferred-track-change/Music/Other/Other Album.jpg"), "track change does not retarget pending job")
     end
 
     do
@@ -306,8 +460,8 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(has_progress(h, "Checking Cover Art Archive"), "manual status reports archive phase")
         assert_true(has_progress(h, "Resolving cover image"), "manual status reports image resolution phase")
         assert_true(has_progress(h, "Downloading and saving cover"), "manual status reports download/save phase")
-        assert_true(has_toast(h, "Saved cover.jpg"), "manual completion toast remains visible")
-        assert_true(exists(root .. "/manual-progress/Music/Dummy/cover.jpg"), "manual fetch saves cover")
+        assert_true(has_toast(h, "Saved Dummy.jpg"), "manual completion toast remains visible")
+        assert_true(exists(root .. "/manual-progress/Music/Dummy/Dummy.jpg"), "manual fetch saves album sidecar")
         assert_eq(h.active_progress, nil, "success closes manual progress card")
     end
 
@@ -381,6 +535,7 @@ return function(assert_eq, assert_true, assert_false)
         os.execute("mkdir -p '" .. second_dir .. "'")
         h.current_path = second_dir .. "/02.flac"
         h.now_playing = { "Song", "The Artist", "Other", 180 }
+        h.songs[2] = { id = 2, path = h.current_path, title = "Song", artist = "The Artist", album = "Other", album_artist = "The Artist" }
         M.fetch_current(false)
         assert_true(has_toast(h, "Cover fetch queued"), "manual request behind active manual work reports queued")
         M.fetch_current(false)
@@ -407,9 +562,10 @@ return function(assert_eq, assert_true, assert_false)
         os.execute("mkdir -p '" .. second_dir .. "'")
         h.current_path = second_dir .. "/02.flac"
         h.now_playing = { "Song", "The Artist", "Other", 180 }
+        h.songs[2] = { id = 2, path = h.current_path, title = "Song", artist = "The Artist", album = "Other", album_artist = "The Artist" }
         M.fetch_current(false)
         assert_true(h.active_progress ~= nil, "queued manual job has a progress card")
-        write_file(second_dir .. "/cover.jpg", "already here")
+        write_file(second_dir .. "/Other.jpg", "already here")
         local original_time = os.time
         local now = original_time() + 10
         os.time = function() return now end
@@ -417,7 +573,7 @@ return function(assert_eq, assert_true, assert_false)
         h.flush()
         os.time = original_time
         assert_eq(h.active_progress, nil, "skipped existing-cover queue item closes its progress")
-        assert_true(has_toast(h, "cover.jpg already present"), "skipped manual queue item reports existing cover")
+        assert_true(has_toast(h, "Other.jpg already present"), "skipped manual queue item reports existing cover")
     end
 
     do
@@ -429,7 +585,7 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(has_progress(h, "Looking up MusicBrainz"), "manual tap joining automatic job reports its actual stage")
         assert_eq(#h.http_calls, 1, "manual tap joining auto job does not duplicate lookup")
         h.flush()
-        assert_true(has_toast(h, "Saved cover.jpg"), "joined manual request receives completion")
+        assert_true(has_toast(h, "Saved Dummy.jpg"), "joined manual request receives completion")
     end
 
     do
@@ -448,6 +604,7 @@ return function(assert_eq, assert_true, assert_false)
         os.execute("mkdir -p '" .. second_dir .. "'")
         h.current_path = second_dir .. "/02.flac"
         h.now_playing = { "Song", "The Artist", "Other", 180 }
+        h.songs[2] = { id = 2, path = h.current_path, title = "Song", artist = "The Artist", album = "Other", album_artist = "The Artist" }
         M.fetch_current(false)
         assert_true(has_progress(h, "Cover fetch queued"), "manual job queued behind auto job is announced")
         local queued_handle = h.active_progress
@@ -473,7 +630,7 @@ return function(assert_eq, assert_true, assert_false)
         M.fetch_current(false)
         write_file(dest, "user-cover")
         h.flush()
-        assert_eq(read_file(dest), "user-cover", "in-flight callback did not replace cover.jpg")
+        assert_eq(read_file(dest), "user-cover", "in-flight callback did not replace album-title.jpg")
     end
 
     do
@@ -620,6 +777,6 @@ return function(assert_eq, assert_true, assert_false)
         assert_eq(job.dir, dir .. "/Music/Beta/Hits", "folder of the playing file")
         h.current_path = dir .. "/Music/Unknown/Hits/01.flac"
         job = M.current_album()
-        assert_eq(job.album_artist, "", "unknown path leaves album_artist empty")
+        assert_eq(job, nil, "unknown path is refused when it has no matching indexed row")
     end
 end
