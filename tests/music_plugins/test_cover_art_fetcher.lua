@@ -221,7 +221,10 @@ local function setup(dir, extra)
         defer_http = extra.defer_http,
         http_impl = extra.http_impl or router("ok", extra.image_body),
         download_impl = function() error("cover fetcher must not use download_file_async") end,
+        storage_data = extra.storage_data,
+        storage_mode = extra.storage_mode,
     })
+    for name, value in pairs(extra.caps or {}) do h.capabilities[name] = value end
     h.current_path = audio
     h.now_playing = { "Song", extra.artist or "The Artist", extra.album or "Dummy", 180 }
     h.songs[1] = {
@@ -763,7 +766,7 @@ return function(assert_eq, assert_true, assert_false)
     local function run_resolve(dir, kind, start_url)
         local h, M, dest = setup(root .. "/" .. dir, { http_impl = router(kind) })
         M.pending_dest[dest] = 1
-        M.fetch_image({ dest = dest, is_auto = false, key = "k" }, start_url, 1)
+        M.fetch_image({ dest = dest, album = "Dummy", artist = "The Artist", album_artist = "The Artist", is_auto = false, key = "k" }, start_url, 1)
         return h, M, dest
     end
 
@@ -840,7 +843,7 @@ return function(assert_eq, assert_true, assert_false)
         local dir = root .. "/staging-write-fail/Music/Dummy"
         M.pending_dest[dest] = 1
         os.execute("chmod 555 '" .. dir .. "'")
-        M.fetch_image({ dest = dest, is_auto = false, manual_requested = true, key = "k" }, ARCHIVE_500, 1)
+        M.fetch_image({ dest = dest, album = "Dummy", artist = "The Artist", album_artist = "The Artist", is_auto = false, manual_requested = true, key = "k" }, ARCHIVE_500, 1)
         os.execute("chmod 755 '" .. dir .. "'")
         assert_false(exists(dest), "unwritable folder saves nothing")
         assert_false(exists(dest .. ".compas-fetch"), "unwritable folder leaves no staging file")
@@ -1504,5 +1507,667 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(exists(dest), "pending fetch still saves its album sidecar")
         assert_eq(read_file(shared .. "/cover.jpg.compas-backup"), "legacy", "repair renamed the shared cover")
         assert_eq(#image_gets(h), 1, "repair adds no network work")
+    end
+
+    -- ---- 1.1.4: download receipts and revert ----
+
+    local function receipt_value(fields)
+        local lines = { "CAF-RECEIPT 1" }
+        for _, pair in ipairs(fields) do lines[#lines + 1] = pair[1] .. "\t" .. tostring(pair[2]) end
+        return table.concat(lines, "\n")
+    end
+
+    local function make_receipt(id, state, dest, body, extra)
+        local fields = {
+            { "id", id }, { "state", state }, { "dest", dest }, { "size", #body },
+            { "md5", harness.md5_hex(body) }, { "album", dest:match("([^/]+)%.jpg$") or "Dummy" }, { "artist", "The Artist" },
+            { "created", 1700000000 },
+        }
+        for _, pair in ipairs(extra or {}) do fields[#fields + 1] = pair end
+        return receipt_value(fields)
+    end
+
+    local function stored_state(data, id)
+        local value = data["rcpt." .. id]
+        return value and value:match("\nstate\t(%l+)") or nil
+    end
+
+    local function fail_state(state, mode)
+        return function(op, _, value)
+            if op == "set" and value and value:find("\nstate\t" .. state .. "\n", 1, true) then return mode or "fail" end
+            return "ok"
+        end
+    end
+
+    local function tick_n(h, n)
+        for _ = 1, n or 1 do h.tick_intervals() end
+    end
+
+    local function receipt_row(list)
+        for i, item in ipairs(list.items) do
+            if type(item) == "string" and item:find("Revert", 1, true) then return i end
+        end
+    end
+
+    do
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-success", { storage_data = data })
+        M.fetch_current(false)
+        assert_eq(read_file(dest), JPEG, "tracked cover is saved")
+        local r = M.receipts()[1]
+        assert_true(r ~= nil, "a receipt is recorded")
+        assert_eq(r.state, "saved", "receipt is saved")
+        assert_eq(r.dest, dest, "receipt names the exact path")
+        assert_eq(r.size, #JPEG, "receipt records the size")
+        assert_eq(r.md5, harness.md5_hex(JPEG), "receipt records the MD5 of the saved bytes")
+        assert_eq(r.album, "Dummy", "receipt records the album")
+        assert_eq(r.artist, "The Artist", "receipt records the artist")
+        assert_eq(stored_state(data, 1), "saved", "saved state is durable")
+        local states = {}
+        for _, w in ipairs(h.storage_writes) do
+            if w.op == "set" and w.key == "rcpt.1" then states[#states + 1] = w.value:match("\nstate\t(%l+)") end
+        end
+        assert_eq(table.concat(states, ","), "pending,saved", "pending is written before the cover appears")
+        assert_eq(h.md5_calls, 1, "one fingerprint per saved cover")
+
+        -- Reload: a new plugin instance over the same storage and files.
+        local h2, M2 = setup(root .. "/receipt-success", { storage_data = data })
+        assert_eq(M2.receipts()[1].state, "saved", "receipt survives a reload")
+        M2.open_history(1)
+        assert_true(h2.lists[#h2.lists].items[1]:find("Dummy", 1, true) ~= nil, "history lists the reloaded receipt")
+    end
+
+    do
+        -- Pending record not written: the cover is never created.
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-pending-fail", { storage_data = data,
+            storage_mode = fail_state("pending") })
+        M.fetch_current(false)
+        assert_false(exists(dest), "no cover without a durable receipt")
+        assert_true(has_toast(h, "Could not record the download"), "receipt failure is reported")
+        assert_true(exists(dest .. ".compas-fetch"), "staged copy is kept as evidence until recovery")
+        h.storage_mode = nil
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "void", "recovery records the cover as never saved")
+        assert_false(exists(dest .. ".compas-fetch"), "staged copy is removed once void is durable")
+        assert_false(exists(dest), "recovery does not create the cover")
+    end
+
+    do
+        -- Pending written but unconfirmed, then a reload: still never adopted.
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-pending-unconfirmed", { storage_data = data,
+            storage_mode = fail_state("pending", "unconfirmed") })
+        M.fetch_current(false)
+        assert_false(exists(dest), "unconfirmed receipt creates no cover")
+        assert_eq(stored_state(data, 1), "pending", "the unconfirmed record was kept by storage")
+        local h2, M2 = setup(root .. "/receipt-pending-unconfirmed", { storage_data = data })
+        assert_true(M2.recovery[1] ~= nil, "reload schedules recovery of the pending receipt")
+        M2.fetch_current(false)
+        assert_true(has_toast(h2, "being checked"), "an unresolved destination is not fetched")
+        tick_n(h2)
+        assert_eq(stored_state(data, 1), "void", "staged evidence makes it void")
+        assert_false(exists(dest), "pending receipt never adopts a cover")
+    end
+
+    do
+        -- Crash after the rename but before "saved" was confirmed.
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-saved-fail", { storage_data = data,
+            storage_mode = fail_state("saved") })
+        M.fetch_current(false)
+        assert_eq(read_file(dest), JPEG, "cover with a durable pending receipt is kept")
+        assert_eq(stored_state(data, 1), "pending", "saved state was not confirmed")
+        local h2, M2 = setup(root .. "/receipt-saved-fail", { storage_data = data })
+        tick_n(h2)
+        assert_eq(stored_state(data, 1), "saved", "recovery confirms the cover from size and MD5")
+        assert_eq(M2.receipts()[1].state, "saved", "recovered receipt is revertible")
+    end
+
+    do
+        -- Crash between pending and rename: staged copy present, no cover.
+        local base = root .. "/receipt-crash-staged"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        os.execute("mkdir -p '" .. base .. "/Music/Dummy'")
+        write_file(dest .. ".compas-fetch", JPEG)
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "void", "staged pending receipt becomes void")
+        assert_false(exists(dest .. ".compas-fetch"), "staged copy is cleaned up")
+        assert_false(exists(dest), "no cover is created by recovery")
+    end
+
+    do
+        -- Pending receipt, no staged copy, and a user's own different file at dest.
+        local base = root .. "/receipt-crash-user-art"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        os.execute("mkdir -p '" .. base .. "/Music/Dummy'")
+        write_file(dest, JPEG .. "user")
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "void", "different bytes are not adopted")
+        assert_eq(read_file(dest), JPEG .. "user", "the user's file is untouched")
+    end
+
+    do
+        -- Recovery handles one record per tick.
+        local base = root .. "/receipt-recovery-one-per-tick"
+        os.execute("mkdir -p '" .. base .. "/Music/A' '" .. base .. "/Music/B'")
+        write_file(base .. "/Music/A/A.jpg.compas-fetch", JPEG)
+        write_file(base .. "/Music/B/B.jpg.compas-fetch", JPEG)
+        local data = {
+            ["rcpt.1"] = make_receipt(1, "pending", base .. "/Music/A/A.jpg", JPEG),
+            ["rcpt.2"] = make_receipt(2, "pending", base .. "/Music/B/B.jpg", JPEG),
+        }
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        local settled = (stored_state(data, 1) == "void" and 1 or 0) + (stored_state(data, 2) == "void" and 1 or 0)
+        assert_eq(settled, 1, "one receipt is recovered per tick")
+        tick_n(h)
+        assert_eq(stored_state(data, 1) .. stored_state(data, 2), "voidvoid", "the next tick recovers the other")
+    end
+
+    do
+        -- Malformed, oversized and outside-SD receipts are ignored and never overwritten.
+        local base = root .. "/receipt-invalid"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local data = {
+            ["rcpt.5"] = "garbage",
+            ["rcpt.6"] = make_receipt(6, "saved", dest, JPEG) .. "\nalbum\t" .. string.rep("x", 5000),
+            ["rcpt.7"] = make_receipt(7, "saved", "/etc/Dummy.jpg", JPEG),
+            ["rcpt.8"] = make_receipt(8, "saved", base .. "/Music/Dummy/Dummy.png", JPEG),
+            ["rcpt.9"] = make_receipt(9, "saved", base .. "/../outside/Dummy.jpg", JPEG),
+            ["rcpt.10"] = make_receipt(11, "saved", dest, JPEG),
+            ["rcpt.12"] = make_receipt(12, "weird", dest, JPEG),
+            ["rcpt.13"] = make_receipt(13, "reverted", dest, JPEG),
+        }
+        local before = {}
+        for k, v in pairs(data) do before[k] = v end
+        local h, M = setup(base, { storage_data = data })
+        local count = 0
+        for _ in pairs(M.receipts()) do count = count + 1 end
+        assert_eq(count, 0, "no invalid receipt is accepted")
+        M.fetch_current(false)
+        assert_true(data["rcpt.14"] ~= nil, "a new receipt takes an id after every existing key")
+        for k, v in pairs(before) do assert_eq(data[k], v, "invalid record " .. k .. " is left as it was") end
+    end
+
+    do
+        local base = root .. "/receipt-strict"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local valid = make_receipt(1, "pending", dest, JPEG)
+        local invalid = {
+            ["rcpt.01"] = valid,
+            ["rcpt.0"] = make_receipt(0, "pending", dest, JPEG),
+            ["rcpt.2"] = make_receipt(2, "pending", dest, JPEG) .. "\nartist\tOther",
+            ["rcpt.3"] = make_receipt(3, "pending", dest, JPEG) .. "\nunknown\tx",
+            ["rcpt.4"] = make_receipt(4, "pending", dest, JPEG):gsub("album\tDummy", "album\tOther"),
+            ["rcpt.5"] = make_receipt(5, "pending", dest, JPEG):gsub("\nartist\tThe Artist", ""),
+        }
+        os.execute("mkdir -p '" .. base .. "/Music/Dummy'")
+        write_file(dest .. ".compas-fetch", JPEG)
+        local data = { ["rcpt.1"] = valid }
+        for k, v in pairs(invalid) do data[k] = v end
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "void", "canonical receipt recovers independently of aliases")
+        for k, v in pairs(invalid) do
+            assert_eq(data[k], v, "invalid receipt remains untouched: " .. k)
+        end
+        assert_eq(M.receipts()[4], nil, "album/path mismatch is rejected")
+    end
+
+    do
+        local data = { ["rcpt.999999999"] = "invalid" }
+        local h, M, dest = setup(root .. "/receipt-id-overflow", { storage_data = data })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "exhausted receipt ids refuse before network work")
+        assert_false(exists(dest), "id overflow cannot produce an untracked cover")
+        assert_eq(data["rcpt.999999999"], "invalid", "exhausting key is preserved")
+    end
+
+    do
+        local base = root .. "/receipt-changed-staging"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        write_file(dest .. ".compas-fetch", "foreign staging")
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "void", "changed staging closes pending receipt")
+        assert_eq(read_file(dest .. ".compas-fetch"), "foreign staging", "changed staging is preserved")
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "foreign staging blocks a new download before network work")
+        assert_eq(read_file(dest .. ".compas-fetch"), "foreign staging", "new fetch cannot overwrite foreign staging")
+    end
+
+    do
+        local base = root .. "/receipt-untracked-staging"
+        local h, M, dest = setup(base)
+        write_file(dest .. ".compas-fetch", "untracked")
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "untracked staging blocks fetch")
+        assert_eq(read_file(dest .. ".compas-fetch"), "untracked", "untracked staging survives")
+    end
+
+    do
+        local base = root .. "/receipt-current-album"
+        local data = {}
+        local h, M, dest, track = setup(base, { storage_data = data })
+        M.fetch_current(false)
+        h.current_path = base .. "/Music/Dummy/02.flac"
+        h.now_playing = { "Other song", "The Artist", "Other", 180 }
+        h.songs[2] = { id = 2, path = h.current_path, title = "Other song", artist = "The Artist", album = "Other", album_artist = "The Artist" }
+        M.open_current_album_receipts()
+        assert_eq(#h.lists, 0, "another album in the same folder does not expose Dummy's revert")
+        assert_true(has_toast(h, "No downloaded cover"), "missing current-album record is explained")
+        h.current_path = track
+        h.now_playing = { "Song", "The Artist", "Dummy", 180 }
+        M.open_current_album_receipts()
+        assert_eq(last_list(h).items[1].label, dest, "current album selects only its exact sidecar")
+    end
+
+    do
+        local base = root .. "/receipt-long-path"
+        local dest = base .. "/Music/" .. string.rep("a/", 280) .. "Dummy.jpg"
+        local data = { ["rcpt.1"] = make_receipt(1, "saved", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        M.open_receipt(1)
+        local shown = ""
+        for _, item in ipairs(last_list(h).items) do
+            if type(item) == "table" and item.wrap then
+                assert_true(#item.label <= 480, "wrapped receipt row fits native label limit")
+                local chunk = item.label:gsub("^%(continued%): ", "")
+                if shown ~= dest and dest:sub(#shown + 1, #shown + #chunk) == chunk then
+                    shown = shown .. chunk
+                end
+            end
+        end
+        assert_eq(shown, dest, "full long destination is visible before confirmation")
+        assert_true(receipt_row(last_list(h)) ~= nil, "long path retains correct confirm row")
+    end
+
+    do
+        local data = {}
+        local failing = false
+        local h, M, dest = setup(root .. "/receipt-revert-void", { storage_data = data,
+            storage_mode = function(op, _, value)
+                if failing and op == "set" and value and value:find("\nstate\tpending\n", 1, true) then return "unconfirmed" end
+                return "ok"
+            end })
+        M.fetch_current(false)
+        assert_true(M.revert_receipt(1), "initial cover reverted")
+        with_clock(function(clock)
+            clock.now = clock.now + 2
+            failing = true
+            M.fetch_current(false)
+            failing = false
+            tick_n(h)
+            assert_eq(stored_state(data, 2), "void", "failed manual fetch settles as void")
+            local calls = #h.http_calls
+            M.state.auto = true
+            h.emit("track_started")
+            assert_eq(#h.http_calls, calls, "failed manual download does not lift automatic suppression")
+            assert_false(exists(dest), "automatic fetch does not undo revert after failed manual download")
+        end)
+    end
+
+    do
+        local h, M = setup(root .. "/receipt-too-large")
+        local deep = root .. "/receipt-too-large/Music/" .. string.rep("deep/", 420)
+        h.current_path = deep .. "01.flac"
+        h.songs[1].path = h.current_path
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "oversize receipt is refused before network or staging")
+        assert_eq(#h.storage_writes, 0, "oversize receipt reserves no history record")
+    end
+
+    for _, state in ipairs({ "pending", "reverting" }) do
+        local base = root .. "/receipt-unavailable-" .. state
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local backup = dest .. ".compas-backup"
+        local extra = state == "reverting" and { { "backup", backup } } or nil
+        local data = { ["rcpt.1"] = make_receipt(1, state, dest, JPEG, extra) }
+        local h, M = setup(base, { storage_data = data })
+        write_file(state == "pending" and dest or backup, JPEG)
+        local folder = base .. "/Music/Dummy"
+        assert(os.rename(folder, folder .. ".offline"))
+        with_clock(function(clock)
+            tick_n(h)
+            assert_eq(stored_state(data, 1), state, "unavailable directory preserves " .. state .. " receipt")
+            assert(os.rename(folder .. ".offline", folder))
+            clock.now = clock.now + 31
+            tick_n(h)
+        end)
+        assert_eq(stored_state(data, 1), state == "pending" and "saved" or "reverted", "recovery resumes when directory returns")
+        assert_eq(read_file(state == "pending" and dest or backup), JPEG, "recovery leaves original bytes intact")
+    end
+
+    do
+        local base = root .. "/receipt-io-error"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        write_file(dest, JPEG)
+        local real_open = io.open
+        with_clock(function(clock)
+            io.open = function(path, mode)
+                if path == dest then return nil, "Input/output error", 5 end
+                return real_open(path, mode)
+            end
+            local ok, err = pcall(tick_n, h)
+            io.open = real_open
+            assert(ok, err)
+            assert_eq(stored_state(data, 1), "pending", "I/O error cannot discard promoted receipt")
+            clock.now = clock.now + 31
+            tick_n(h)
+        end)
+        assert_eq(stored_state(data, 1), "saved", "receipt recovers after I/O error clears")
+    end
+
+    do
+        local base = root .. "/receipt-unreadable-staging"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local staging = dest .. ".compas-fetch"
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        write_file(dest, JPEG)
+        write_file(staging, JPEG)
+        local real_open = io.open
+        with_clock(function(clock)
+            io.open = function(path, mode)
+                if path == staging then return nil, "Permission denied", 13 end
+                return real_open(path, mode)
+            end
+            local ok, err = pcall(tick_n, h)
+            io.open = real_open
+            assert(ok, err)
+            assert_eq(stored_state(data, 1), "pending", "unreadable staging cannot cause adoption of matching destination")
+            clock.now = clock.now + 31
+            tick_n(h)
+        end)
+        assert_eq(stored_state(data, 1), "void", "readable own staging proves cover was never promoted")
+        assert_eq(read_file(dest), JPEG, "same-byte user cover remains untouched")
+        assert_eq(M.revert_receipt(1), nil, "same-byte user cover cannot be reverted")
+    end
+
+    do
+        local base = root .. "/receipt-missing-files"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        local data = { ["rcpt.1"] = make_receipt(1, "pending", dest, JPEG) }
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "pending", "both missing files preserve pending ownership evidence")
+        assert_true(M.recovery[1] ~= nil, "both missing files remain scheduled for recovery")
+    end
+
+    do
+        -- Cap reached: no download; a void record makes room.
+        local base = root .. "/receipt-cap"
+        local data = {}
+        for i = 1, 200 do
+            data["rcpt." .. i] = make_receipt(i, "saved", base .. "/Music/X" .. i .. "/X.jpg", JPEG)
+        end
+        local h, M, dest = setup(base, { storage_data = data })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "a full download history refuses before any network work")
+        assert_true(has_toast(h, "history is full"), "full history is explained")
+        data["rcpt.3"] = make_receipt(3, "void", base .. "/Music/X3/X.jpg", JPEG)
+        local h2, M2, dest2 = setup(base, { storage_data = data })
+        M2.fetch_current(false)
+        assert_eq(read_file(dest2), JPEG, "a void record is pruned to make room")
+        assert_eq(data["rcpt.3"], nil, "only the void record was removed")
+        assert_true(data["rcpt.1"] ~= nil and data["rcpt.201"] ~= nil, "other records stay and the new one is added")
+        data["rcpt.999"] = "extra"
+        local h3, M3 = setup(base, { storage_data = data })
+        M3.fetch_current(false)
+        assert_true(has_toast(h3, "history is unavailable"), "more keys than the bound fail closed")
+    end
+
+    do
+        local h, M, dest = setup(root .. "/receipt-no-capability", { caps = { ["crypto.md5"] = false } })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "no fetch without fingerprint support")
+        assert_true(has_toast(h, "cannot track"), "missing tracking support is explained")
+    end
+
+    do
+        -- Storage list failure at load: fail closed, then a later retry.
+        local failing = true
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-list-fail", { storage_data = data,
+            storage_mode = function(op) return (op == "list" and failing) and "fail" or "ok" end })
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "unreadable history refuses downloads")
+        failing = false
+        with_clock(function(clock)
+            clock.now = clock.now + 31
+            tick_n(h)
+            M.fetch_current(false)
+        end)
+        assert_eq(read_file(dest), JPEG, "history loads on retry and downloads resume")
+    end
+
+    do
+        -- Existing user art is never owned.
+        local h, M, dest = setup(root .. "/receipt-user-art")
+        write_file(dest, "user art")
+        M.fetch_current(false)
+        assert_eq(next(M.receipts()), nil, "an existing file gets no receipt")
+        M.open_current_album_receipts()
+        assert_true(has_toast(h, "No downloaded cover recorded"), "nothing to revert for user art")
+        assert_eq(read_file(dest), "user art", "user art is untouched")
+    end
+
+    do
+        -- Confirm, cancel and repeat.
+        local data = {}
+        local h, M, dest = setup(root .. "/revert-confirm", { storage_data = data })
+        M.fetch_current(false)
+        M.open_current_album_receipts()
+        local list = last_list(h)
+        assert_eq(list.items[1].label, dest, "detail shows the exact path")
+        local revert = receipt_row(list)
+        assert_true(revert ~= nil, "a saved cover offers revert")
+        list.on_select(revert + 1)
+        assert_true(has_toast(h, "No files changed"), "cancel is confirmed")
+        list.on_select(revert)
+        assert_eq(read_file(dest), JPEG, "cancel then confirm on the same screen changes nothing")
+        M.open_receipt(1)
+        list = last_list(h)
+        list.on_select(receipt_row(list))
+        assert_false(exists(dest), "confirmed revert moves the cover")
+        assert_eq(read_file(dest .. ".compas-backup"), JPEG, "the backup holds the exact bytes")
+        assert_eq(stored_state(data, 1), "reverted", "reverted state is durable")
+        assert_true(data["rcpt.1"]:find("backup\t" .. dest .. ".compas-backup", 1, true) ~= nil, "backup path is recorded")
+        assert_true(has_toast(h, "Reload cover"), "native Reload cover is mentioned")
+        assert_eq(h.library_refresh_count, 1, "revert inside the native refresh window does not call it again")
+        assert_true(M.refresh.pending, "revert leaves one coalesced refresh pending")
+        list.on_select(receipt_row(list) or 7)
+        assert_eq(read_file(dest .. ".compas-backup"), JPEG, "repeated confirm does nothing")
+        M.open_receipt(1)
+        assert_eq(receipt_row(last_list(h)), nil, "a reverted cover offers no revert")
+        local h2, M2 = setup(root .. "/revert-confirm", { storage_data = data })
+        assert_eq(M2.receipts()[1].state, "reverted", "revert status survives a reload")
+        local ok = M2.revert_receipt(1)
+        assert_eq(ok, nil, "a reverted receipt cannot be reverted again")
+    end
+
+    do
+        local h, M, dest = setup(root .. "/revert-same-size")
+        M.fetch_current(false)
+        write_file(dest, string.char(0xFF, 0xD8, 0xFF, 0xE1) .. "fakejpeg")
+        local ok, message = M.revert_receipt(1)
+        assert_eq(ok, nil, "same-size different bytes are not reverted")
+        assert_true(message:find("changed", 1, true) ~= nil, "changed file is explained")
+        assert_eq(read_file(dest), string.char(0xFF, 0xD8, 0xFF, 0xE1) .. "fakejpeg", "the changed file is untouched")
+        assert_false(exists(dest .. ".compas-backup"), "no backup for a changed file")
+        assert_eq(M.receipts()[1].state, "saved", "the receipt is unchanged")
+    end
+
+    do
+        local h, M, dest = setup(root .. "/revert-missing")
+        M.fetch_current(false)
+        os.remove(dest)
+        local ok, message = M.revert_receipt(1)
+        assert_eq(ok, nil, "a missing cover is not reverted")
+        assert_true(message:find("missing", 1, true) ~= nil, "missing file is explained")
+    end
+
+    do
+        local h, M, dest = setup(root .. "/revert-backup-conflict")
+        M.fetch_current(false)
+        write_file(dest .. ".compas-backup", "older backup")
+        assert_true(M.revert_receipt(1), "revert uses the next backup name")
+        assert_eq(read_file(dest .. ".compas-backup"), "older backup", "an existing backup is not overwritten")
+        assert_eq(read_file(dest .. ".compas-backup-2"), JPEG, "the cover goes to the next free name")
+    end
+
+    do
+        local data = {}
+        local h, M, dest = setup(root .. "/revert-io-failure", { storage_data = data })
+        M.fetch_current(false)
+        local dir = root .. "/revert-io-failure/Music/Dummy"
+        os.execute("chmod 555 '" .. dir .. "'")
+        local ok, message = M.revert_receipt(1)
+        os.execute("chmod 755 '" .. dir .. "'")
+        assert_eq(ok, nil, "a failed rename is reported")
+        assert_true(message:find("Could not rename", 1, true) ~= nil, "rename failure is explained")
+        assert_eq(read_file(dest), JPEG, "the cover stays after a failed rename")
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "saved", "recovery returns the receipt to saved")
+        assert_true(M.revert_receipt(1), "the cover can be reverted afterwards")
+    end
+
+    do
+        local data = {}
+        local h, M, dest = setup(root .. "/revert-intent-fail", { storage_data = data })
+        M.fetch_current(false)
+        h.storage_mode = fail_state("reverting")
+        local ok = M.revert_receipt(1)
+        assert_eq(ok, nil, "no rename without a durable revert record")
+        assert_eq(read_file(dest), JPEG, "cover untouched when the revert cannot be recorded")
+        h.storage_mode = nil
+        tick_n(h)
+        assert_eq(M.receipts()[1].state, "saved", "the receipt settles back to saved")
+    end
+
+    do
+        -- Renamed, but "reverted" unconfirmed; recovery after reload.
+        local data = {}
+        local h, M, dest = setup(root .. "/revert-final-fail", { storage_data = data })
+        M.fetch_current(false)
+        h.storage_mode = fail_state("reverted")
+        assert_true(M.revert_receipt(1), "the rename itself succeeded")
+        assert_eq(stored_state(data, 1), "reverting", "only the intent is durable")
+        local h2, M2 = setup(root .. "/revert-final-fail", { storage_data = data })
+        tick_n(h2)
+        assert_eq(stored_state(data, 1), "reverted", "recovery finds the backup and records the revert")
+        assert_eq(read_file(dest .. ".compas-backup"), JPEG, "the backup is untouched by recovery")
+    end
+
+    do
+        -- A revert record whose files no longer match is never acted on.
+        local base = root .. "/revert-lost"
+        local dest = base .. "/Music/Dummy/Dummy.jpg"
+        os.execute("mkdir -p '" .. base .. "/Music/Dummy'")
+        write_file(dest .. ".compas-backup", "someone else's backup")
+        local data = { ["rcpt.1"] = make_receipt(1, "reverting", dest, JPEG, { { "backup", dest .. ".compas-backup" } }) }
+        local h, M = setup(base, { storage_data = data })
+        tick_n(h)
+        assert_eq(stored_state(data, 1), "lost", "unmatched files mark the record lost")
+        assert_eq(read_file(dest .. ".compas-backup"), "someone else's backup", "unmatched backup is untouched")
+    end
+
+    do
+        -- Automatic fetch does not undo a revert; a manual fetch may, keeping history.
+        local data = {}
+        local h, M, dest = setup(root .. "/revert-auto", { storage_data = data })
+        M.fetch_current(false)
+        assert_true(M.revert_receipt(1), "reverted")
+        local calls = #h.http_calls
+        M.state.auto = true
+        h.emit("track_started")
+        assert_eq(#h.http_calls, calls, "automatic fetch skips a reverted cover")
+        M.queue[1] = { dest = dest, is_auto = true, key = "k", album = "Dummy", artist = "The Artist", album_artist = "" }
+        with_clock(function(clock)
+            clock.now = clock.now + 2
+            h.tick_intervals()
+            assert_eq(#h.http_calls, calls, "a queued automatic job for a reverted cover is dropped")
+            assert_eq(#M.queue, 0, "the dropped job leaves the queue")
+            M.fetch_current(false)
+        end)
+        assert_eq(read_file(dest), JPEG, "manual fetch restores the cover")
+        assert_eq(M.receipts()[2].state, "saved", "the new download has its own receipt")
+        assert_eq(M.receipts()[1].state, "reverted", "the earlier revert is kept in history")
+        assert_eq(read_file(dest .. ".compas-backup"), JPEG, "the earlier backup is preserved")
+        assert_true(M.revert_receipt(2), "the new download can be reverted too")
+        assert_eq(read_file(dest .. ".compas-backup-2"), JPEG, "without overwriting the earlier backup")
+    end
+
+    do
+        -- Revert removes queued jobs for the same cover.
+        local h, M, dest = setup(root .. "/revert-drops-queue")
+        M.fetch_current(false)
+        M.queue[1] = { dest = dest, is_auto = false, manual_requested = true, key = "k" }
+        M.queue[2] = { dest = dest .. "-other.jpg", is_auto = true, key = "o" }
+        assert_true(M.revert_receipt(1), "reverted")
+        assert_eq(#M.queue, 1, "only the job for the reverted cover is removed")
+        assert_eq(M.queue[1].key, "o", "unrelated queued work is kept")
+        M.queue[1] = nil
+    end
+
+    do
+        -- Re-fetch after the user removed a tracked cover closes the old record.
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-refetch", { storage_data = data })
+        M.fetch_current(false)
+        os.remove(dest)
+        with_clock(function(clock)
+            clock.now = clock.now + 2
+            M.fetch_current(false)
+        end)
+        assert_eq(stored_state(data, 1), "gone", "the old record is closed as missing")
+        assert_true(data["rcpt.1"]:find("superseded_by\t2", 1, true) ~= nil, "it names the newer record")
+        assert_eq(stored_state(data, 2), "saved", "the new cover has its own receipt")
+        assert_eq(M.revert_receipt(1), nil, "the closed record cannot revert the new file")
+        assert_true(M.revert_receipt(2), "the new record can")
+    end
+
+    do
+        -- Track change during a deferred fetch: the receipt names the captured path.
+        local data = {}
+        local h, M, dest = setup(root .. "/receipt-track-change", { storage_data = data, defer_http = true })
+        M.fetch_current(false)
+        h.current_path = root .. "/receipt-track-change/Music/Other/02.flac"
+        h.now_playing = { "Other", "Other Artist", "Other Album", 180 }
+        h.flush()
+        assert_eq(M.receipts()[1].dest, dest, "receipt names the captured destination")
+        -- A stale image callback writes no receipt.
+        M.pending_dest[dest .. "x"] = 7
+        M.fetch_image({ dest = dest .. "x", is_auto = false, key = "s" }, ARCHIVE_500, 3)
+        assert_eq(M.receipts()[2], nil, "stale callbacks record nothing")
+    end
+
+    do
+        -- Paginated history and the per-folder shortcut.
+        local base = root .. "/receipt-history"
+        local data = {}
+        for i = 1, 25 do
+            data["rcpt." .. i] = make_receipt(i, "saved", base .. "/Music/X" .. i .. "/X.jpg", JPEG)
+        end
+        local h, M = setup(base, { storage_data = data })
+        M.open_history(1)
+        local list = last_list(h)
+        assert_eq(#list.items, 21, "first page shows 20 records and Older")
+        assert_eq(list.items[21], "Older", "older page row")
+        list.on_select(21)
+        list = last_list(h)
+        assert_eq(#list.items, 6, "second page shows the rest and Newer")
+        assert_eq(list.options.replace, 1, "paging replaces the existing list instead of nesting")
+        assert_eq(list.items[6], "Newer", "newer page row")
+        list.on_select(1)
+        assert_eq(last_list(h).items[1].label, base .. "/Music/X5/X.jpg", "selecting a row opens that record")
     end
 end

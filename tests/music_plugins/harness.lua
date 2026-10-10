@@ -107,6 +107,51 @@ local function decode_json(text)
     return value
 end
 
+-- Real MD5 (RFC 1321), so fingerprints in tests behave like plugin.md5.
+local function md5_hex(message)
+    local s = {
+        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+        5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+        4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+        6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
+    }
+    local K = {}
+    for i = 0, 63 do K[i] = math.floor(math.abs(math.sin(i + 1)) * 2 ^ 32) & 0xFFFFFFFF end
+    local function rotl(x, c) return ((x << c) | (x >> (32 - c))) & 0xFFFFFFFF end
+    local len = #message
+    local padded = message .. "\128" .. string.rep("\0", (55 - len) % 64) .. string.pack("<I8", len * 8)
+    local a0, b0, c0, d0 = 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476
+    for chunk = 1, #padded, 64 do
+        local M = { string.unpack("<" .. string.rep("I4", 16), padded, chunk) }
+        local A, B, C, D = a0, b0, c0, d0
+        for i = 0, 63 do
+            local F, g
+            if i < 16 then
+                F, g = (B & C) | (~B & D), i
+            elseif i < 32 then
+                F, g = (D & B) | (~D & C), (5 * i + 1) % 16
+            elseif i < 48 then
+                F, g = B ~ C ~ D, (3 * i + 5) % 16
+            else
+                F, g = C ~ (B | ~D), (7 * i) % 16
+            end
+            F = (F + A + K[i] + M[g + 1]) & 0xFFFFFFFF
+            A, D, C = D, C, B
+            B = (B + rotl(F, s[i + 1])) & 0xFFFFFFFF
+        end
+        a0, b0, c0, d0 = (a0 + A) & 0xFFFFFFFF, (b0 + B) & 0xFFFFFFFF, (c0 + C) & 0xFFFFFFFF, (d0 + D) & 0xFFFFFFFF
+    end
+    local out = string.pack("<I4I4I4I4", a0, b0, c0, d0)
+    return (out:gsub(".", function(ch) return string.format("%02x", ch:byte()) end))
+end
+harness.md5_hex = md5_hex
+
+-- Native plugin.storage limits (plugin_storage.c): 256 KiB per value, 500
+-- keys and 2 MiB per plugin, keys of 1..128 bytes.
+local STORAGE_VALUE_MAX = 256 * 1024
+local STORAGE_KEYS_MAX = 500
+local STORAGE_BYTES_MAX = 2 * 1024 * 1024
+
 function harness.new(opts)
     opts = opts or {}
     local sd = opts.sd_root
@@ -136,7 +181,17 @@ function harness.new(opts)
             ["library.paged"] = true,
             ["library.refresh"] = true,
             ["ui.progress"] = opts.api_version == 16,
+            ["storage.namespaced"] = true,
+            ["crypto.md5"] = true,
         },
+        -- Shared across harness instances to model a plugin/device reload.
+        storage_data = opts.storage_data or {},
+        -- storage_mode(op, key, value) may return "ok", "fail" (nothing
+        -- written, false) or "unconfirmed" (written, but false: the native
+        -- call could not confirm durability).
+        storage_mode = opts.storage_mode,
+        storage_writes = {},
+        md5_calls = 0,
         now_playing = { nil, nil, nil, 0 },
         current_path = nil,
         play_mode = "sequential",
@@ -180,6 +235,66 @@ function harness.new(opts)
         self.json_decode_calls[#self.json_decode_calls + 1] = { text = text, limits = limits }
         return decode_json(text)
     end
+    function plugin.md5(text)
+        if type(text) ~= "string" then error("bad argument #1 to 'md5' (string expected)", 2) end
+        self.md5_calls = self.md5_calls + 1
+        return md5_hex(text)
+    end
+
+    local function storage_usage(replace_key, value)
+        local keys, bytes = 0, 0
+        for k, v in pairs(self.storage_data) do
+            if k ~= replace_key then
+                keys = keys + 1
+                bytes = bytes + #v
+            end
+        end
+        if value then
+            keys = keys + 1
+            bytes = bytes + #value
+        end
+        return keys, bytes
+    end
+
+    plugin.storage = {}
+    function plugin.storage.get(key, default)
+        if type(key) ~= "string" then error("bad argument #1 to 'get' (string expected)", 2) end
+        local value = self.storage_data[key]
+        if value == nil then return default end
+        return value
+    end
+    function plugin.storage.set(key, value)
+        if type(key) ~= "string" or type(value) ~= "string" then
+            error("bad argument to 'set' (string expected)", 2)
+        end
+        local mode = self.storage_mode and self.storage_mode("set", key, value) or "ok"
+        self.storage_writes[#self.storage_writes + 1] = { op = "set", key = key, value = value, mode = mode }
+        if mode == "fail" then return false, "plugin.storage.set failed" end
+        if #key == 0 or #key > 128 or #value > STORAGE_VALUE_MAX then return false, "plugin.storage.set failed" end
+        local keys, bytes = storage_usage(key, value)
+        if keys > STORAGE_KEYS_MAX or bytes > STORAGE_BYTES_MAX then return false, "plugin.storage.set failed" end
+        self.storage_data[key] = value
+        if mode == "unconfirmed" then return false, "plugin.storage.set failed" end
+        return true
+    end
+    function plugin.storage.delete(key)
+        local mode = self.storage_mode and self.storage_mode("delete", key) or "ok"
+        self.storage_writes[#self.storage_writes + 1] = { op = "delete", key = key, mode = mode }
+        if mode == "fail" then return false end
+        self.storage_data[key] = nil
+        return mode ~= "unconfirmed"
+    end
+    function plugin.storage.list(prefix)
+        local mode = self.storage_mode and self.storage_mode("list", prefix) or "ok"
+        if mode == "fail" then return nil, "plugin.storage.list failed" end
+        local keys = {}
+        for k in pairs(self.storage_data) do
+            if not prefix or prefix == "" or k:sub(1, #prefix) == prefix then keys[#keys + 1] = k end
+        end
+        table.sort(keys)
+        return keys
+    end
+
     function plugin.refresh_library()
         self.library_refresh_count = self.library_refresh_count + 1
         -- Tests may queue native refusals ({ false, "rate_limited" }).
@@ -282,8 +397,8 @@ function harness.new(opts)
     function plugin.show_settings_list(title, items)
         self.settings_screens[#self.settings_screens + 1] = { title = title, items = items }
     end
-    function plugin.show_list(title, items, on_select)
-        self.lists[#self.lists + 1] = { title = title, items = items, on_select = on_select }
+    function plugin.show_list(title, items, on_select, options)
+        self.lists[#self.lists + 1] = { title = title, items = items, on_select = on_select, options = options }
         return #self.lists
     end
     -- Native contract (PLUGINS.md, plugin.cancel): returns whether the request

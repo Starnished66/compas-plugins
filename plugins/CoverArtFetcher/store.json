@@ -1,5 +1,5 @@
 {
-  "description": "Fill missing album-title.jpg sidecars using MusicBrainz and the Cover Art Archive. Fetch the current album or enable automatic lookup, and repair shared folder artwork with a confirmed, reversible rename.",
+  "description": "Fill missing album-title.jpg sidecars using MusicBrainz and the Cover Art Archive. Fetch the current album or enable automatic lookup, revert recorded downloads, and repair shared folder artwork with a confirmed, reversible rename.",
   "category": "Tools",
   "author": "Compás",
   "publish": false
