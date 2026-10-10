@@ -1,0 +1,16 @@
+{
+  "description": "Navy pixel-menu surfaces with crisp light text.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "GameBoy.png",
+  "files": [
+    {
+      "src": "GameBoy.theme",
+      "dest": "Themes/GameBoy.theme"
+    },
+    {
+      "src": "GameBoy.png",
+      "dest": "Themes/GameBoy.png"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Clean ivory surfaces with blue-gray labels.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Porcelain.png",
+  "files": [
+    {
+      "src": "Porcelain.theme",
+      "dest": "Themes/Porcelain.theme"
+    },
+    {
+      "src": "Porcelain.png",
+      "dest": "Themes/Porcelain.png"
+    }
+  ]
+}

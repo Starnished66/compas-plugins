@@ -1,0 +1,16 @@
+{
+  "description": "Soft blue-white surfaces with deep blue text.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "White.png",
+  "files": [
+    {
+      "src": "White.theme",
+      "dest": "Themes/White.theme"
+    },
+    {
+      "src": "White.png",
+      "dest": "Themes/White.png"
+    }
+  ]
+}

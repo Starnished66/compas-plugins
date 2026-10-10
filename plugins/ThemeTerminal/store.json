@@ -1,0 +1,16 @@
+{
+  "description": "Green-on-black CRT-inspired surfaces.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Terminal.png",
+  "files": [
+    {
+      "src": "Terminal.theme",
+      "dest": "Themes/Terminal.theme"
+    },
+    {
+      "src": "Terminal.png",
+      "dest": "Themes/Terminal.png"
+    }
+  ]
+}

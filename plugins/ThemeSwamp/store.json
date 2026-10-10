@@ -1,0 +1,16 @@
+{
+  "description": "Murky greens with earthy dark surfaces.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Swamp.png",
+  "files": [
+    {
+      "src": "Swamp.theme",
+      "dest": "Themes/Swamp.theme"
+    },
+    {
+      "src": "Swamp.png",
+      "dest": "Themes/Swamp.png"
+    }
+  ]
+}

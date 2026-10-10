@@ -1,0 +1,16 @@
+{
+  "description": "Forest greens with warm natural highlights.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Trees.png",
+  "files": [
+    {
+      "src": "Trees.theme",
+      "dest": "Themes/Trees.theme"
+    },
+    {
+      "src": "Trees.png",
+      "dest": "Themes/Trees.png"
+    }
+  ]
+}

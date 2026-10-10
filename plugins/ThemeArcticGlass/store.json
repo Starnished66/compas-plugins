@@ -1,0 +1,16 @@
+{
+  "description": "Icy blue and white surfaces with deep blue text.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "ArcticGlass.png",
+  "files": [
+    {
+      "src": "ArcticGlass.theme",
+      "dest": "Themes/ArcticGlass.theme"
+    },
+    {
+      "src": "ArcticGlass.png",
+      "dest": "Themes/ArcticGlass.png"
+    }
+  ]
+}

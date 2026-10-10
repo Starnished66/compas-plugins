@@ -1,0 +1,16 @@
+{
+  "description": "Cool slate with bright citrus accents.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "CitrusSlate.png",
+  "files": [
+    {
+      "src": "CitrusSlate.theme",
+      "dest": "Themes/CitrusSlate.theme"
+    },
+    {
+      "src": "CitrusSlate.png",
+      "dest": "Themes/CitrusSlate.png"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Rustic clay, moss, and bark tones.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Earthy.png",
+  "files": [
+    {
+      "src": "Earthy.theme",
+      "dest": "Themes/Earthy.theme"
+    },
+    {
+      "src": "Earthy.png",
+      "dest": "Themes/Earthy.png"
+    }
+  ]
+}

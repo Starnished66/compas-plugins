@@ -1,0 +1,16 @@
+{
+  "description": "High-contrast graphite with restrained cyan accents.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "ObsidianAudio.png",
+  "files": [
+    {
+      "src": "ObsidianAudio.theme",
+      "dest": "Themes/ObsidianAudio.theme"
+    },
+    {
+      "src": "ObsidianAudio.png",
+      "dest": "Themes/ObsidianAudio.png"
+    }
+  ]
+}

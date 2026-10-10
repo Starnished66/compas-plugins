@@ -7,9 +7,13 @@ Plugins for [Compás](https://github.com/Starnished66/compas-player), the music 
 Download the files of a plugin from the [latest release](https://github.com/Starnished66/compas-plugins/releases/latest), or from `plugins/<Name>/` in this repository, and copy them to the SD card:
 
 - `<Name>.lua` goes in the `.plugins` folder.
-- Extra files go where the plugin's `store.json` says (`dest`). For example, `NetRadio` reads its stations from `Radio.txt` at the root of the card, and `Themes` reads `.theme` files from the `Themes` folder.
+- Extra files go where the plugin's `store.json` says (`dest`). For example, `NetRadio` reads its stations from `Radio.txt` at the root of the card, and individual theme packages install their `.theme` and `.png` files in the `Themes` folder.
 
 Then open Settings > Plugin Manager and choose Refresh Plugins.
+
+## Themes
+
+Open **Settings > Display > Themes > Download** to download any of the 21 themes individually. Each package includes its theme definition and matching screenshot, so the main theme picker shows its preview after installation. If a theme was installed through the old Themes bundle, download its individual package to add the screenshot. The existing Themes plugin can remain installed.
 
 ## AutoEQ profiles
 

@@ -1,0 +1,16 @@
+{
+  "description": "Warm terracotta with calm earthy neutrals.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "ZenTerracotta.png",
+  "files": [
+    {
+      "src": "ZenTerracotta.theme",
+      "dest": "Themes/ZenTerracotta.theme"
+    },
+    {
+      "src": "ZenTerracotta.png",
+      "dest": "Themes/ZenTerracotta.png"
+    }
+  ]
+}

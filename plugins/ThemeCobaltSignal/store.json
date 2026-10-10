@@ -1,0 +1,16 @@
+{
+  "description": "Deep navy surfaces with vivid cobalt accents.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "CobaltSignal.png",
+  "files": [
+    {
+      "src": "CobaltSignal.theme",
+      "dest": "Themes/CobaltSignal.theme"
+    },
+    {
+      "src": "CobaltSignal.png",
+      "dest": "Themes/CobaltSignal.png"
+    }
+  ]
+}

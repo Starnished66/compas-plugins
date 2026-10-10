@@ -1,0 +1,16 @@
+{
+  "description": "Quiet stone and undyed-wool neutrals.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Monastic.png",
+  "files": [
+    {
+      "src": "Monastic.theme",
+      "dest": "Themes/Monastic.theme"
+    },
+    {
+      "src": "Monastic.png",
+      "dest": "Themes/Monastic.png"
+    }
+  ]
+}

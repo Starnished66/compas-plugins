@@ -1,0 +1,16 @@
+{
+  "description": "Soft rose and ivory with muted berry text.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "RoseQuartz.png",
+  "files": [
+    {
+      "src": "RoseQuartz.theme",
+      "dest": "Themes/RoseQuartz.theme"
+    },
+    {
+      "src": "RoseQuartz.png",
+      "dest": "Themes/RoseQuartz.png"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Warm brass accents over dark studio graphite.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "BrassStudio.png",
+  "files": [
+    {
+      "src": "BrassStudio.theme",
+      "dest": "Themes/BrassStudio.theme"
+    },
+    {
+      "src": "BrassStudio.png",
+      "dest": "Themes/BrassStudio.png"
+    }
+  ]
+}

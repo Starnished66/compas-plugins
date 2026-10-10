@@ -1,0 +1,16 @@
+{
+  "description": "Layered ocean blues with cool pale text.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Wavy.png",
+  "files": [
+    {
+      "src": "Wavy.theme",
+      "dest": "Themes/Wavy.theme"
+    },
+    {
+      "src": "Wavy.png",
+      "dest": "Themes/Wavy.png"
+    }
+  ]
+}

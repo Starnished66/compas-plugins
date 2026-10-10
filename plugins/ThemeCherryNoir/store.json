@@ -1,0 +1,16 @@
+{
+  "description": "Dark cherry surfaces with soft rose highlights.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "CherryNoir.png",
+  "files": [
+    {
+      "src": "CherryNoir.theme",
+      "dest": "Themes/CherryNoir.theme"
+    },
+    {
+      "src": "CherryNoir.png",
+      "dest": "Themes/CherryNoir.png"
+    }
+  ]
+}

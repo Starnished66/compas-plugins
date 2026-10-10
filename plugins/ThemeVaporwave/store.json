@@ -1,0 +1,16 @@
+{
+  "description": "Deep purple surfaces with hot-pink synthwave accents.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Vaporwave.png",
+  "files": [
+    {
+      "src": "Vaporwave.theme",
+      "dest": "Themes/Vaporwave.theme"
+    },
+    {
+      "src": "Vaporwave.png",
+      "dest": "Themes/Vaporwave.png"
+    }
+  ]
+}

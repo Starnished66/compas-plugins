@@ -1,0 +1,16 @@
+{
+  "description": "Cream, amber, and brown in a chunky 80s style.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "Retro.png",
+  "files": [
+    {
+      "src": "Retro.theme",
+      "dest": "Themes/Retro.theme"
+    },
+    {
+      "src": "Retro.png",
+      "dest": "Themes/Retro.png"
+    }
+  ]
+}

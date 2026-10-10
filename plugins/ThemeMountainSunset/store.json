@@ -1,0 +1,16 @@
+{
+  "description": "Dusk purples with warm sunset accents.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "MountainSunset.png",
+  "files": [
+    {
+      "src": "MountainSunset.theme",
+      "dest": "Themes/MountainSunset.theme"
+    },
+    {
+      "src": "MountainSunset.png",
+      "dest": "Themes/MountainSunset.png"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Deep indigo surfaces with lilac highlights.",
+  "category": "Customization",
+  "author": "Compás",
+  "preview": "MidnightIndigo.png",
+  "files": [
+    {
+      "src": "MidnightIndigo.theme",
+      "dest": "Themes/MidnightIndigo.theme"
+    },
+    {
+      "src": "MidnightIndigo.png",
+      "dest": "Themes/MidnightIndigo.png"
+    }
+  ]
+}
