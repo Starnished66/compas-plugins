@@ -1,0 +1,17 @@
+Icons by @buymyhubs
+
+Data is fetched on request. Nothing is bundled with the plugin, and results are cached on the device.
+
+MusicBrainz  https://musicbrainz.org/ws/2/
+  Artist and release-group search, lookup and browse. Lookups request genres and ratings.
+  Core data (names, titles, dates, IDs, artist credits) is CC0 (public domain).
+  Genres and ratings shown in Discover are supplementary data, (c) MusicBrainz contributors,
+  licensed CC BY-NC-SA 3.0: https://musicbrainz.org/doc/About/Data_License
+
+ListenBrainz
+  https://api.listenbrainz.org/1/explore/fresh-releases/  (new and upcoming releases)
+  https://labs.api.listenbrainz.org/similar-artists/json  (similar artists)
+  ListenBrainz listen data and datasets are released under CC0: https://listenbrainz.org/data/
+
+Privacy: artist names from your library, and any text you search for, are sent to MusicBrainz.
+Requests identify as: Discover-CompasPlugin/<version> ( https://github.com/Starnished66/compas-player )
