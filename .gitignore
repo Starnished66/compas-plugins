@@ -31,3 +31,5 @@ __pycache__/
 !/tests/ab_plugins/**
 !/tests/jellyfin_emby/
 !/tests/jellyfin_emby/**
+
+!/tests/kids_mode_test.lua

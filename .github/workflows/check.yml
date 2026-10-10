@@ -21,6 +21,10 @@ jobs:
         run: lua tests/music_plugins/run.lua
       - name: Test API 15 ListenBrainz and Net Radio plugins
         run: lua tests/service_plugins/run.lua
+      - name: Test Lock Screen persistence and Kids Mode
+        run: |
+          lua tests/lockscreen_storage_test.lua
+          lua tests/kids_mode_test.lua
       - name: Test API 16 v1.1 plugins
         run: |
           lua tests/track_inspector/run.lua

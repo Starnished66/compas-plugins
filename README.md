@@ -29,6 +29,19 @@ Both use Plugin API 15, the API in Compás v1.0.1. No newer plugin API is requir
 
 **Net Radio** is one Stream Media tile for both saved stations and Radio Browser search. Open **Saved stations** to play the `Radio.txt` queue, or **Search stations** to find and save direct MP3, FLAC, or ADTS AAC/AAC+ streams. Favorites append to the same `Name | http(s)://direct-stream` file; existing bytes are preserved, and stations remain available offline (playback needs a network connection). Existing users of the separate Radio Browser plugin should disable it in Plugin Manager or remove `.plugins/RadioBrowser.lua`, then refresh plugins. Keep `Radio.txt` so saved stations remain available. Live ICY or ID3 titles are not shown by the player.
 
+## Kids Mode and Discover
+
+**Kids Mode** is under Settings > System > Additional Tools. It simplifies Home
+to Music, Books and a Parent Mode tile. The initial parent PIN is `1234`; change
+it in the plugin settings. The Quick Drawer and its settings shortcuts remain
+accessible, so this is a simpler Home screen rather than a full device lock.
+
+**Discover** is under Settings > Music Library. It finds releases and similar
+artists through MusicBrainz and ListenBrainz, compares releases with your local
+library, and maintains a wish list with an optional SD card backup. Online lookup
+requires Wi-Fi; saved wish-list entries remain available offline. Both plugins
+work on API 15 firmware.
+
 ## Player layouts
 
 Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Player, Hiby's Graph Player, Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires Plugin API 15 or newer, which guarantees the current XML player-layout features and board-size variant discovery; all designs support tap-to-open lyrics, and Default Waveform, Gallery Waveform, Hibys Graph, Panorama, and Vinyl use waveform seeking.

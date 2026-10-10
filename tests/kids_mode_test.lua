@@ -1,4 +1,4 @@
-local plugin_path = assert(arg[1], "KidsMode.lua path required")
+local plugin_path = arg[1] or "plugins/KidsMode/KidsMode.lua"
 
 local function reset(enabled, pin)
     local state = {
