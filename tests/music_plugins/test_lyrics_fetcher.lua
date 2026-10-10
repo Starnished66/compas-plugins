@@ -343,6 +343,145 @@ return function(assert_eq, assert_true, assert_false)
         assert_eq(read_file(dest), nil, "stale callback did not write")
     end
 
+    -- A stale rate-limited reply does not hold the request slot or delay the latest queued track.
+    do
+        local calls = 0
+        local h, M = setup(root .. "/stale-retry-queue", {
+            defer_http = true,
+            http_impl = function()
+                calls = calls + 1
+                if calls == 1 then return 503, "", nil, { ["Retry-After"] = "30" } end
+                return 200, LRCLIB_OK, nil, {}
+            end,
+        })
+        M.state.auto = true
+        h.emit("track_started")
+        local latest = root .. "/stale-retry-queue/Music/Album/latest.flac"
+        h.current_path = latest
+        h.now_playing = { "Latest", "Artist", "Album", 100 }
+        h.emit("track_started")
+        assert_eq(#h.http_calls, 1, "latest waits behind outstanding request")
+        h.flush()
+        assert_eq(#h.http_calls, 2, "stale 503 immediately drains latest queued lookup")
+        assert_true(read_file(latest:gsub("%.flac$", ".lrc")) ~= nil, "latest queued result saved")
+        assert_eq(h.active_progress, nil, "stale manual progress is closed")
+    end
+
+    -- Different audio paths that map to one sidecar do not join the old path's in-flight job.
+    do
+        local h, M, audio = setup(root .. "/same-dest-different-path", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.fetch_current(false)
+        local alternate = audio:gsub("%.flac$", ".mp3")
+        write_file(alternate, "audio")
+        h.current_path = alternate
+        h.emit("track_started")
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 1, "same-destination new path stays queued")
+        h.flush()
+        assert_eq(#h.http_calls, 2, "new path starts after previous native request finishes")
+    end
+
+    -- Rapid track changes keep one native request and replace the single queued job.
+    do
+        local h, M = setup(root .. "/burst", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.state.auto = true
+        local final_path
+        for i = 1, 100 do
+            final_path = root .. "/burst/Music/Album/track" .. i .. ".flac"
+            h.current_path = final_path
+            h.now_playing = { "Title " .. i, "Artist " .. i, "Album", 123 }
+            h.emit("track_started")
+        end
+        local active, queued = M.get_queue_state()
+        assert_true(active ~= nil, "burst retains one active request")
+        assert_true(queued ~= nil, "burst retains latest queued job")
+        assert_eq(#h.http_calls, 1, "burst does not start parallel requests")
+        h.flush()
+        assert_eq(#h.http_calls, 2, "only the active and latest queued jobs run")
+        assert_true(h.http_calls[2].url:find("Title%%20100", 1, false) ~= nil, "latest track replaces older queued tracks")
+        assert_true(read_file(final_path:gsub("%.flac$", ".lrc")) ~= nil, "latest track result saved")
+    end
+
+    -- Oversized network bodies are rejected before JSON parsing; decoded LRC and atomic writes retain the 512 KiB cap.
+    do
+        local h, M, _, dest = setup(root .. "/oversized-body", {
+            http_impl = function() return 200, string.rep("x", 512 * 1024 + 1), nil, {} end,
+        })
+        M.fetch_current(false)
+        assert_eq(#h.json_decode_calls, 0, "oversized response never reaches JSON decoder")
+        assert_eq(read_file(dest), nil, "oversized response creates no file")
+    end
+    do
+        local h, M, _, dest = setup(root .. "/lrc-cap")
+        local exact = "[00:00.00]" .. string.rep("x", 512 * 1024 - 10)
+        local ok = M.atomic_write_lrc(dest, exact)
+        assert_true(ok, "exact 512 KiB LRC boundary is accepted")
+        local over = dest .. ".over"
+        ok = M.atomic_write_lrc(over, exact .. "x")
+        assert_false(ok, "LRC beyond 512 KiB is rejected")
+        assert_eq(read_file(over), nil, "oversized LRC creates no file")
+    end
+
+    -- Metadata and path bounds prevent oversized or unsafe paths from reaching HTTP or filesystem writes.
+    do
+        local h, M, audio, dest = setup(root .. "/bounds", { http_impl = function() return 200, LRCLIB_OK, nil, {} end })
+        h.now_playing = { string.rep("t", 129), "Artist", "Album", 100 }
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "oversized title is rejected")
+        h.now_playing = { "Title", "Artist", "Album", 100 }
+        h.current_path = root .. "/bounds/Music/Album/../escape.flac"
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "dot traversal path is rejected")
+        h.current_path = root .. "/bounds/Music//Album/song.flac"
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "doubled slash path is rejected")
+        assert_eq(read_file(dest), nil, "unsafe paths create no sidecar")
+        local track = { title = string.rep("t", 128), artist = string.rep("a", 128), album = string.rep("b", 128), duration = 100 }
+        assert_true(#M.build_url(track) < 2048, "maximum ASCII metadata URL fits native buffer")
+        track.title = string.rep("x", 3000)
+        assert_eq(M.build_url(track), nil, "URL beyond native buffer is rejected")
+        h.current_path = root .. "/bounds/Music/Album/" .. string.rep("f", 250) .. ".flac"
+        M.fetch_current(false)
+        assert_eq(#h.http_calls, 0, "staging filename beyond 255 bytes is rejected")
+    end
+
+    do
+        local h, M, _, dest = setup(root .. "/decoder-bounds", {
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.fetch_current(false)
+        local limits = h.json_decode_calls[1].limits
+        assert_eq(limits.max_input_bytes, 512 * 1024, "decoder input has a byte cap")
+        assert_eq(limits.max_nesting, 8, "decoder nesting is bounded")
+        assert_eq(limits.max_entries, 64, "decoder entry count is bounded")
+        os.remove(dest)
+        h.plugin.json_decode = function() return { syncedLyrics = "[00:00.00]" .. string.rep("x", 512 * 1024) } end
+        M.fetch_current(false)
+        assert_eq(read_file(dest), nil, "oversized decoded lyrics create no sidecar")
+    end
+
+    do
+        local h, M = setup(root .. "/queued-start-failure", {
+            defer_http = true,
+            http_impl = function() return 200, LRCLIB_OK, nil, {} end,
+        })
+        M.fetch_current(false)
+        h.current_path = root .. "/queued-start-failure/Music/Album/latest.flac"
+        M.fetch_current(false)
+        h.plugin.http_request = function() return nil, "no_free_slots" end
+        h.flush()
+        local active, waiting = M.get_queue_state()
+        assert_eq(active, nil, "failed queued start releases request ownership")
+        assert_eq(waiting, nil, "failed queued start retains no queued job")
+        assert_eq(h.active_progress, nil, "failed queued start closes its progress")
+    end
+
     -- extract_synced rejects JSON-shaped records without LRC
     do
         local h, M = setup(root .. "/extract")

@@ -121,6 +121,7 @@ function harness.new(opts)
         download_progress = {},
         active_downloads = {},
         http_calls = {},
+        json_decode_calls = {},
         downloads = {},
         play_lists = {},
         events = {},
@@ -171,7 +172,10 @@ function harness.new(opts)
     function plugin.get_play_mode() return self.play_mode end
     function plugin.is_playing() return self.playing end
     function plugin.is_paused() return self.paused end
-    function plugin.json_decode(text) return decode_json(text) end
+    function plugin.json_decode(text, limits)
+        self.json_decode_calls[#self.json_decode_calls + 1] = { text = text, limits = limits }
+        return decode_json(text)
+    end
     function plugin.refresh_library()
         self.library_refresh_count = self.library_refresh_count + 1
         return true, "started"
