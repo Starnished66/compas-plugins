@@ -1,7 +1,7 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.3",
+  version = "1.4",
   api_min = 15,
 })
 
@@ -35,12 +35,13 @@ local get_background
 
 local function is_enabled()
   local saved = plugin.storage.get(KEY_ENABLED)
-  if type(saved) == "boolean" then return saved end
+  if saved == "1" or saved == "true" then return true end
+  if saved == "0" or saved == "false" then return false end
   return legacy_mode() ~= "off"
 end
 
 local function set_enabled(enabled)
-  plugin.storage.set(KEY_ENABLED, enabled)
+  plugin.storage.set(KEY_ENABLED, enabled and "1" or "0")
   -- Preserve the old on/off representation for older plugin versions.
   plugin.storage.set(KEY_MODE, enabled and get_background() or "off")
 end

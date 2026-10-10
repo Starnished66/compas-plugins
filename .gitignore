@@ -6,6 +6,7 @@ dist/
 /tests/*
 !/tests/podcasts_speed_test.lua
 !/tests/workflow_shelves_test.lua
+!/tests/lockscreen_storage_test.lua
 __pycache__/
 *.pyc
 /dist/
