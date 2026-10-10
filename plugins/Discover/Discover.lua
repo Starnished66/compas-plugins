@@ -1,11 +1,11 @@
-local PLUGIN_VERSION = "1.0.0"
+local PLUGIN_VERSION = "1.0.1"
 local WISHLIST_FORMAT_VERSION = 1
 
 plugin.define({
     id = "com.buymyhubs.discover",
     name = "Discover",
     version = PLUGIN_VERSION,
-    api_min = 13
+    api_min = 14
 })
 
 local REQUIRED_CAPS = {
@@ -51,14 +51,23 @@ local function normalize_album_title(s)
 end
 
 local function json_dump(value)
-    local text = plugin.json_encode(value, { max_output_bytes = 524288 })
-    return text or "{}"
+    local text, err = plugin.json_encode(value, { max_output_bytes = 262144 })
+    if type(text) ~= "string" then return nil, err or "couldn't encode JSON" end
+    return text
+end
+
+local function storage_json_set(key, value)
+    local text, encode_err = json_dump(value)
+    if not text then return false, encode_err end
+    local ok, storage_err = plugin.storage.set(key, text)
+    if not ok then return false, storage_err or "plugin storage is full or unavailable" end
+    return true
 end
 
 local function json_load(text, default)
     if not text or text == "" then return default end
     local value, err = plugin.json_decode(text, { max_input_bytes = 524288 })
-    if not value then return default end
+    if not value or (default ~= nil and type(value) ~= type(default)) then return default end
     return value
 end
 
@@ -150,10 +159,11 @@ local OPTIONS_KEY = "options"
 
 local function load_options()
     local saved = json_load(plugin.storage.get(OPTIONS_KEY), {})
+    if type(saved) ~= "table" then saved = {} end
     local opts = {}
     for _, t in ipairs(SECONDARY_TYPE_OPTIONS) do
-        if saved[t.key] ~= nil then
-            opts[t.key] = saved[t.key] and true or false
+        if type(saved[t.key]) == "boolean" then
+            opts[t.key] = saved[t.key]
         else
             opts[t.key] = DEFAULT_SECONDARY_ON[t.key] or false
         end
@@ -163,8 +173,9 @@ end
 
 local function save_option(key, value)
     local saved = json_load(plugin.storage.get(OPTIONS_KEY), {})
+    if type(saved) ~= "table" then saved = {} end
     saved[key] = value and true or false
-    plugin.storage.set(OPTIONS_KEY, json_dump(saved))
+    return storage_json_set(OPTIONS_KEY, saved)
 end
 
 local function release_types_allowed(secondary_types, opts)
@@ -181,6 +192,19 @@ local ICON_BLANK = "Discover/blank.png"
 local ICON_OWNED = "Discover/owned.png"
 local ICON_WISH = "Discover/wish.png"
 local ICON_OWNED_WISH = "Discover/owned_wish.png"
+
+-- Store assets live beside the plugin script, while UI icons resolve under
+-- the theme root. Copy the bundled images into the plugin icon namespace at
+-- load time so the paths used by list rows can resolve.
+local function install_icon(name)
+    pcall(plugin.set_icon, "Discover/" .. name, plugin.sd_root() .. "/.plugins/Discover/" .. name)
+end
+
+install_icon("discover.png")
+install_icon("blank.png")
+install_icon("owned.png")
+install_icon("wish.png")
+install_icon("owned_wish.png")
 
 local function marker_icon(owned, wished)
     if owned and wished then return ICON_OWNED_WISH end
@@ -221,6 +245,15 @@ local function read_text_file(path)
     return data
 end
 
+local function read_limited_text_file(path, max_bytes)
+    local f = io.open(path, "rb")
+    if not f then return nil end
+    local data = f:read(max_bytes + 1)
+    f:close()
+    if not data or #data > max_bytes then return nil end
+    return data
+end
+
 local function file_exists(path)
     local f = io.open(path, "rb")
     if f then
@@ -254,11 +287,40 @@ end
 
 local function valid_wishlist(value)
     if type(value) ~= "table" then return false end
-    for _, e in ipairs(value) do
-        if type(e) ~= "table" or type(e.id) ~= "string" then return false end
+    local count = #value
+    for key in pairs(value) do
+        if type(key) ~= "number" or key < 1 or key > count or key % 1 ~= 0 then return false end
     end
-    -- a non-empty json object (not an array) isn't a wish list
-    if #value == 0 and next(value) ~= nil then return false end
+    if count > 1000 then return false end
+    for _, e in ipairs(value) do
+        if type(e) ~= "table" or type(e.id) ~= "string" or e.id == ""
+            or type(e.artist) ~= "string" or e.artist == ""
+            or type(e.album) ~= "string" or e.album == ""
+            or #e.id > 2048 or #e.artist > 1024 or #e.album > 1024 then
+            return false
+        end
+        if (e.added_at ~= nil and type(e.added_at) ~= "number")
+            or (e.year ~= nil and type(e.year) ~= "string")
+            or (e.release_group_mbid ~= nil and type(e.release_group_mbid) ~= "string")
+            or (e.release_type ~= nil and type(e.release_type) ~= "string")
+            or (e.source ~= nil and type(e.source) ~= "string")
+            or (e.cached_info ~= nil and type(e.cached_info) ~= "table") then
+            return false
+        end
+        if type(e.cached_info) == "table" then
+            local info = e.cached_info
+            if (info.disambiguation ~= nil and type(info.disambiguation) ~= "string")
+                or (info.rating_value ~= nil and type(info.rating_value) ~= "number")
+                or (info.rating_votes ~= nil and type(info.rating_votes) ~= "number")
+                or (info.artist_mbid ~= nil and type(info.artist_mbid) ~= "string")
+                or (info.genres ~= nil and type(info.genres) ~= "table") then
+                return false
+            end
+            for _, genre in ipairs(info.genres or {}) do
+                if type(genre) ~= "string" then return false end
+            end
+        end
+    end
     return true
 end
 
@@ -302,7 +364,7 @@ end
 
 local function read_mirror()
     if not mirror_writable() then return nil, "SD card not available" end
-    local text = read_text_file(mirror_path())
+    local text = read_limited_text_file(mirror_path(), 524288)
     if not text then return nil, "no SD copy found" end
     local list, why = decode_wishlist_text(text)
     if not list then
@@ -331,11 +393,17 @@ local function write_mirror(list)
     local f, open_err = io.open(tmp, "wb")
     if not f then return false, tostring(open_err) end
 
-    local wrote = f:write(json_dump(wishlist_envelope(list)))
-    f:close()
-    if not wrote then
+    local text, encode_err = json_dump(wishlist_envelope(list))
+    if not text then
+        f:close()
         os.remove(tmp)
-        return false, "couldn't write the SD copy"
+        return false, encode_err
+    end
+    local wrote, write_err = f:write(text)
+    local closed, close_err = f:close()
+    if not wrote or not closed then
+        os.remove(tmp)
+        return false, tostring(write_err or close_err or "couldn't write the SD copy")
     end
 
     if file_exists(path) then
@@ -377,10 +445,14 @@ local function merge_wishlists(a, b)
 end
 
 local function save_wishlist(list)
-    plugin.storage.set("wishlist", json_dump(wishlist_envelope(list)))
-    local ok = write_mirror(list)
-    if not ok then plugin.storage.set("wishlist_mirror_dirty", "1") end
-    return ok
+    if not valid_wishlist(list) then
+        return false, "wish list is invalid or has reached its 1000-item limit"
+    end
+    local stored, storage_err = storage_json_set("wishlist", wishlist_envelope(list))
+    if not stored then return false, storage_err end
+    local mirrored = write_mirror(list)
+    if not mirrored then plugin.storage.set("wishlist_mirror_dirty", "1") end
+    return true
 end
 
 local function sync_wishlist_mirror()
@@ -390,7 +462,8 @@ local function sync_wishlist_mirror()
         plugin.storage.set("wishlist_corrupt", raw) -- keep the bad data
         local mirrored = read_mirror()
         if mirrored then
-            plugin.storage.set("wishlist", json_dump(wishlist_envelope(mirrored)))
+            local stored = storage_json_set("wishlist", wishlist_envelope(mirrored))
+            if not stored then return "restore_failed" end
             record_mirror_mtime()
             plugin.show_toast("Discover: wish list restored from your SD copy")
             return "restored_corrupt"
@@ -401,7 +474,8 @@ local function sync_wishlist_mirror()
     if status == "missing" then
         local mirrored = read_mirror()
         if mirrored then
-            plugin.storage.set("wishlist", json_dump(wishlist_envelope(mirrored)))
+            local stored = storage_json_set("wishlist", wishlist_envelope(mirrored))
+            if not stored then return "restore_failed" end
             record_mirror_mtime()
             return "restored_missing"
         end
@@ -410,7 +484,8 @@ local function sync_wishlist_mirror()
 
     local upgraded = internal_version ~= WISHLIST_FORMAT_VERSION
     if upgraded then
-        plugin.storage.set("wishlist", json_dump(wishlist_envelope(internal)))
+        local stored = storage_json_set("wishlist", wishlist_envelope(internal))
+        if not stored then return "upgrade_failed" end
     end
 
     if not mirror_writable() then return "sd_unavailable" end
@@ -440,11 +515,13 @@ local function sync_wishlist_mirror()
             return "mirror_unreadable"
         end
         if dirty then
-            save_wishlist(merge_wishlists(internal, mirrored))
+            local saved = save_wishlist(merge_wishlists(internal, mirrored))
+            if not saved then return "merge_failed" end
             plugin.show_toast("Discover: wish list merged with your SD copy")
             return "merged"
         end
-        plugin.storage.set("wishlist", json_dump(wishlist_envelope(mirrored)))
+        local stored = storage_json_set("wishlist", wishlist_envelope(mirrored))
+        if not stored then return "pull_failed" end
         record_mirror_mtime()
         plugin.show_toast(("Discover: wish list updated from SD copy (%d)"):format(#mirrored))
         return "pulled"
@@ -517,8 +594,13 @@ local function wishlist_checker()
 end
 
 local function add_wishlist_entry(artist, album, year, release_group_mbid, release_type, source, cached_info)
+    if #artist > 1024 or #album > 1024 then
+        return nil, nil, "artist and album names must be 1024 bytes or fewer"
+    end
     local id = make_entry_id(artist, album, release_group_mbid)
+    if #id > 2048 then return nil, nil, "wish list ID is too long" end
     local wishlist = load_wishlist()
+    if #wishlist >= 1000 then return nil, id, "wish list can contain up to 1000 items" end
     for _, e in ipairs(wishlist) do
         if e.id == id then return false, id end
     end
@@ -534,7 +616,8 @@ local function add_wishlist_entry(artist, album, year, release_group_mbid, relea
         added_at = os.time(),
         cached_info = cached_info,
     })
-    save_wishlist(wishlist)
+    local saved, err = save_wishlist(wishlist)
+    if not saved then return nil, id, err end
     return true, id
 end
 
@@ -548,12 +631,17 @@ local function remove_wishlist_entries(id_set)
             table.insert(remaining, e)
         end
     end
-    if removed > 0 then save_wishlist(remaining) end
+    if removed > 0 then
+        local saved, err = save_wishlist(remaining)
+        if not saved then return 0, err end
+    end
     return removed
 end
 
 local function remove_wishlist_entry(id)
-    return remove_wishlist_entries({ [id] = true }) > 0
+    local removed, err = remove_wishlist_entries({ [id] = true })
+    if err then return nil, err end
+    return removed > 0
 end
 
 -- library lookups
@@ -580,9 +668,15 @@ end
 local function build_owned_album_set(library_artist)
     local owned = {}
     if not library_artist then return owned end
-    local albums = plugin.library_get_albums(0, 200, library_artist)
-    for _, a in ipairs(albums or {}) do
-        owned[normalize_album_title(a.name)] = true
+    local offset = 0
+    while true do
+        local albums = plugin.library_get_albums(offset, 200, library_artist)
+        if not albums or #albums == 0 then break end
+        for _, a in ipairs(albums) do
+            owned[normalize_album_title(a.name)] = true
+        end
+        if #albums < 200 then break end
+        offset = offset + 200
     end
     return owned
 end
@@ -614,7 +708,7 @@ local function load_possible_matches()
 end
 
 local function save_possible_matches(list)
-    plugin.storage.set(POSSIBLE_MATCHES_KEY, json_dump(list))
+    return storage_json_set(POSSIBLE_MATCHES_KEY, list)
 end
 
 -- skipping or repeating a scan is harmless, matching is rederived each time
@@ -676,10 +770,23 @@ local function run_autocheck_scan()
         end
     end
 
-    if removed_count > 0 then remove_wishlist_entries(to_remove) end
+    if removed_count > 0 then
+        local removed, remove_err = remove_wishlist_entries(to_remove)
+        if remove_err then
+            scan_running = false
+            plugin.show_toast("Discover: couldn't save wish list (" .. tostring(remove_err) .. ")")
+            return
+        end
+        removed_count = removed
+    end
 
     if changed then
-        save_possible_matches(possible)
+        local saved, save_err = save_possible_matches(possible)
+        if not saved then
+            scan_running = false
+            plugin.show_toast("Discover: couldn't save match confirmations (" .. tostring(save_err) .. ")")
+            return
+        end
         if removed_count > 0 then
             plugin.show_toast(("Discover: removed %d item%s you already have"):format(
                 removed_count, removed_count == 1 and "" or "s"))
@@ -861,14 +968,22 @@ local function finish_feed_job()
 
     -- stay under the storage limit by dropping the oldest first
     local text = json_dump(combined)
-    while #text > FEED_MAX_STORED_BYTES and #combined > 0 do
+    while (not text or #text > FEED_MAX_STORED_BYTES) and #combined > 0 do
         for _ = 1, math.max(1, math.floor(#combined * 0.1)) do
             table.remove(combined, 1)
         end
         text = json_dump(combined)
     end
 
-    plugin.storage.set(MATCHED_RELEASES_KEY, text)
+    if not text then
+        plugin.show_toast("Discover: couldn't save the release feed")
+        return
+    end
+    local saved, save_err = plugin.storage.set(MATCHED_RELEASES_KEY, text)
+    if not saved then
+        plugin.show_toast("Discover: couldn't save the release feed (" .. tostring(save_err) .. ")")
+        return
+    end
     plugin.storage.set(FEED_COVERED_TO_KEY, job.today)
     plugin.storage.set(LAST_FEED_FETCH_KEY, tostring(os.time()))
 
@@ -901,7 +1016,13 @@ local function process_release_object(job, obj)
     end
 
     local rel = plugin.json_decode(obj, { max_input_bytes = 65536 })
-    if not rel then
+    if type(rel) ~= "table" then
+        job.decode_failures = job.decode_failures + 1
+        return
+    end
+    if type(rel.artist_credit_name) ~= "string" or type(rel.release_name) ~= "string"
+        or type(rel.release_date) ~= "string"
+        or (rel.artist_mbids ~= nil and type(rel.artist_mbids) ~= "table") then
         job.decode_failures = job.decode_failures + 1
         return
     end
@@ -1172,7 +1293,7 @@ local function mb_request(url, callback)
         end
 
         local data = plugin.json_decode(body, { max_input_bytes = MB_MAX_RESPONSE_BYTES })
-        if not data then
+        if type(data) ~= "table" then
             callback(nil, "couldn't read the response")
             return
         end
@@ -1182,11 +1303,13 @@ end
 
 -- genres come unsorted, so sort by vote count here
 local function top_genres(genres, n)
-    if not genres or #genres == 0 then return {} end
+    if type(genres) ~= "table" or #genres == 0 then return {} end
 
     local sorted = {}
     for _, g in ipairs(genres) do
-        table.insert(sorted, g)
+        if type(g) == "table" and type(g.name) == "string" then
+            table.insert(sorted, g)
+        end
     end
     table.sort(sorted, function(a, b) return (a.count or 0) > (b.count or 0) end)
 
@@ -1219,11 +1342,20 @@ local function render_album_page(artist, album, year, release_group_mbid, releas
         { type = "toggle", label = "On Wish List", value = on_wishlist, icon = ICON_WISH,
             on_change = function(checked)
                 if checked then
-                    add_wishlist_entry(artist, album, year, release_group_mbid, release_type, "album_page", info)
-                    plugin.show_toast("Added to wish list")
+                    local added, _, err = add_wishlist_entry(
+                        artist, album, year, release_group_mbid, release_type, "album_page", info)
+                    if added then
+                        plugin.show_toast("Added to wish list")
+                    elseif added == nil then
+                        plugin.show_toast("Discover: couldn't save wish list (" .. tostring(err) .. ")")
+                    end
                 else
-                    remove_wishlist_entry(id)
-                    plugin.show_toast("Removed from wish list")
+                    local removed, err = remove_wishlist_entry(id)
+                    if err then
+                        plugin.show_toast("Discover: couldn't save wish list (" .. tostring(err) .. ")")
+                    else
+                        plugin.show_toast("Removed from wish list")
+                    end
                 end
             end },
         { type = "row", label = "Artist: " .. artist, wrap = true,
@@ -1316,9 +1448,9 @@ local function fetch_release_groups(artist_mbid, type_query, on_done)
                 return
             end
 
-            local groups = data["release-groups"] or {}
+            local groups = type(data["release-groups"]) == "table" and data["release-groups"] or {}
             for _, rg in ipairs(groups) do
-                if rg.id and not seen[rg.id] then
+                if type(rg) == "table" and type(rg.id) == "string" and not seen[rg.id] then
                     seen[rg.id] = true
                     all[#all + 1] = rg
                 end
@@ -1423,7 +1555,7 @@ local function show_similar_artists(seed_mbid, seed_name)
         end
 
         local similar = plugin.json_decode(body, { max_input_bytes = MB_MAX_RESPONSE_BYTES })
-        if not similar or #similar == 0 then
+        if type(similar) ~= "table" or #similar == 0 then
             plugin.show_toast("Discover: no recommendations found for " .. seed_name)
             return
         end
@@ -1431,9 +1563,11 @@ local function show_similar_artists(seed_mbid, seed_name)
         local labels = {}
         for i, a in ipairs(similar) do
             if i > 50 then break end
-            local comment = a.comment
-            labels[i] = { label = (comment and comment ~= "") and
-                (a.name .. " (" .. comment .. ")") or a.name, wrap = true }
+            if type(a) == "table" and type(a.name) == "string" then
+                local comment = type(a.comment) == "string" and a.comment or nil
+                labels[#labels + 1] = { label = (comment and comment ~= "") and
+                    (a.name .. " (" .. comment .. ")") or a.name, wrap = true }
+            end
         end
 
         plugin.show_list("Similar to " .. seed_name, labels, function(index)
@@ -1504,6 +1638,10 @@ show_artist_page = function(artist_mbid, artist_name)
 end
 
 local function resolve_artist_mbid(name, callback)
+    if #name > 512 then
+        callback(nil, "artist name is too long to search")
+        return
+    end
     local url = "https://musicbrainz.org/ws/2/artist/?fmt=json&limit=1&query=" .. url_encode(name)
     mb_request(url, function(data, err)
         if err then
@@ -1512,7 +1650,8 @@ local function resolve_artist_mbid(name, callback)
         end
 
         local artists = data["artists"]
-        if not artists or #artists == 0 then
+        if type(artists) ~= "table" or type(artists[1]) ~= "table" or type(artists[1].id) ~= "string"
+            or type(artists[1].name) ~= "string" then
             callback(nil, "couldn't identify \"" .. name .. "\" on MusicBrainz")
             return
         end
@@ -1537,6 +1676,10 @@ end
 local function search_artist(query)
     query = trim(query)
     if query == "" then return end
+    if #query > 512 then
+        plugin.show_toast("Discover: search text must be 512 bytes or fewer")
+        return
+    end
 
     local url = "https://musicbrainz.org/ws/2/artist/?fmt=json&limit=15&query=" .. url_encode(query)
     loading_toast("Discover: searching artists...")
@@ -1548,16 +1691,18 @@ local function search_artist(query)
         end
 
         local artists = data["artists"]
-        if not artists or #artists == 0 then
+        if type(artists) ~= "table" or #artists == 0 then
             plugin.show_toast("Discover: no artists found for \"" .. query .. "\"")
             return
         end
 
         local labels = {}
         for i, a in ipairs(artists) do
-            local disambig = a.disambiguation
-            labels[i] = { label = (disambig and disambig ~= "") and
-                (a.name .. " (" .. disambig .. ")") or a.name, wrap = true }
+            if type(a) == "table" and type(a.name) == "string" then
+                local disambig = type(a.disambiguation) == "string" and a.disambiguation or nil
+                labels[#labels + 1] = { label = (disambig and disambig ~= "") and
+                    (a.name .. " (" .. disambig .. ")") or a.name, wrap = true }
+            end
         end
 
         plugin.show_list("Artist Results", labels, function(index)
@@ -1581,6 +1726,10 @@ end
 local function search_album(query)
     query = trim(query)
     if query == "" then return end
+    if #query > 512 then
+        plugin.show_toast("Discover: search text must be 512 bytes or fewer")
+        return
+    end
 
     local url = "https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=15&query=" .. url_encode(query)
     loading_toast("Discover: searching albums...")
@@ -1592,7 +1741,7 @@ local function search_album(query)
         end
 
         local groups = data["release-groups"]
-        if not groups or #groups == 0 then
+        if type(groups) ~= "table" or #groups == 0 then
             plugin.show_toast("Discover: no albums found for \"" .. query .. "\"")
             return
         end
@@ -1602,11 +1751,16 @@ local function search_album(query)
 
         local labels = {}
         for i, rg in ipairs(groups) do
-            local artist = (rg["artist-credit"] and rg["artist-credit"][1] and rg["artist-credit"][1].name) or ""
-            labels[i] = {
-                label = format_album_search_result_label(rg), wrap = true,
-                icon = marker_icon(is_owned(artist, rg.title or ""), is_wished(artist, rg.title or "", rg.id)),
-            }
+            if type(rg) == "table" and type(rg.title) == "string" then
+                local credit = rg["artist-credit"]
+                local first_credit = type(credit) == "table" and credit[1] or nil
+                local artist = type(first_credit) == "table" and type(first_credit.name) == "string"
+                    and first_credit.name or ""
+                labels[#labels + 1] = {
+                    label = format_album_search_result_label(rg), wrap = true,
+                    icon = marker_icon(is_owned(artist, rg.title), is_wished(artist, rg.title, rg.id)),
+                }
+            end
         end
 
         plugin.show_list("Album Results", labels, function(index)
@@ -1778,8 +1932,11 @@ local function show_add_by_hand()
             album = trim(album)
             if album == "" then return end
 
-            if add_wishlist_entry(artist, album, nil, nil, nil, "manual", nil) then
+            local added, _, err = add_wishlist_entry(artist, album, nil, nil, nil, "manual", nil)
+            if added then
                 plugin.show_toast("Added to wish list")
+            elseif added == nil then
+                plugin.show_toast("Discover: couldn't save wish list (" .. tostring(err) .. ")")
             else
                 plugin.show_toast("Already on your wish list")
             end
@@ -1820,14 +1977,23 @@ local function show_wish_list()
                     on_change = function(checked)
                         if not checked then return end
 
+                        local removed, err = remove_wishlist_entry(e.id)
+                        if not removed then
+                            plugin.show_toast("Discover: couldn't save wish list (" .. tostring(err) .. ")")
+                            return
+                        end
+
                         local remaining = {}
                         for _, p in ipairs(possible) do
                             if p.id ~= e.id then table.insert(remaining, p) end
                         end
                         possible = remaining
 
-                        remove_wishlist_entry(e.id)
-                        save_possible_matches(possible)
+                        local saved, save_err = save_possible_matches(possible)
+                        if not saved then
+                            plugin.show_toast("Discover: couldn't save confirmations (" .. tostring(save_err) .. ")")
+                            return
+                        end
                         plugin.show_toast("Removed from wish list")
                     end,
                 }
@@ -1872,11 +2038,25 @@ local function show_restore_confirm()
         if index ~= 1 then return end
 
         local current = plugin.storage.get("wishlist")
-        if current then plugin.storage.set("wishlist_before_restore", current) end
+        if current then
+            local backed_up, backup_err = plugin.storage.set("wishlist_before_restore", current)
+            if not backed_up then
+                plugin.show_toast("Discover: couldn't back up the current wish list (" .. tostring(backup_err) .. ")")
+                return
+            end
+        end
 
-        plugin.storage.set("wishlist", json_dump(wishlist_envelope(mirrored)))
+        local stored, store_err = storage_json_set("wishlist", wishlist_envelope(mirrored))
+        if not stored then
+            plugin.show_toast("Discover: couldn't restore wish list (" .. tostring(store_err) .. ")")
+            return
+        end
         record_mirror_mtime()
-        plugin.storage.set("wishlist_mirror_dirty", "0")
+        local clean = plugin.storage.set("wishlist_mirror_dirty", "0")
+        if not clean then
+            plugin.show_toast("Discover: restored the list, but couldn't update SD sync status")
+            return
+        end
         plugin.show_toast(("Discover: restored %d from the SD copy"):format(#mirrored))
     end)
 end
@@ -1892,7 +2072,10 @@ local function show_options()
     for _, t in ipairs(SECONDARY_TYPE_OPTIONS) do
         rows[#rows + 1] = {
             type = "toggle", label = t.label, value = opts[t.key],
-            on_change = function(checked) save_option(t.key, checked) end,
+            on_change = function(checked)
+                local saved, err = save_option(t.key, checked)
+                if not saved then plugin.show_toast("Discover: couldn't save Options (" .. tostring(err) .. ")") end
+            end,
         }
     end
 
@@ -1933,15 +2116,9 @@ local function show_discover_menu()
     end)
 end
 
--- try "music" (speculative), then "music_library", then a stream media tile
+-- Music Library is the supported Settings list for music library tools.
 local menu_options = { icon = ICON_MENU }
-local registered = pcall(plugin.register_list_item, "music", "Discover", show_discover_menu, menu_options)
-if not registered then
-    registered = pcall(plugin.register_list_item, "music_library", "Discover", show_discover_menu, menu_options)
-end
-if not registered then
-    plugin.register_stream_media_tile("Discover", show_discover_menu)
-end
+plugin.register_list_item("music_library", "Discover", show_discover_menu, menu_options)
 
 -- events
 -- these trigger the auto check-off; the wish list screen also runs it on open

@@ -38,6 +38,7 @@ local tests = {
     { "lyrics", "test_lyrics_fetcher" },
     { "cover", "test_cover_art_fetcher" },
     { "shuffle", "test_album_shuffle" },
+    { "discover", "test_discover" },
 }
 
 for _, t in ipairs(tests) do
