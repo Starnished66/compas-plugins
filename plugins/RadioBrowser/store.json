@@ -1,5 +1,6 @@
 {
-  "description": "Search Radio Browser from Stream Media, play a station, and append favorites to Radio.txt.",
+  "description": "Merged into Net Radio. Existing users should disable or remove the old Radio Browser plugin and refresh plugins; keep Radio.txt.",
   "category": "Listening",
-  "author": "Compás"
+  "author": "Compás",
+  "publish": false
 }

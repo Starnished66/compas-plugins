@@ -19,7 +19,7 @@ jobs:
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
       - name: Test API 15 music plugins
         run: lua tests/music_plugins/run.lua
-      - name: Test API 15 ListenBrainz and Radio Browser plugins
+      - name: Test API 15 ListenBrainz and Net Radio plugins
         run: lua tests/service_plugins/run.lua
       - name: Test podcast and audiobook speed handoff
         run: lua tests/podcasts_speed_test.lua plugins/Podcasts/Podcasts.lua plugins/Audiobooks/Audiobooks.lua

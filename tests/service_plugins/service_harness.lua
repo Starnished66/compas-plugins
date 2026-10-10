@@ -1,4 +1,4 @@
--- Host-side mock for ListenBrainz and Radio Browser. Not shipped to the device.
+-- Host-side mock for ListenBrainz and Net Radio. Not shipped to the device.
 -- plugin.storage and plugin.secrets are the real API 15 names; tables may be
 -- shared across loads so a restart keeps the same queue and token.
 

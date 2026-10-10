@@ -21,13 +21,13 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 Lyrics Fetcher, Cover Art Fetcher and Album Shuffle support Plugin API 15. Fetchers offer manual lookup and optional automatic mode; Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
 
-## ListenBrainz and Radio Browser
+## ListenBrainz and Net Radio
 
 Both use Plugin API 15, the API in Compás v1.0.1. No newer plugin API is required.
 
 **ListenBrainz Scrobbler** is under Settings > Playback & Controls. Turn on **Enabled** and enter a ListenBrainz user token. The token stays in the plugin secret store. A listen is kept on the device before it is sent, up to 40 records or 32 KiB. Past that, or if the save fails, the listens already stored stay and the new one is not added. Paused time and time skipped by seeking do not count. Tracks under 30 seconds and streams with no duration are skipped. Logging out or changing the token clears the previous account's queue. A rejected token stops new sends and keeps the saved listens.
 
-**Radio Browser** is a Stream Media tile. Search by station name and play a direct MP3, FLAC, or ADTS AAC/AAC+ stream. Saving a favorite appends one line to `Radio.txt` in the same `Name | http(s)://direct-stream` form Net Radio already reads. Existing lines are left as they are, and saved favorites can be opened offline. Playback still needs a network connection. The list shows the station name. Live ICY or ID3 titles are not available to plugins and are not shown by the player.
+**Net Radio** is one Stream Media tile for both saved stations and Radio Browser search. Open **Saved stations** to play the `Radio.txt` queue, or **Search stations** to find and save direct MP3, FLAC, or ADTS AAC/AAC+ streams. Favorites append to the same `Name | http(s)://direct-stream` file; existing bytes are preserved, and stations remain available offline (playback needs a network connection). Existing users of the separate Radio Browser plugin should disable it in Plugin Manager or remove `.plugins/RadioBrowser.lua`, then refresh plugins. Keep `Radio.txt` so saved stations remain available. Live ICY or ID3 titles are not shown by the player.
 
 ## Player layouts
 

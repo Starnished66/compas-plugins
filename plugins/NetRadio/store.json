@@ -1,5 +1,5 @@
 {
-  "description": "Internet radio stations from the Radio.txt file on the SD card, in Stream Media.",
+  "description": "Play saved internet radio stations from Radio.txt or search Radio Browser and save stations to the SD card.",
   "category": "Listening",
   "author": "Compás",
   "files": [

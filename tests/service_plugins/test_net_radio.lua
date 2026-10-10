@@ -1,6 +1,6 @@
 local harness = require("service_harness")
 
-local PLUGIN = "plugins/RadioBrowser/RadioBrowser.lua"
+local PLUGIN = "plugins/NetRadio/NetRadio.lua"
 local UUID = "12345678-1234-1234-1234-123456789abc"
 
 local function read_file(path)
@@ -53,9 +53,10 @@ return function(assert_eq, assert_true, assert_false)
 
     do
         local h, api = boot(root .. "/search")
-        assert_eq(h.definition.id, "compas.radio_browser", "plugin id")
+        assert_eq(h.definition.id, "example.net_radio", "plugin id")
+        assert_eq(h.definition.version, "1.6.0", "merged plugin version")
         assert_eq(h.definition.api_min, 15, "api_min 15")
-        assert_eq(h.tiles[1].label, "Radio Browser", "stream media tile")
+        assert_eq(h.tiles[1].label, "Net Radio", "stream media tile")
         api.search("rock & roll", 0)
         assert_eq(h.http_calls[1].options.url, "https://de1.api.radio-browser.info/json/servers", "discovery URL")
         assert_eq(h.http_calls[1].options.method, "GET", "discovery GET")
@@ -72,6 +73,16 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(search.url:sub(1, 8) == "https://", "search uses HTTPS")
         assert_eq(api.search("", 0), nil, "empty query does not search")
         assert_true(table.concat(h.toasts, "\n"):find("Enter a station name", 1, true) ~= nil, "empty query toast")
+    end
+
+    do
+        local h, api = boot(root .. "/root-menu")
+        assert_eq(h.tiles[1].label, "Net Radio", "merged root tile identity")
+        api.open_browser()
+        local menu = h.lists[#h.lists]
+        assert_eq(menu.title, "Net Radio", "root menu title")
+        assert_eq(menu.items[1], "Saved stations", "saved stations appear first")
+        assert_eq(menu.items[2], "Search stations", "search appears second")
     end
 
     do
@@ -261,12 +272,13 @@ return function(assert_eq, assert_true, assert_false)
         assert_eq(favorites.items[1], "Custom", "comments are hidden and custom names remain")
         assert_eq(favorites.items[2], "http://only.example/b", "URL-only line stays playable")
         favorites.on_select(2)
-        assert_eq(h.play_lists[#h.play_lists].paths[1], "http://only.example/b", "offline favorite plays the saved URL")
+        assert_eq(h.play_lists[#h.play_lists].paths[2], "http://only.example/b", "offline favorite queue preserves displayed order")
+        assert_eq(h.play_lists[#h.play_lists].start_index, 2, "selected station keeps its queue index")
         favorites.on_select(4)
-        assert_eq(h.play_lists[#h.play_lists].paths[1], "https://CDN.Example:443/live.mp3?x=1#.aac",
-            "saved hint and query are kept")
+        assert_eq(h.play_lists[#h.play_lists].paths[4], "https://CDN.Example:443/live.mp3?x=1#.aac",
+            "saved hint and query are kept in queue")
         assert_eq(#h.http_calls, calls, "favorite playback does not use the network")
-        assert_eq(#h.play_lists, 2, "both saved entries played")
+        assert_eq(#h.play_lists, 2, "both saved selections played")
     end
 
     do
@@ -353,10 +365,33 @@ return function(assert_eq, assert_true, assert_false)
 
     do
         local h, api, path = boot(root .. "/long-existing-favorite")
-        write_file(path, "Long | https://h.example/" .. string.rep("x", 512) .. "\n")
+        write_file(path, "Good | http://good.example/live\nLong | https://h.example/" .. string.rep("x", 512) .. "\nBad | https://bad host/live\n")
         api.open_favorites()
         h.lists[#h.lists].on_select(1)
-        assert_eq(#h.play_lists, 0, "pre-existing long URL cannot reach truncating native API")
+        assert_eq(#h.play_lists, 1, "valid saved URL is queued")
+        assert_eq(h.play_lists[1].paths[1], "http://good.example/live", "queue contains valid URL only")
+        assert_eq(#h.play_lists[1].paths, 1, "invalid URLs never enter playback queue")
+        assert_true(table.concat(h.toasts, "\n"):find("Some stations could not be listed", 1, true) ~= nil,
+            "filtered invalid URLs are reported")
+    end
+
+    do
+        local h, api, path = boot(root .. "/empty-radio")
+        api.open_browser()
+        h.lists[#h.lists].on_select(1)
+        local retry = h.lists[#h.lists]
+        assert_eq(retry.title, "No stations found in Radio.txt", "empty file offers retry screen")
+        assert_eq(retry.items[1], "Check again", "empty file retry action")
+        write_file(path, "Ready | https://ready.example/live\n")
+        retry.on_select(1)
+        assert_eq(h.lists[#h.lists].items[1], "Ready", "retry reloads stations from disk")
+    end
+
+    do
+        local h, api, path = boot(root .. "/zero-byte-radio")
+        write_file(path, "")
+        api.open_favorites()
+        assert_eq(h.lists[#h.lists].items[1], "Check again", "zero-byte Radio.txt offers retry")
     end
 
     do

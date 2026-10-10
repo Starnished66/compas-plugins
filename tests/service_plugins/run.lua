@@ -1,4 +1,4 @@
--- Host runner for mocked ListenBrainz and Radio Browser tests.
+-- Host runner for mocked ListenBrainz and Net Radio tests.
 package.path = "tests/service_plugins/?.lua;tests/music_plugins/?.lua;" .. package.path
 
 os.execute("mkdir -p build_test/service_plugin_tests")
@@ -36,7 +36,7 @@ end
 
 local tests = {
     { "listenbrainz", "test_listenbrainz" },
-    { "radio", "test_radio_browser" },
+    { "netradio", "test_net_radio" },
 }
 
 for _, entry in ipairs(tests) do
