@@ -2,5 +2,5 @@
   "description": "Fill missing album-title.jpg sidecars using MusicBrainz and the Cover Art Archive. Fetch the current album or enable automatic lookup.",
   "category": "Tools",
   "author": "Compás",
-  "publish": true
+  "publish": false
 }
