@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.lyrics_fetcher",
     name = "Lyrics Fetcher",
-    version = "1.1.1",
+    version = "1.1.2",
     api_min = 16,
 })
 

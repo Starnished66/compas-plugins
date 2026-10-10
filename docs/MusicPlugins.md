@@ -16,7 +16,7 @@ The music plugins listed here are published for Compás v1.1. Lyrics Fetcher, Co
 
 ### API 16 behavior
 
-Lyrics Fetcher 1.1.1, Cover Art Fetcher 1.1.1, and AutoEQ 1.1.0 are published API16 packages. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Cover and podcast downloads show a percentage only when the native download API reports a known byte total. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
+Lyrics Fetcher 1.1.2, Cover Art Fetcher 1.1.2, and AutoEQ 1.1.0 are published API16 packages. Manual lookup/download operations show dismissible progress cards; automatic fetches stay quiet. Cover and podcast downloads show a percentage only when the native download API reports a known byte total. HTTP lookup, profile download, unknown totals, and other phases remain indeterminate; no estimated percentages are shown. Dismissing a card stops asynchronous updates from reopening it, while an intentional repeated manual action can reopen an existing operation when that plugin supports joining it.
 
 Fetchers preserve existing sidecars and use verified HTTPS. No API key is needed. Album matching uses album artist where available, including compilation albums. Lyrics are looked up using title, artist, album and duration. Automatic lookups send those tags to the relevant service.
 
@@ -24,7 +24,7 @@ Cover Art Fetcher saves album-specific sidecars because a generic `cover.jpg` al
 
 Existing images, including `cover.jpg` written by earlier versions, are preserved. Fetch the affected albums again to add their individual sidecars; these take precedence over generic folder artwork when no track-specific sidecar is present. The old generic file can still affect albums that have not been fetched. Inspect it before removing it with File Manager, then update the music database. Embedded artwork remains unavailable to Lua.
 
-Newly saved lyrics are loaded when the track is played again; fetching does not restart playback. Lyrics Fetcher 1.1.1 allows one native HTTP lookup and one replaceable latest-track job at a time. It caps response JSON and saved LRC at 512 KiB, track metadata at 128 bytes per field, and validates paths and request URLs against native buffer limits. JSON decoding allows at most eight nesting levels and 64 entries. Each request times out after 30 seconds; there is at most one retry, delayed by at most 30 seconds. Stale results are discarded without writing a file.
+Newly saved lyrics are loaded when the track is played again; fetching does not restart playback. Lyrics Fetcher 1.1.2 allows one native HTTP lookup and one replaceable latest-track job at a time. It caps response JSON and saved LRC at 512 KiB, track metadata at 128 bytes per field, and validates paths and request URLs against native buffer limits. JSON decoding allows at most eight nesting levels and 64 entries. Each request times out after 30 seconds; there is at most one retry, delayed by at most 30 seconds. Stale results are discarded without writing a file.
 
 API 15 does not expose embedded lyrics or embedded artwork to Lua. These plugins check sidecar files; a track with embedded lyrics or artwork may still receive a missing sidecar. Album Shuffle cannot set native playback mode, so the user selects sequential mode before starting.
 
