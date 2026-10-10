@@ -42,6 +42,31 @@ Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Pl
 - **Vinyl Player** uses a record-inspired layout with an envelope waveform seek bar.
 - **Orbit Player** uses circular artwork and a circular seek bar.
 
+## v1.1 plugins (API 16)
+
+These sources are held with `publish: false` until the v1.1 release. Manual
+installation requires firmware with API 16 and the corresponding native
+capabilities.
+
+| Plugin | Where to open it | Behavior |
+| --- | --- | --- |
+| Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
+| Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |
+| Volume Limiter | Settings > Sound | Quietly pulls software volume down to a configured ceiling. Volume events arrive at the firmware's notification cadence. |
+| AutoEQ Context | Settings > Sound | Selects local `.peq` profiles by folder, artist, or genre. Applies and restores runtime EQ without saving each track change. |
+| Output-Aware Sound | Settings > Sound | Selects a local `.peq` profile for wired, USB DAC, or Bluetooth output, including codec-specific Bluetooth rules. |
+| Album Playback Rules | Settings > Playback & Controls | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
+| A-B Repeat | Settings > Playback & Controls | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
+| ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
+| Jellyfin & Emby | Stream Media | Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
+
+Automatic EQ tools preserve later manual changes. If another tool changes EQ,
+automation suspends rather than continually overwriting it; use the plugin's
+reclaim control to resume. Profiles live in the SD card's `PEQ_Profiles` folder.
+
+The host tests exercise plugin callbacks and failure paths against API mocks.
+They do not replace verification on a device or against a live media server.
+
 ## Layout
 
 ```

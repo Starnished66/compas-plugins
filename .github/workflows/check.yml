@@ -21,6 +21,13 @@ jobs:
         run: lua tests/music_plugins/run.lua
       - name: Test API 15 ListenBrainz and Net Radio plugins
         run: lua tests/service_plugins/run.lua
+      - name: Test API 16 v1.1 plugins
+        run: |
+          lua tests/track_inspector/run.lua
+          lua tests/volume_plugins/run.lua
+          lua tests/context_plugins/run.lua
+          lua tests/ab_plugins/run.lua
+          lua tests/jellyfin_emby/run.lua
       - name: Test podcast and audiobook speed handoff
         run: lua tests/podcasts_speed_test.lua plugins/Podcasts/Podcasts.lua plugins/Audiobooks/Audiobooks.lua
       - name: Test audiobook shelves and podcast offline workflows

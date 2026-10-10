@@ -1,0 +1,6 @@
+{
+  "description": "Browse and stream music libraries, artists, albums, and tracks from Jellyfin and Emby media servers.",
+  "category": "Listening",
+  "author": "Compás",
+  "publish": false
+}

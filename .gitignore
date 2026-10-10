@@ -17,3 +17,16 @@ __pycache__/
 !/tests/service_plugins/
 !/tests/service_plugins/**
 /build_test/
+/work/audio-suite-20261009/
+
+# API 16 v1.1 plugin regression suites.
+!/tests/track_inspector/
+!/tests/track_inspector/**
+!/tests/volume_plugins/
+!/tests/volume_plugins/**
+!/tests/context_plugins/
+!/tests/context_plugins/**
+!/tests/ab_plugins/
+!/tests/ab_plugins/**
+!/tests/jellyfin_emby/
+!/tests/jellyfin_emby/**

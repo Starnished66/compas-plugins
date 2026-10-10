@@ -1,0 +1,6 @@
+{
+  "description": "Applies parametric EQ profiles automatically based on output route and Bluetooth codec.",
+  "category": "Audio",
+  "author": "Compás",
+  "publish": false
+}

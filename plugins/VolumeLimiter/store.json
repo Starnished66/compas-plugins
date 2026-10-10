@@ -1,0 +1,6 @@
+{
+  "description": "Sets a software maximum volume ceiling and quietly clamps playback volume without intrusive popups.",
+  "category": "Audio",
+  "author": "Compás",
+  "publish": false
+}
