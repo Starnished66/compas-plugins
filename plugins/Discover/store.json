@@ -1,0 +1,27 @@
+{
+  "description": "Find new releases, similar artists, releases missing from your collection, and manage your wish list using data from MusicBrainz and ListenBrainz.",
+  "category": "Tools",
+  "author": "buymyhubs",
+  "files": [
+    {
+      "src": "assets/discover.png",
+      "dest": ".plugins/Discover/discover.png"
+    },
+    {
+      "src": "assets/blank.png",
+      "dest": ".plugins/Discover/blank.png"
+    },
+    {
+      "src": "assets/owned.png",
+      "dest": ".plugins/Discover/owned.png"
+    },
+    {
+      "src": "assets/wish.png",
+      "dest": ".plugins/Discover/wish.png"
+    },
+    {
+      "src": "assets/owned_wish.png",
+      "dest": ".plugins/Discover/owned_wish.png"
+    }
+  ]
+}
