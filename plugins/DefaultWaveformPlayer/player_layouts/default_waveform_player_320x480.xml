@@ -16,7 +16,7 @@
         <lv_label name="album" text="" x="15" y="68" width="290" height="22" style_text_font="player_meta" style_text_color="0xaab1b8" style_text_align="center" style_pad_all="0" />
         <lv_obj name="quality_pill" x="30" y="311" width="260" height="22" scrollable="false" style_radius="100" style_bg_color="0x000000" style_bg_opa="51" style_border_width="0" style_pad_all="0" clickable="false">
             <lv_image src="quality_waveform" x="12" y="1" width="20" height="20" inner_align="contain" />
-            <lv_label name="format_badge" text="" x="36" y="0" width="212" height="100%" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="center" />
+            <lv_label name="format_badge" text="" x="36" y="1" width="212" height="100%" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="center" />
         </lv_obj>
         <lv_label name="seek_style" text="waveform_bars" hidden="true" />
         <lv_slider name="progress_slider" x="20" y="338" width="280" height="28" style_bg_color="0x46515b" style_bg_opa="255" style_radius="8" />
