@@ -1,5 +1,5 @@
 {
-  "description": "Inspects audio playback format, signal path, DSP status, and audio file headers.",
+  "description": "Shows current track metadata, source format and quality, output route, sound processing, and an explanation of changes to the audio. It can inspect local WAV, FLAC, and AIFF headers.",
   "category": "Audio",
   "author": "Comp\u00e1s",
   "publish": true

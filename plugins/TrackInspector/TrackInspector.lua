@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.track_inspector",
     name = "Track Inspector",
-    version = "1.1",
+    version = "1.2",
     api_min = 16,
 })
 
@@ -18,8 +18,6 @@ local settings = {
     show_full_path = false,
     show_db_tags = true,
 }
-
-local last_output_event = nil
 
 local function load_settings()
     if plugin.has_capability("storage.namespaced") and plugin.storage then
@@ -58,7 +56,7 @@ local function format_hz(hz)
 end
 
 local function format_depth(bits)
-    if not is_valid_number(bits) or bits <= 0 then return "Unknown / N/A (lossy source)" end
+    if not is_valid_number(bits) or bits <= 0 then return "Unknown / not reported" end
     return string.format("%d-bit", math.floor(bits))
 end
 
@@ -77,7 +75,11 @@ local function format_bitrate(kbps)
 end
 
 local function format_duration(sec)
-    if not is_valid_number(sec) or sec <= 0 then return "Unknown (Live stream or unparsed)" end
+    if not is_valid_number(sec) or sec < 0 then return "Unknown" end
+    if sec == 0 then return "Live or unknown length" end
+    if sec >= 3600 then
+        return string.format("%d:%02d:%02d", math.floor(sec / 3600), math.floor(sec / 60) % 60, math.floor(sec) % 60)
+    end
     local m = math.floor(sec / 60)
     local s = math.floor(sec % 60)
     return string.format("%d:%02d (%d s)", m, s, math.floor(sec))
@@ -96,14 +98,19 @@ end
 
 local function is_remote_url(path)
     if type(path) ~= "string" then return false end
-    return path:match("^%a+://") ~= nil
+    return path:match("^%a[%w+%.%-]*://") ~= nil
 end
 
 local function sanitize_path(path)
     if type(path) ~= "string" or path == "" then return "" end
     if is_remote_url(path) then
         local clean = path:gsub("[?#].*$", "")
-        clean = clean:gsub("^(%a+://)[^/@]+@", "%1")
+        local scheme, authority, suffix = clean:match("^(%a[%w+.-]*://)([^/]*)(.*)$")
+        if scheme and authority then
+            local last_at = authority:match(".*()@")
+            if last_at then authority = authority:sub(last_at + 1) end
+            clean = scheme .. authority .. suffix
+        end
         return clean
     end
     return path
@@ -487,33 +494,34 @@ local function assess_bit_perfect(fmt, out, eq)
 
     -- Required sink presence
     if not out or out.active ~= true then
-        table.insert(reasons, "Audio output sink is inactive or unqueried.")
+        table.insert(reasons, "Output is inactive or its state is unknown.")
     end
 
     -- Route check
     local route = out and out.route or "unknown"
     if route == "bluetooth" then
         local bt_codec = (out and out.bluetooth_codec) or "Unknown / Negotiating"
-        table.insert(reasons, string.format("Output route is Bluetooth (%s): lossy radio transmission cannot certify end-to-end bit-perfect output.", bt_codec))
+        table.insert(reasons, string.format("Bluetooth encoding can change the audio (%s); the receiving device's final output is not visible here.", bt_codec))
     elseif route == "usb_dac" then
         table.insert(reasons, "Output route is USB DAC: external USB endpoint conversion and hardware mixer formats are unverified; matching PCM fields alone cannot prove bit-perfect output.")
     elseif route ~= "wired" then
-        table.insert(reasons, string.format("Output route '%s' is not verified wired DAC.", route))
+        table.insert(reasons, "The active output route is unknown.")
     end
 
-    local hardware_format_known = out and (is_valid_number(out.hardware_sample_rate) and is_valid_number(out.hardware_bit_depth))
+    local hardware_format_known = out and (is_valid_number(out.hardware_sample_rate) and out.hardware_sample_rate > 0
+        and is_valid_number(out.hardware_bit_depth) and out.hardware_bit_depth > 0)
     if out then
         if out.resampling_known then
             if out.resampling then
-                table.insert(reasons, "Hardware driver indicates resampling is active.")
+                table.insert(reasons, "The player reports different engine and output sample rates.")
             end
         else
-            table.insert(reasons, "Hardware DAC resampling status is unconfirmed by audio driver.")
+            table.insert(reasons, "The player cannot compare the engine and output sample rates.")
         end
         if not hardware_format_known then
-            table.insert(reasons, "Hardware DAC sample rate or bit depth is unconfirmed by audio driver.")
+            table.insert(reasons, "The local output format is not reported by the player.")
         elseif is_valid_number(out_depth) and out.hardware_bit_depth ~= out_depth then
-            table.insert(reasons, string.format("Hardware DAC depth mismatch: engine %d-bit -> hardware %d-bit.", out_depth, out.hardware_bit_depth))
+            table.insert(reasons, string.format("Output depth differs: audio engine %d-bit -> player-reported %d-bit.", out_depth, out.hardware_bit_depth))
         end
     end
 
@@ -534,7 +542,7 @@ local function assess_bit_perfect(fmt, out, eq)
             table.insert(reasons, "Output sink DoP flag is not active.")
         end
         if hardware_format_known and is_valid_number(out.hardware_sample_rate) and math.abs(out.hardware_sample_rate - expected_carrier_rate) > FLOAT_TOLERANCE then
-            table.insert(reasons, string.format("Hardware DAC rate does not match DoP carrier rate: hardware %d Hz vs carrier %.0f Hz.", out.hardware_sample_rate, expected_carrier_rate))
+            table.insert(reasons, string.format("Player-reported output rate does not match the DoP carrier: %d Hz vs %.0f Hz.", out.hardware_sample_rate, expected_carrier_rate))
         end
 
         table.insert(notes, string.format("DoP carrier framing: %s 1-bit DSD stream packaged into %s %s PCM carrier frames; PCM DSP chain bypassed.",
@@ -562,7 +570,7 @@ local function assess_bit_perfect(fmt, out, eq)
         end
 
         if hardware_format_known and is_valid_number(out.hardware_sample_rate) and is_valid_number(src_rate) and math.abs(out.hardware_sample_rate - src_rate) > FLOAT_TOLERANCE then
-            table.insert(reasons, string.format("Hardware DAC rate mismatch: source %d Hz -> hardware %d Hz.", math.floor(src_rate), math.floor(out.hardware_sample_rate)))
+            table.insert(reasons, string.format("Player-reported output rate differs from source: %d Hz -> %d Hz.", math.floor(src_rate), math.floor(out.hardware_sample_rate)))
         end
 
         if is_valid_number(src_depth) and is_valid_number(out_depth) and src_depth ~= out_depth then
@@ -577,34 +585,51 @@ local function assess_bit_perfect(fmt, out, eq)
         if not eq or type(eq.bypass) ~= "boolean" then
             table.insert(reasons, "Equalizer state unavailable or unqueried; cannot verify flat DSP path.")
         elseif eq.bypass == true then
-            table.insert(notes, "Parametric EQ is bypassed (preamp, stereo width, and band filters bypassed by native DSP).")
+            table.insert(notes, "Equalizer bypass is active; preamp, stereo width, crossfeed, and band filters are skipped.")
         else
             local preamp = eq.preamp_db
             if not is_valid_number(preamp) then
                 table.insert(reasons, "EQ preamp gain is unknown or invalid.")
-            elseif math.abs(preamp) > FLOAT_TOLERANCE then
+            elseif preamp ~= 0 then
                 table.insert(reasons, string.format("EQ digital preamp gain active: %+.2f dB.", preamp))
             end
 
             local width = eq.stereo_width
-            if not is_valid_number(width) then
+            if not is_valid_number(width) and (not is_valid_number(channels) or channels == 2) then
                 table.insert(reasons, "Stereo width is unknown or invalid.")
-            elseif math.abs(width - 1.0) > FLOAT_TOLERANCE then
-                table.insert(reasons, string.format("Stereo width DSP active: %.4f (crossfeed alters channels).", width))
+            elseif (not is_valid_number(channels) or channels == 2) and width ~= 1.0 then
+                table.insert(reasons, string.format("Stereo width processing is active: %.4f.", width))
+            end
+
+            local crossfeed = eq.crossfeed
+            if not is_valid_number(crossfeed) and (not is_valid_number(channels) or channels == 2) then
+                table.insert(reasons, "Headphone crossfeed state is unknown.")
+            elseif is_valid_number(crossfeed) and (not is_valid_number(channels) or channels == 2) and crossfeed > 0 then
+                table.insert(reasons, string.format("Headphone crossfeed is active at %.2f strength.", crossfeed))
             end
 
             local active_bands = 0
             if type(eq.bands) == "table" then
+                if #eq.bands ~= 10 then table.insert(reasons, "The full equalizer band state is unavailable.") end
                 for _, band in ipairs(eq.bands) do
-                    if band.enabled and (not is_valid_number(band.gain_db) or math.abs(band.gain_db) > FLOAT_TOLERANCE) then
-                        active_bands = active_bands + 1
+                    if band.enabled == nil then
+                        table.insert(reasons, "An EQ band's enabled state is unknown.")
+                    elseif band.enabled then
+                        local band_type = type(band.type) == "string" and band.type:lower() or "unknown"
+                        if band_type ~= "peaking" and band_type ~= "low_shelf" and band_type ~= "high_shelf" then
+                            table.insert(reasons, "An enabled EQ band has an unrecognized filter type; its effect is unknown.")
+                        elseif not is_valid_number(band.gain_db) then
+                            table.insert(reasons, "An enabled EQ filter has unknown gain.")
+                        else
+                            active_bands = active_bands + 1
+                        end
                     end
                 end
             else
                 table.insert(reasons, "EQ bands configuration missing.")
             end
             if active_bands > 0 then
-                table.insert(reasons, string.format("Parametric EQ active: %d band(s) modifying frequency response.", active_bands))
+                table.insert(reasons, string.format("Parametric EQ has %d enabled band(s); filter processing and peak protection may affect samples even with a flat response.", active_bands))
             end
         end
 
@@ -612,7 +637,7 @@ local function assess_bit_perfect(fmt, out, eq)
         local soft_gain = fmt.software_volume_gain
         if not is_valid_number(soft_gain) then
             table.insert(reasons, "Software volume state unavailable or invalid; cannot verify unity gain.")
-        elseif math.abs(soft_gain - 1.0) > FLOAT_TOLERANCE then
+        elseif soft_gain ~= 1.0 then
             table.insert(reasons, string.format("Software volume scaling active: %.6fx (%s digital modification).", soft_gain, format_gain_db(soft_gain)))
         else
             table.insert(notes, "Software volume at unity gain (1.00 / 0.0 dB - no digital PCM scaling).")
@@ -622,7 +647,7 @@ local function assess_bit_perfect(fmt, out, eq)
         local speed = fmt.playback_speed
         if not is_valid_number(speed) then
             table.insert(reasons, "Playback speed state unavailable or invalid.")
-        elseif math.abs(speed - 1.0) > FLOAT_TOLERANCE then
+        elseif speed ~= 1.0 then
             table.insert(reasons, string.format("Playback speed modified: %.4fx (time-stretching DSP active).", speed))
         end
 
@@ -630,35 +655,38 @@ local function assess_bit_perfect(fmt, out, eq)
         if fmt.replaygain_applied == nil then
             table.insert(reasons, "ReplayGain state unavailable.")
         elseif fmt.replaygain_applied == true then
-            local rg_db = fmt.replaygain_applied_db or 0
-            if not is_valid_number(rg_db) or math.abs(rg_db) > FLOAT_TOLERANCE then
+            local rg_db = fmt.replaygain_applied_db
+            if not is_valid_number(rg_db) then
+                table.insert(reasons, "ReplayGain was reported as applied, but its gain amount is unknown.")
+            elseif rg_db ~= 0 then
                 table.insert(reasons, string.format("ReplayGain scaling applied: %+.2f dB.", rg_db))
             end
         end
 
         if fmt.crossfade_enabled then
-            table.insert(notes, "Crossfade setting is enabled (may blend track boundaries).")
+            table.insert(reasons, "Crossfade is enabled; the player does not report whether tracks are currently being mixed.")
         end
     else
         table.insert(notes, "Native DoP hardware stream bypasses PCM Equalizer, stereo width, and software volume.")
     end
 
     local status, is_candidate
-    if #reasons == 0 and route == "wired" then
+    if #reasons == 0 and route == "wired" and hardware_format_known then
         if is_true_dop then
-            status = "Bit-Perfect DoP Candidate (Wired)"
+            status = "No changes detected (wired DoP candidate)"
         else
-            status = "Bit-Perfect PCM Candidate (Wired)"
+            status = "No changes detected (wired PCM candidate)"
         end
         is_candidate = true
+        table.insert(notes, "No changes detected in the observable playback stages. Hardware certification is not available from this snapshot.")
     elseif route == "bluetooth" or route == "usb_dac" then
-        status = string.format("Route Uncertainty: End-to-End Uncertifiable (%s)", route == "bluetooth" and "Bluetooth" or "USB DAC")
+        status = route == "bluetooth" and "Bluetooth can change audio" or "USB output cannot be fully checked"
         is_candidate = false
     elseif out and out.active ~= true then
-        status = "Sink Inactive / Standby"
+        status = "Output is inactive"
         is_candidate = false
     else
-        status = "Signal Path Modified / Uncertain"
+        status = "Changes detected or information unavailable"
         is_candidate = false
     end
 
@@ -707,6 +735,99 @@ local function get_track_metadata(path)
     return plugin.get_track_metadata(path)
 end
 
+local CODEC_NAMES = {
+    flac = "FLAC (Free Lossless Audio Codec)", mp3 = "MP3", pcm = "PCM audio",
+    dsd = "DSD audio", aac = "AAC", alac = "ALAC (Apple Lossless)",
+    ape = "Monkey's Audio", wma = "Windows Media Audio", opus = "Opus",
+    vorbis = "Vorbis", wavpack = "WavPack", unknown = "Unknown codec",
+}
+
+local function codec_name(codec)
+    local key = type(codec) == "string" and codec:lower() or "unknown"
+    return CODEC_NAMES[key] or key
+end
+
+local function source_quality(codec)
+    codec = type(codec) == "string" and codec:lower() or "unknown"
+    if codec == "flac" or codec == "alac" or codec == "ape" then return "Lossless compression" end
+    if codec == "pcm" then return "Uncompressed PCM" end
+    if codec == "dsd" then return "One-bit DSD audio" end
+    if codec == "mp3" or codec == "aac" or codec == "opus" or codec == "vorbis" or codec == "wma" then return "Lossy" end
+    if codec == "wavpack" or codec == "unknown" or codec == "" then return "Unknown (mode not reported)" end
+    return "Not classified by this inspector"
+end
+
+local function safe_call(name, ...)
+    local fn = plugin[name]
+    if type(fn) ~= "function" then return nil end
+    local ok, value = pcall(fn, ...)
+    if ok then return value end
+    return nil
+end
+
+local function safe_call_all(name, ...)
+    local fn = plugin[name]
+    if type(fn) ~= "function" then return nil end
+    local result = table.pack(pcall(fn, ...))
+    if not result[1] then return nil end
+    local values = { n = result.n - 1 }
+    for i = 2, result.n do values[i - 1] = result[i] end
+    return values
+end
+
+local function first_text(...)
+    for i = 1, select("#", ...) do
+        local value = select(i, ...)
+        if type(value) == "string" and value ~= "" then return value end
+    end
+    return nil
+end
+
+local function yes_no_unknown(value)
+    if value == true then return "Yes" end
+    if value == false then return "No" end
+    return "Unknown"
+end
+
+local function playback_position()
+    local pos = safe_call("get_position")
+    local duration = safe_call("get_duration")
+    if not is_valid_number(pos) or pos < 0 then return "Unknown" end
+    local function clock(sec)
+        sec = math.floor(sec)
+        if sec >= 3600 then return string.format("%d:%02d:%02d", math.floor(sec / 3600), math.floor(sec / 60) % 60, sec % 60) end
+        return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
+    end
+    if is_valid_number(duration) and duration > 0 then return clock(pos) .. " / " .. clock(duration) end
+    return clock(pos) .. " elapsed"
+end
+
+local function playback_state()
+    local playing, paused = safe_call("is_playing"), safe_call("is_paused")
+    if playing == true then return "Playing" end
+    if paused == true then return "Paused" end
+    if playing == false and paused == false then return "Stopped" end
+    return "Unknown"
+end
+
+local function file_size(path)
+    if type(path) ~= "string" or path == "" or is_remote_url(path) then return nil end
+    local f = io.open(path, "rb")
+    if not f then return nil end
+    local size = f:seek("end")
+    f:close()
+    if is_valid_number(size) and size >= 0 then return size end
+    return nil
+end
+
+local function format_file_size(size)
+    if not is_valid_number(size) then return "Unknown" end
+    if size < 1024 then return string.format("%d bytes", size) end
+    if size < 1024 * 1024 then return string.format("%.1f KiB", size / 1024) end
+    if size < 1024 * 1024 * 1024 then return string.format("%.2f MiB", size / (1024 * 1024)) end
+    return string.format("%.2f GiB", size / (1024 * 1024 * 1024))
+end
+
 --------------------------------------------------------------------------------
 -- UI Screens and Navigation (In-place replacement via ui.list_update)
 --------------------------------------------------------------------------------
@@ -721,136 +842,148 @@ local show_settings_screen
 
 -- 1. Format Snapshot Screen
 show_format_screen = function(replace_handle)
-    local fmt, err = get_format_snapshot()
+    local fmt = get_format_snapshot()
     local out = get_output_snapshot()
     local rows = {}
 
-    table.insert(rows, { label = "[Tap to Refresh Format Data]", text_size = "medium" })
-
-    if not fmt then
-        table.insert(rows, { label = "Status: Idle / Not Playing", text_size = "medium" })
-        table.insert(rows, { label = "Explanation: No active track or stream is playing. Start playback to view real-time format parameters.", wrap = true })
-        if err then table.insert(rows, { label = "Detail: " .. err, wrap = true }) end
-
-        local current_handle
-        local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-        current_handle = plugin.show_list("Format Snapshot", rows, function(idx)
-            if idx == 1 then
-                show_format_screen(current_handle)
+    table.insert(rows, { label = "Refresh playback details", text_size = "medium" })
+    table.insert(rows, { label = "Playback: " .. playback_state() .. " · " .. playback_position(), wrap = true })
+    local now = safe_call_all("get_now_playing") or {}
+    local now_title, now_artist, now_album, now_duration = now[1], now[2], now[3], now[4]
+    local source_path = first_text(fmt and fmt.path, safe_call("get_current_track_path"))
+    local source_is_stream = (fmt and fmt.is_stream == true) or is_remote_url(source_path)
+    local meta = source_path and settings.show_db_tags and not source_is_stream and get_track_metadata(source_path) or nil
+    local title = first_text(meta and meta.title, now_title)
+    if title and is_remote_url(title) then title = sanitize_path(title) end
+    local artist = first_text(meta and meta.artist, now_artist)
+    local album = first_text(meta and meta.album, now_album)
+    if title and title ~= "" then table.insert(rows, { label = "Title: " .. title, text_size = "medium", wrap = true }) end
+    if artist and artist ~= "" then table.insert(rows, { label = "Artist: " .. artist, wrap = true }) end
+    if meta and meta.album_artist and meta.album_artist ~= "" then table.insert(rows, { label = "Album artist: " .. meta.album_artist, wrap = true }) end
+    if album and album ~= "" then table.insert(rows, { label = "Album: " .. album, wrap = true }) end
+    if meta and meta.genre and meta.genre ~= "" then table.insert(rows, { label = "Genre: " .. meta.genre, wrap = true }) end
+    if source_path then
+        table.insert(rows, { label = "Source: " .. (source_is_stream and "Network stream" or "Local file") .. " · " .. safe_display_path(source_path, settings.show_full_path), wrap = true })
+        if not source_is_stream then
+            table.insert(rows, { label = "File size: " .. format_file_size(file_size(source_path)), wrap = true })
+            local header = parse_local_file_header(source_path)
+            if header then
+                table.insert(rows, { label = "File header: " .. header.format_name .. " · " .. format_hz(header.sample_rate) .. " · " .. format_depth(header.bit_depth), wrap = true })
             end
-        end, opts)
-        return current_handle
-    end
-
-    local disp_path = safe_display_path(fmt.path, settings.show_full_path)
-    table.insert(rows, { label = "Source Path: " .. disp_path, wrap = true })
-
-    if settings.show_db_tags and not fmt.is_stream then
-        local meta = get_track_metadata(fmt.path)
-        if meta then
-            if meta.title and meta.title ~= "" then table.insert(rows, { label = "Title: " .. meta.title, wrap = true }) end
-            if meta.artist and meta.artist ~= "" then table.insert(rows, { label = "Artist: " .. meta.artist, wrap = true }) end
-            if meta.album and meta.album ~= "" then table.insert(rows, { label = "Album: " .. meta.album, wrap = true }) end
-            if meta.genre and meta.genre ~= "" then table.insert(rows, { label = "Genre: " .. meta.genre, wrap = true }) end
         end
     end
 
-    table.insert(rows, { label = "Codec: " .. (fmt.codec or "unknown"):upper(), text_size = "medium" })
-    table.insert(rows, { label = "Source Sample Rate: " .. format_hz(fmt.sample_rate), text_size = "medium" })
-    table.insert(rows, { label = "Source Bit Depth: " .. format_depth(fmt.bit_depth), text_size = "medium" })
-    table.insert(rows, { label = "Channels: " .. format_channels(fmt.channels), text_size = "medium" })
-    table.insert(rows, { label = "Bitrate: " .. format_bitrate(fmt.bitrate_kbps), text_size = "medium" })
-    table.insert(rows, { label = "Duration: " .. format_duration(fmt.duration_seconds), text_size = "medium" })
-    table.insert(rows, { label = "Stream Type: " .. (fmt.is_stream and "Remote Network Stream" or "Local File") })
-    table.insert(rows, { label = "Seekable: " .. (fmt.seekable and "Yes" or "No (Forward-only)") })
-
-    if fmt.dop then
-        table.insert(rows, { label = "DSD Stream: Native DoP (Bypasses PCM DSP)", text_size = "medium" })
-    elseif fmt.is_dsd then
-        table.insert(rows, { label = "DSD Stream: DSD-to-PCM Decimation", text_size = "medium" })
+    if not fmt then
+        table.insert(rows, { label = "Audio format: Unknown (no active decoder snapshot)", wrap = true })
+        table.insert(rows, { label = "Start or resume playback to inspect the decoder's live format.", wrap = true })
+    else
+        table.insert(rows, { label = "Codec: " .. codec_name(fmt.codec), text_size = "medium", wrap = true })
+        table.insert(rows, { label = "Source quality: " .. source_quality(fmt.codec), wrap = true })
+        table.insert(rows, { label = "Source audio: " .. format_hz(fmt.sample_rate) .. " · " .. format_depth(fmt.bit_depth) .. " · " .. format_channels(fmt.channels), wrap = true })
+        table.insert(rows, { label = "Bitrate: " .. format_bitrate(fmt.bitrate_kbps), wrap = true })
+        local duration = is_valid_number(fmt.duration_seconds) and fmt.duration_seconds > 0 and fmt.duration_seconds or now_duration
+        table.insert(rows, { label = "Length: " .. format_duration(duration) .. " · " .. (fmt.seekable == true and "seekable" or fmt.seekable == false and "forward-only" or "seek status unknown"), wrap = true })
+        if fmt.dop then
+            table.insert(rows, { label = "DSD-over-PCM carrier is active; PCM processing is bypassed", wrap = true })
+        elseif fmt.is_dsd then
+            table.insert(rows, { label = "DSD playback: converted to PCM", wrap = true })
+        end
+        if fmt.is_stream then table.insert(rows, { label = "Stream name or endpoint: " .. safe_display_path(fmt.path, settings.show_full_path), wrap = true }) end
+        table.insert(rows, { label = "Audio engine output: " .. format_hz(fmt.output_sample_rate) .. " · " .. format_depth(fmt.output_bit_depth), wrap = true })
     end
-
-    table.insert(rows, { label = "--- Output Stream ---", text_size = "small" })
-    table.insert(rows, { label = "Output Sample Rate: " .. format_hz(fmt.output_sample_rate), text_size = "medium" })
-    table.insert(rows, { label = "Output Bit Depth: " .. format_depth(fmt.output_bit_depth), text_size = "medium" })
     if out then
-        table.insert(rows, { label = "Route: " .. (out.route or "unknown"):upper() .. (out.active and " (Active)" or " (Inactive)") })
+        local route = ({ wired = "Wired output", bluetooth = "Bluetooth", usb_dac = "USB audio" })[out.route] or "Unknown route"
+        table.insert(rows, { label = "Output route: " .. route .. " · " .. (out.active == true and "active" or out.active == false and "standby" or "status unknown"), wrap = true })
+        if out.route == "bluetooth" then table.insert(rows, { label = "Bluetooth codec: " .. (out.bluetooth_codec or "Not reported"), wrap = true }) end
         if out.resampling_known then
-            table.insert(rows, { label = "Resampling: " .. (out.resampling and "Active" or "None (Matched)") })
+            table.insert(rows, { label = "Player output rate: " .. format_hz(out.sample_rate) .. " · " .. (out.resampling and "differs from the engine" or "matches the engine"), wrap = true })
         else
-            table.insert(rows, { label = "Resampling: Unknown (Hardware format unconfirmed)", wrap = true })
+            table.insert(rows, { label = "Final device format: Not available from the player", wrap = true })
         end
     end
 
     local current_handle
     local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-    current_handle = plugin.show_list("Format Snapshot", rows, function(idx)
-        if idx == 1 then
-            show_format_screen(current_handle)
-        end
+    current_handle = plugin.show_list("Playback details", rows, function(idx)
+        if idx == 1 then show_format_screen(current_handle) end
     end, opts)
     return current_handle
 end
 
 -- 2. Output & Signal Path Screen
 show_output_screen = function(replace_handle)
-    local out, err = get_output_snapshot()
+    local out = get_output_snapshot()
     local fmt = get_format_snapshot()
     local rows = {}
 
-    table.insert(rows, { label = "[Tap to Refresh Output Data]", text_size = "medium" })
+    table.insert(rows, { label = "Refresh output details", text_size = "medium" })
 
     if not out then
-        table.insert(rows, { label = "Output Info Unavailable", text_size = "medium" })
-        if err then table.insert(rows, { label = "Detail: " .. err, wrap = true }) end
+        table.insert(rows, { label = "Output details unavailable", text_size = "medium" })
+        table.insert(rows, { label = "This firmware does not expose a live output snapshot.", wrap = true })
         local current_handle
         local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-        current_handle = plugin.show_list("Output Route", rows, function(idx)
+        current_handle = plugin.show_list("Output details", rows, function(idx)
             if idx == 1 then show_output_screen(current_handle) end
         end, opts)
         return current_handle
     end
 
-    table.insert(rows, { label = "Active Route: " .. (out.route or "unknown"):upper(), text_size = "medium" })
-    table.insert(rows, { label = "Sink Active: " .. (out.active and "Yes (Transmitting audio)" or "No (Standby)") })
+    local route_names = { wired = "Wired output", bluetooth = "Bluetooth", usb_dac = "USB audio" }
+    table.insert(rows, { label = "Route: " .. (route_names[out.route] or "Unknown"), text_size = "medium" })
+    table.insert(rows, { label = "Output active: " .. yes_no_unknown(out.active) })
 
     if out.route == "bluetooth" then
-        local bt_codec = out.bluetooth_codec or "Unknown / Negotiating"
-        table.insert(rows, { label = "Bluetooth Codec: " .. bt_codec, text_size = "medium" })
-        table.insert(rows, { label = "Notice: Bluetooth transmission uses lossy radio compression; DAC output cannot be verified bit-perfect.", wrap = true })
+        local bt_codec = out.bluetooth_codec or "Not reported"
+        table.insert(rows, { label = "Bluetooth codec: " .. bt_codec, text_size = "medium", wrap = true })
+        table.insert(rows, { label = "The remote device's final output format is not visible here.", wrap = true })
     elseif out.route == "usb_dac" then
-        table.insert(rows, { label = "USB Endpoint: Connected USB Audio DAC", text_size = "medium" })
-        table.insert(rows, { label = "Notice: External USB DAC conversion and internal endpoint formats are unverified.", wrap = true })
+        table.insert(rows, { label = "USB audio output is selected", text_size = "medium" })
+        table.insert(rows, { label = "The external device's final conversion and output format are not visible here.", wrap = true })
     elseif out.route == "wired" then
-        table.insert(rows, { label = "Wired Port: On-board 3.5mm Headphone / Line-out", text_size = "medium" })
+        table.insert(rows, { label = "Wired output is selected", text_size = "medium" })
     end
 
-    table.insert(rows, { label = "Output PCM Rate: " .. format_hz(out.sample_rate), text_size = "medium" })
-    table.insert(rows, { label = "Output PCM Depth: " .. format_depth(out.bit_depth), text_size = "medium" })
-
-    local hw_known = (is_valid_number(out.hardware_sample_rate) and is_valid_number(out.hardware_bit_depth))
-    if hw_known then
-        table.insert(rows, { label = "Hardware DAC Rate: " .. format_hz(out.hardware_sample_rate), text_size = "medium" })
-        table.insert(rows, { label = "Hardware DAC Depth: " .. format_depth(out.hardware_bit_depth), text_size = "medium" })
-        table.insert(rows, { label = "Hardware Resampling: " .. (out.resampling and "Active (Rate mismatch)" or "None (Direct rate)") })
+    if fmt then
+        table.insert(rows, { label = "Audio engine format: " .. format_hz(fmt.output_sample_rate) .. " · " .. format_depth(fmt.output_bit_depth), text_size = "medium", wrap = true })
     else
-        table.insert(rows, { label = "Hardware DAC Rate: Unknown (Driver hardware register unqueried)", wrap = true })
-        table.insert(rows, { label = "Hardware Resampling: " .. (out.resampling_known and (out.resampling and "Active" or "None") or "Unknown"), wrap = true })
+        table.insert(rows, { label = "Audio engine format: Unknown", text_size = "medium" })
+    end
+    if out.active == true then
+        table.insert(rows, { label = "Active output format: " .. format_hz(out.sample_rate) .. " · " .. format_depth(out.bit_depth), text_size = "medium", wrap = true })
+    else
+        table.insert(rows, { label = "Active output format: Not available while output is inactive", wrap = true })
     end
 
-    table.insert(rows, { label = "DoP (DSD over PCM): " .. (out.dop and "Active" or "Inactive") })
+    local hw_known = (is_valid_number(out.hardware_sample_rate) and out.hardware_sample_rate > 0
+        and is_valid_number(out.hardware_bit_depth) and out.hardware_bit_depth > 0)
+    if hw_known then
+        table.insert(rows, { label = "Local output format: " .. format_hz(out.hardware_sample_rate) .. " · " .. format_depth(out.hardware_bit_depth), text_size = "medium", wrap = true })
+        table.insert(rows, { label = "Output rate matches engine: " .. (out.resampling_known and (out.resampling and "No" or "Yes") or "Unknown"), wrap = true })
+    else
+        table.insert(rows, { label = "Final device format: Not reported by the player", wrap = true })
+        table.insert(rows, { label = "Output rate matches engine: " .. (out.resampling_known and (out.resampling and "No" or "Yes") or "Unknown"), wrap = true })
+    end
 
-    if fmt and fmt.sample_rate and out.sample_rate then
-        if fmt.sample_rate == out.sample_rate then
-            table.insert(rows, { label = "Source vs Output Rate: Matched (" .. format_hz(fmt.sample_rate) .. ")" })
+    table.insert(rows, { label = "DSD-over-PCM carrier: " .. yes_no_unknown(out.dop) })
+
+    if fmt and is_valid_number(fmt.sample_rate) and fmt.sample_rate > 0
+        and is_valid_number(fmt.output_sample_rate) and fmt.output_sample_rate > 0 then
+        if fmt.dop then
+            local expected = fmt.sample_rate / 16
+            table.insert(rows, { label = "DSD carrier rate: " .. format_hz(fmt.output_sample_rate) .. " · expected " .. format_hz(expected), wrap = true })
+        elseif fmt.is_dsd then
+            table.insert(rows, { label = "DSD converted to PCM at " .. format_hz(fmt.output_sample_rate), wrap = true })
+        elseif fmt.sample_rate == fmt.output_sample_rate then
+            table.insert(rows, { label = "Source and audio engine rates match: " .. format_hz(fmt.sample_rate), wrap = true })
         else
-            table.insert(rows, { label = string.format("Source vs Output Rate: Mismatched (%d Hz -> %d Hz)", math.floor(fmt.sample_rate), math.floor(out.sample_rate)) })
+            table.insert(rows, { label = "Audio engine resampling: " .. format_hz(fmt.sample_rate) .. " source to " .. format_hz(fmt.output_sample_rate), wrap = true })
         end
     end
 
     local current_handle
     local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-    current_handle = plugin.show_list("Output Route", rows, function(idx)
+    current_handle = plugin.show_list("Output details", rows, function(idx)
         if idx == 1 then show_output_screen(current_handle) end
     end, opts)
     return current_handle
@@ -858,84 +991,100 @@ end
 
 -- 3. DSP & Equalizer State Screen
 show_dsp_screen = function(replace_handle)
-    local eq, err = get_live_eq()
+    local eq = get_live_eq()
     local fmt = get_format_snapshot()
     local rows = {}
 
-    table.insert(rows, { label = "[Tap to Refresh DSP & EQ Data]", text_size = "medium" })
+    table.insert(rows, { label = "Refresh sound details", text_size = "medium" })
 
     if not eq then
-        table.insert(rows, { label = "EQ State Unavailable", text_size = "medium" })
-        if err then table.insert(rows, { label = "Detail: " .. err, wrap = true }) end
+        table.insert(rows, { label = "Equalizer details unavailable", text_size = "medium" })
+        table.insert(rows, { label = "This firmware does not expose a live equalizer snapshot.", wrap = true })
         local current_handle
         local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-        current_handle = plugin.show_list("DSP & EQ Status", rows, function(idx)
+        current_handle = plugin.show_list("Sound processing", rows, function(idx)
             if idx == 1 then show_dsp_screen(current_handle) end
         end, opts)
         return current_handle
     end
 
     local bypass = eq.bypass
-    table.insert(rows, { label = "Parametric EQ Bypass: " .. (bypass and "BYPASS ACTIVE" or "IN SERVICE (ACTIVE)"), text_size = "medium" })
-    if bypass then
-        table.insert(rows, { label = "Bypass Note: Configured preamp, stereo width, and band filters are not applied to audio stream.", wrap = true })
+    table.insert(rows, { label = "Equalizer: " .. (bypass == true and "Bypassed" or bypass == false and "Enabled" or "State unknown"), text_size = "medium" })
+    if bypass == true then
+        table.insert(rows, { label = "Equalizer bypass also skips preamp, stereo width, crossfeed, and filters.", wrap = true })
     end
     if fmt and fmt.dop then
-        table.insert(rows, { label = "DoP Note: Native DSD bitstream bypasses PCM DSP chain regardless of EQ configuration.", wrap = true })
+        table.insert(rows, { label = "DSD-over-PCM playback bypasses the equalizer and other PCM processing.", wrap = true })
     elseif fmt and fmt.is_dsd then
-        table.insert(rows, { label = "DSD Decimation Note: Stream is converted to PCM; PCM DSP filters apply.", wrap = true })
+        table.insert(rows, { label = "DSD is converted to PCM; the sound settings below can affect playback.", wrap = true })
     end
 
-    table.insert(rows, { label = string.format("Preamp Gain: %+.2f dB %s", eq.preamp_db or 0, bypass and "(bypassed)" or ""), text_size = "medium" })
-    local width = eq.stereo_width or 1.0
-    local width_desc = math.abs(width - 1.0) <= FLOAT_TOLERANCE and "Normal Stereo" or (width <= FLOAT_TOLERANCE and "Mono" or "Modified Width")
-    table.insert(rows, { label = string.format("Stereo Width: %.4f (%s)", width, width_desc), text_size = "medium" })
+    table.insert(rows, { label = "Preamp gain: " .. (is_valid_number(eq.preamp_db) and string.format("%+.2f dB", eq.preamp_db) or "Unknown") .. (bypass == true and " · bypassed" or ""), text_size = "medium", wrap = true })
+    local width = eq.stereo_width
+    local width_desc = not is_valid_number(width) and "Unknown" or (width == 1.0 and "Neutral" or width == 0 and "Mono" or "Wider or narrower stereo")
+    table.insert(rows, { label = "Stereo width: " .. (is_valid_number(width) and string.format("%.3f · %s", width, width_desc) or width_desc), text_size = "medium", wrap = true })
+    local crossfeed = eq.crossfeed
+    local angle = safe_call("eq_get_crossfeed_angle")
+    if not is_valid_number(angle) then angle = eq.crossfeed_angle end
+    table.insert(rows, { label = "Headphone crossfeed: " .. (is_valid_number(crossfeed) and string.format("%d%% strength", math.floor(crossfeed * 100 + 0.5)) or "Unknown") .. (bypass == true and " · bypassed" or ""), wrap = true })
+    if is_valid_number(angle) then
+        table.insert(rows, { label = angle == 0 and "Crossfeed delay: none" or string.format("Crossfeed angle: %.1f°", angle), wrap = true })
+    end
 
     if fmt then
-        local soft_gain = fmt.software_volume_gain or 1.0
-        local soft_desc = math.abs(soft_gain - 1.0) <= FLOAT_TOLERANCE and "Unity Gain (0 dB - unaltered)" or format_gain_db(soft_gain)
-        table.insert(rows, { label = string.format("Software Volume: %.6fx (%s)", soft_gain, soft_desc), text_size = "medium", wrap = true })
-        table.insert(rows, { label = "Note: Software gain is a linear PCM multiplier, distinct from hardware volume.", wrap = true })
+        local soft_gain = fmt.software_volume_gain
+        local soft_desc = is_valid_number(soft_gain) and (soft_gain == 1.0 and "unity (0 dB)" or format_gain_db(soft_gain)) or "Unknown"
+        table.insert(rows, { label = "Software audio gain: " .. (is_valid_number(soft_gain) and string.format("%.4fx · %s", soft_gain, soft_desc) or soft_desc), text_size = "medium", wrap = true })
+        local volume = safe_call("get_volume")
+        table.insert(rows, { label = "Player volume: " .. (is_valid_number(volume) and string.format("%d%%", math.floor(volume + 0.5)) or "Unknown") .. " · separate from software audio gain", wrap = true })
 
-        local speed = fmt.playback_speed or 1.0
-        table.insert(rows, { label = string.format("Playback Speed: %.4fx %s", speed, math.abs(speed - 1.0) > FLOAT_TOLERANCE and "(Time-stretch DSP)" or "(Normal)") })
+        local speed = fmt.playback_speed
+        table.insert(rows, { label = "Playback speed: " .. (is_valid_number(speed) and string.format("%.3fx%s", speed, speed ~= 1.0 and " · time stretch active" or " · normal") or "Unknown"), wrap = true })
 
-        if fmt.replaygain_applied then
-            table.insert(rows, { label = string.format("ReplayGain Applied: %+.2f dB", fmt.replaygain_applied_db or 0) })
-        else
-            table.insert(rows, { label = "ReplayGain: Inactive (0.0 dB)" })
-        end
+        local rg_mode = safe_call("get_replaygain_mode")
+        local replaygain_names = { off = "Off", track = "Per track", album = "Per album" }
+        table.insert(rows, { label = "ReplayGain (loudness matching): " .. (replaygain_names[rg_mode] or "Unknown") .. " · current track applied: " .. yes_no_unknown(fmt.replaygain_applied), wrap = true })
+        if rg_mode then table.insert(rows, { label = "Changes to this setting take effect with the next track.", wrap = true }) end
+        if fmt.replaygain_applied == true then table.insert(rows, { label = "Applied ReplayGain: " .. (is_valid_number(fmt.replaygain_applied_db) and string.format("%+.2f dB", fmt.replaygain_applied_db) or "amount unknown"), wrap = true }) end
 
-        table.insert(rows, { label = "Crossfade Setting: " .. (fmt.crossfade_enabled and "Enabled" or "Disabled") })
+        table.insert(rows, { label = "Crossfade setting: " .. yes_no_unknown(fmt.crossfade_enabled) .. " · current mixing state is not exposed", wrap = true })
+        local gapless = safe_call("get_gapless")
+        table.insert(rows, { label = "Gapless playback: " .. yes_no_unknown(gapless), wrap = true })
+        local play_mode = safe_call("get_play_mode")
+        local mode_names = { sequential = "In order", repeat_all = "Repeat all", repeat_one = "Repeat one", shuffle = "Shuffle" }
+        table.insert(rows, { label = "Play mode: " .. (mode_names[play_mode] or "Unknown") })
     end
 
     local active_count = 0
-    if eq.bands then
+    local band_states_known = type(eq.bands) == "table" and #eq.bands == 10
+    if type(eq.bands) == "table" then
         for _, b in ipairs(eq.bands) do
-            if b.enabled and math.abs(b.gain_db or 0) > FLOAT_TOLERANCE then
+            if type(b.enabled) ~= "boolean" then band_states_known = false end
+            if b.enabled == true then
                 active_count = active_count + 1
             end
         end
     end
-    table.insert(rows, { label = string.format("EQ Active Bands: %d / 10", active_count), text_size = "medium" })
-    table.insert(rows, { label = "View All 10 EQ Bands Details ->", text_size = "medium" })
+    table.insert(rows, { label = band_states_known and string.format("Enabled equalizer bands: %d / 10", active_count) or "Enabled equalizer bands: Not fully reported", text_size = "medium" })
+    table.insert(rows, { label = "View all equalizer bands", text_size = "medium" })
 
     local current_handle
     local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-    current_handle = plugin.show_list("DSP & EQ Status", rows, function(idx)
+    current_handle = plugin.show_list("Sound processing", rows, function(idx)
         if idx == 1 then
             show_dsp_screen(current_handle)
         elseif idx == #rows then
             local band_rows = {}
             if eq.bands then
                 for i, b in ipairs(eq.bands) do
-                    local active_str = (b.enabled and math.abs(b.gain_db or 0) > FLOAT_TOLERANCE) and "ACTIVE" or (b.enabled and "FLAT" or "OFF")
-                    local label = string.format("Band %d: %s | %d Hz | %+.2f dB | Q=%.3f [%s]",
-                        b.index or i, b.type or "peaking", math.floor(b.freq_hz or 0), b.gain_db or 0, b.q or 0.7, active_str)
-                    table.insert(band_rows, { label = label, text_size = "small", wrap = true })
+                    local filter_names = { peaking = "Peaking", low_shelf = "Low shelf", high_shelf = "High shelf" }
+                    local filter = filter_names[b.type] or (b.type or "Unknown filter")
+                    local gain = is_valid_number(b.gain_db) and string.format("%+.2f dB", b.gain_db) or "gain unknown"
+                    local state = b.enabled == true and "Enabled" or b.enabled == false and "Disabled" or "State unknown"
+                    table.insert(band_rows, { label = string.format("Band %d · %s · %s Hz · %s · Q %s · %s", b.index or i, filter, is_valid_number(b.freq_hz) and tostring(math.floor(b.freq_hz)) or "?", gain, is_valid_number(b.q) and string.format("%.2f", b.q) or "?", state), text_size = "small", wrap = true })
                 end
             end
-            plugin.show_list("EQ Bands (1-10)", band_rows, function(b_idx) end)
+            plugin.show_list("Equalizer bands", band_rows, function(b_idx) end)
         end
     end, opts)
     return current_handle
@@ -949,24 +1098,24 @@ show_bitperfect_screen = function(replace_handle)
     local assess = assess_bit_perfect(fmt, out, eq)
 
     local rows = {}
-    table.insert(rows, { label = "[Tap to Refresh Assessment]", text_size = "medium" })
+    table.insert(rows, { label = "Refresh signal path check", text_size = "medium" })
     table.insert(rows, { label = "Result: " .. assess.status, text_size = "large", wrap = true })
 
     if assess.is_candidate then
-        table.insert(rows, { label = "Verdict: Bit-perfect candidate under all observable native stages.", wrap = true })
+        table.insert(rows, { label = "No changes detected in the observable playback stages. This is a candidate, not proof of the physical hardware output.", wrap = true })
     else
-        table.insert(rows, { label = "Verdict: Audio stream cannot be certified bit-perfect.", wrap = true })
+        table.insert(rows, { label = "The snapshot shows a change or lacks enough information to verify an unchanged signal path.", wrap = true })
     end
 
     if #assess.reasons > 0 then
-        table.insert(rows, { label = "--- Disqualifying Factors / DSP ---", text_size = "small" })
+        table.insert(rows, { label = "Changes or unknown details", text_size = "small" })
         for _, r in ipairs(assess.reasons) do
             table.insert(rows, { label = "* " .. r, wrap = true })
         end
     end
 
     if #assess.notes > 0 then
-        table.insert(rows, { label = "--- Signal Observations ---", text_size = "small" })
+        table.insert(rows, { label = "Other observations", text_size = "small" })
         for _, n in ipairs(assess.notes) do
             table.insert(rows, { label = "- " .. n, wrap = true })
         end
@@ -974,7 +1123,7 @@ show_bitperfect_screen = function(replace_handle)
 
     local current_handle
     local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-    current_handle = plugin.show_list("Bit-Perfect Check", rows, function(idx)
+    current_handle = plugin.show_list("Signal check", rows, function(idx)
         if idx == 1 then show_bitperfect_screen(current_handle) end
     end, opts)
     return current_handle
@@ -995,7 +1144,7 @@ show_file_details = function(file_path)
         table.insert(detail_rows, { label = "Duration: " .. format_duration(header.duration_seconds), text_size = "medium" })
         if header.is_compressed then
             table.insert(detail_rows, { label = "Estimated Container Bitrate: " .. format_bitrate(header.bitrate_kbps) .. " (includes container/metadata overhead)", wrap = true })
-            table.insert(detail_rows, { label = header.codec == "flac" and "Type: Lossless Compressed" or "Type: Encoded Audio (losslessness unverified)", wrap = true })
+            table.insert(detail_rows, { label = header.codec == "flac" and "Encoding: Lossless compressed audio" or "Encoding: Compressed audio · losslessness not confirmed by this header", wrap = true })
         else
             table.insert(detail_rows, { label = "Bitrate: " .. format_bitrate(header.bitrate_kbps), text_size = "medium" })
             table.insert(detail_rows, { label = "Type: Uncompressed PCM", wrap = true })
@@ -1006,7 +1155,7 @@ show_file_details = function(file_path)
         table.insert(detail_rows, { label = "Note: Inspection bounded to local WAV, FLAC, AIFF headers. Other formats report unknown without guessing from file extension.", wrap = true })
     end
 
-    plugin.show_list("File Header Details", detail_rows, function(d_idx) end)
+    plugin.show_list("Local file details", detail_rows, function(d_idx) end)
 end
 
 show_file_inspector = function(current_dir, replace_handle)
@@ -1043,7 +1192,7 @@ show_file_inspector = function(current_dir, replace_handle)
             local full_path = current_dir .. "/" .. entry.name
             if entry.dir then
                 if is_within_sd(full_path, clean_root) then
-                    table.insert(rows, { label = "[DIR] " .. entry.name, text_size = "medium" })
+                    table.insert(rows, { label = "Folder · " .. entry.name, text_size = "medium", wrap = true })
                     table.insert(actions, { type = "dir", path = full_path })
                 end
             else
@@ -1056,7 +1205,7 @@ show_file_inspector = function(current_dir, replace_handle)
         end
     end
 
-    local title = "Inspect File (" .. basename(current_dir) .. ")"
+    local title = "Browse audio files · " .. basename(current_dir)
     local current_handle
     local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
 
@@ -1077,7 +1226,7 @@ show_settings_screen = function()
     local items = {
         {
             type = "toggle",
-            label = "Show Full File Paths",
+            label = "Show full file paths",
             value = settings.show_full_path,
             on_change = function(val)
                 settings.show_full_path = val
@@ -1086,7 +1235,7 @@ show_settings_screen = function()
         },
         {
             type = "toggle",
-            label = "Lookup Database Tags",
+            label = "Show music library tags",
             value = settings.show_db_tags,
             on_change = function(val)
                 settings.show_db_tags = val
@@ -1094,25 +1243,27 @@ show_settings_screen = function()
             end,
         },
     }
-    plugin.show_settings_list("Inspector Settings", items)
+    plugin.show_settings_list("Inspector settings", items)
 end
 
 -- Main Menu Navigation
 local function show_main_menu()
     local fmt = get_format_snapshot()
-    local status_line = fmt and string.format("Playing: %s (%s)", (fmt.codec or ""):upper(), format_hz(fmt.sample_rate)) or "Audio Idle"
+    local short_codec = fmt and codec_name(fmt.codec):gsub("%s*%b()", "")
+    local status_line = fmt and string.format("%s · %s · %s · %s", playback_state(), short_codec, format_depth(fmt.bit_depth), format_hz(fmt.sample_rate)) or (playback_state() .. " · format unavailable")
 
     local rows = {
-        { label = "1. Current Playback Format", text_size = "medium" },
-        { label = "2. Output & Hardware", text_size = "medium" },
-        { label = "3. DSP & Equalizer Status", text_size = "medium" },
-        { label = "4. Bit-Perfect Assessment", text_size = "medium" },
-        { label = "5. Inspect Local Audio File", text_size = "medium" },
-        { label = "6. Settings", text_size = "medium" },
-        { label = "Status: " .. status_line, text_size = "small", wrap = true },
+        { label = status_line, text_size = "small", wrap = true },
+        { label = "Track and file details", text_size = "medium", wrap = true },
+        { label = "Output device", text_size = "medium", wrap = true },
+        { label = "Sound processing", text_size = "medium", wrap = true },
+        { label = "Signal check", text_size = "medium", wrap = true },
+        { label = "Inspect a file", text_size = "medium", wrap = true },
+        { label = "Settings", text_size = "medium", wrap = true },
     }
 
     plugin.show_list("Track Inspector", rows, function(index)
+        index = index - 1 -- the first row is the playback overview
         if index == 1 then
             show_format_screen()
         elseif index == 2 then
@@ -1133,15 +1284,11 @@ end
 -- Registration and Event Handlers
 --------------------------------------------------------------------------------
 
-plugin.register_list_item("playback", "Track Inspector", function()
+-- Older firmware keeps the Playback entry until it supports player menu rows.
+local entry_location = plugin.has_capability("ui.player_menu") and "player" or "playback"
+plugin.register_list_item(entry_location, "Track Inspector", function()
     show_main_menu()
 end)
-
-if plugin.has_capability("playback.output_events") then
-    plugin.on("output_changed", function(current, previous)
-        last_output_event = current
-    end)
-end
 
 --------------------------------------------------------------------------------
 -- Test Exposure for Unit & Regression Tests
