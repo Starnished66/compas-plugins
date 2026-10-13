@@ -1,4 +1,4 @@
-plugin.define({ id = "example.lastfm_scrobbler", name = "Last.fm Scrobbler", version = "1.6", api_min = 2 })
+plugin.define({ id = "example.lastfm_scrobbler", name = "LastFM Scrobbler Legacy", version = "1.7", api_min = 2 })
 
 -- Last.fm scrobbler with a bounded, account-specific offline queue.
 
@@ -586,7 +586,7 @@ local function open_menu()
   else
     table.insert(rows, { type = "row", label = "Log In", on_select = start_login })
   end
-  plugin.show_settings_list("Last.fm Scrobbler", rows)
+  plugin.show_settings_list("LastFM Scrobbler Legacy", rows)
 end
 
-plugin.register_list_item("playback", "Last.fm Scrobbler", open_menu)
+plugin.register_list_item("playback", "LastFM Scrobbler Legacy", open_menu)
