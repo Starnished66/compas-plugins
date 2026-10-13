@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.track_inspector",
     name = "Track Inspector",
-    version = "1.2",
+    version = "1.3",
     api_min = 16,
 })
 
@@ -10,7 +10,6 @@ plugin.define({
 -- parametric EQ and DSP signal chain status, bit-perfect PCM candidate criteria,
 -- and local file headers for WAV, FLAC, and AIFF.
 
-local MAX_UI_ROWS = 500
 local HEADER_READ_LIMIT = 4096
 local FLOAT_TOLERANCE = 1e-6
 
@@ -1129,7 +1128,7 @@ show_bitperfect_screen = function(replace_handle)
     return current_handle
 end
 
--- 5. Local File Header Inspector Screen (Replaceable browser, scoped to SD root)
+-- 5. Local File Header Inspector Screen
 show_file_details = function(file_path)
     local header, err = parse_local_file_header(file_path)
     local detail_rows = {}
@@ -1137,16 +1136,16 @@ show_file_details = function(file_path)
     table.insert(detail_rows, { label = "File: " .. clean_name, text_size = "medium", wrap = true })
 
     if header then
-        table.insert(detail_rows, { label = "Format: " .. header.format_name, text_size = "medium" })
-        table.insert(detail_rows, { label = "Sample Rate: " .. format_hz(header.sample_rate), text_size = "medium" })
-        table.insert(detail_rows, { label = "Bit Depth: " .. format_depth(header.bit_depth), text_size = "medium" })
-        table.insert(detail_rows, { label = "Channels: " .. format_channels(header.channels), text_size = "medium" })
-        table.insert(detail_rows, { label = "Duration: " .. format_duration(header.duration_seconds), text_size = "medium" })
+        table.insert(detail_rows, { label = "Format: " .. header.format_name, text_size = "medium", wrap = true })
+        table.insert(detail_rows, { label = "Sample Rate: " .. format_hz(header.sample_rate), text_size = "medium", wrap = true })
+        table.insert(detail_rows, { label = "Bit Depth: " .. format_depth(header.bit_depth), text_size = "medium", wrap = true })
+        table.insert(detail_rows, { label = "Channels: " .. format_channels(header.channels), text_size = "medium", wrap = true })
+        table.insert(detail_rows, { label = "Duration: " .. format_duration(header.duration_seconds), text_size = "medium", wrap = true })
         if header.is_compressed then
             table.insert(detail_rows, { label = "Estimated Container Bitrate: " .. format_bitrate(header.bitrate_kbps) .. " (includes container/metadata overhead)", wrap = true })
             table.insert(detail_rows, { label = header.codec == "flac" and "Encoding: Lossless compressed audio" or "Encoding: Compressed audio · losslessness not confirmed by this header", wrap = true })
         else
-            table.insert(detail_rows, { label = "Bitrate: " .. format_bitrate(header.bitrate_kbps), text_size = "medium" })
+            table.insert(detail_rows, { label = "Bitrate: " .. format_bitrate(header.bitrate_kbps), text_size = "medium", wrap = true })
             table.insert(detail_rows, { label = "Type: Uncompressed PCM", wrap = true })
         end
     else
@@ -1158,67 +1157,28 @@ show_file_details = function(file_path)
     plugin.show_list("Local file details", detail_rows, function(d_idx) end)
 end
 
-show_file_inspector = function(current_dir, replace_handle)
-    local sd_root = plugin.sd_root()
-    current_dir = current_dir or sd_root
-    if not is_within_sd(current_dir, sd_root) then
-        current_dir = sd_root
+show_file_inspector = function()
+    if not plugin.has_capability("ui.file_picker") or type(plugin.pick_file) ~= "function" then
+        plugin.show_toast("File picker unavailable. Update firmware to inspect a local file.")
+        return
     end
 
-    local clean_root = sd_root:gsub("/+$", "")
-    local entries = plugin.list_dir(current_dir) or {}
-
-    table.sort(entries, function(a, b)
-        if a.dir ~= b.dir then return a.dir end
-        return (a.name or "") < (b.name or "")
+    local ok, result, err = pcall(plugin.pick_file, nil, function(path)
+        if path ~= nil then
+            show_file_details(path)
+        end
     end)
-
-    local rows = {}
-    local actions = {}
-
-    -- Parent Folder row confined within SD root
-    if current_dir ~= clean_root then
-        local parent = current_dir:match("^(.*)/[^/]+$") or clean_root
-        if not is_within_sd(parent, clean_root) then
-            parent = clean_root
-        end
-        table.insert(rows, { label = ".. (Parent Folder)", text_size = "medium" })
-        table.insert(actions, { type = "dir", path = parent })
-    end
-
-    for _, entry in ipairs(entries) do
-        if #rows >= MAX_UI_ROWS - 2 then break end
-        if entry.name and not entry.name:find("/") and not entry.name:find("\\") then
-            local full_path = current_dir .. "/" .. entry.name
-            if entry.dir then
-                if is_within_sd(full_path, clean_root) then
-                    table.insert(rows, { label = "Folder · " .. entry.name, text_size = "medium", wrap = true })
-                    table.insert(actions, { type = "dir", path = full_path })
-                end
-            else
-                local lower = entry.name:lower()
-                if lower:match("%.wav$") or lower:match("%.flac$") or lower:match("%.aiff?$") or lower:match("%.mp3$") or lower:match("%.m4a$") or lower:match("%.ogg$") then
-                    table.insert(rows, { label = entry.name, text_size = "small" })
-                    table.insert(actions, { type = "file", path = full_path })
-                end
-            end
+    if not ok then
+        plugin.show_toast("Could not open file picker. Please try again.")
+    elseif result ~= true then
+        if err == "busy" then
+            plugin.show_toast("Please close the other file picker and try again.")
+        else
+            local reason = tostring(err or "unknown error")
+            if #reason > 120 then reason = reason:sub(1, 117) .. "..." end
+            plugin.show_toast("Could not open file picker: " .. reason)
         end
     end
-
-    local title = "Browse audio files · " .. basename(current_dir)
-    local current_handle
-    local opts = replace_handle and { replace = replace_handle, selected = 1 } or nil
-
-    current_handle = plugin.show_list(title, rows, function(idx)
-        local act = actions[idx]
-        if not act then return end
-        if act.type == "dir" then
-            show_file_inspector(act.path, current_handle)
-        elseif act.type == "file" then
-            show_file_details(act.path)
-        end
-    end, opts)
-    return current_handle
 end
 
 -- 6. Settings Screen

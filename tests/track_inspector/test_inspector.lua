@@ -157,7 +157,7 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(h.defined ~= nil, "Plugin called plugin.define")
         assert_eq(h.defined.id, "compas.track_inspector", "Plugin stable ID")
         assert_eq(h.defined.name, "Track Inspector", "Plugin name")
-        assert_eq(h.defined.version, "1.2", "Plugin version v1.2")
+        assert_eq(h.defined.version, "1.3", "Plugin version v1.3")
         assert_eq(h.defined.api_min, 16, "Plugin api_min 16")
         assert_eq(h.count_active_intervals(), 0, "No timers allocated anywhere in plugin")
     end
@@ -243,83 +243,58 @@ return function(assert_eq, assert_true, assert_false)
     end
 
     ----------------------------------------------------------------------------
-    -- Test 3: Folder Browser Virtual Navigation & SD Root Confinement
+    -- Test 3: Native File Picker & SD Root Confinement
     ----------------------------------------------------------------------------
     do
-        local h = harness.new({
-            sd_root = test_dir,
-            dirs = {
-                [test_dir] = {
-                    { name = "Albums", dir = true },
-                    { name = "track1.wav", dir = false },
-                },
-                [test_dir .. "/Albums"] = {
-                    { name = "Rock", dir = true },
-                    { name = "song.flac", dir = false },
-                },
-                [test_dir .. "/Albums/Rock"] = {
-                    { name = "hit.wav", dir = false },
-                },
-            },
-        })
+        local h = harness.new({ sd_root = test_dir })
         local M = h.load("plugins/TrackInspector/TrackInspector.lua")
 
-        -- Path traversal checks
+        -- Path traversal checks remain useful for parsing picker-returned paths.
         assert_true(M.is_within_sd(test_dir, test_dir), "Root is within SD")
         assert_true(M.is_within_sd(test_dir .. "/Albums", test_dir), "Subdir is within SD")
         assert_false(M.is_within_sd("/etc/passwd", test_dir), "Outside root rejected")
         assert_false(M.is_within_sd(test_dir .. "/../etc/passwd", test_dir), "Traversal path rejected")
         assert_false(M.is_within_sd("http://remote.com/file", test_dir), "Remote URL rejected")
 
-        -- Open file inspector from main menu (stack depth 2)
         h.registered_list_items[1].on_open()
         h.screen_stack[1].on_select(6)
-        assert_eq(#h.screen_stack, 2, "File browser at stack depth 2")
+        assert_eq(#h.picker_calls, 1, "Native picker called once")
+        assert_eq(h.picker_calls[1].folder, nil, "Native picker starts at SD root")
+        assert_eq(#h.screen_stack, 1, "Picker callback is deferred")
+        h.picker_calls[1].callback(wav16_path)
+        assert_eq(#h.screen_stack, 2, "Selected file opens details")
+        assert_eq(h.screen_stack[2].title, "Local file details", "Selected WAV uses existing details screen")
+        local details = {}
+        for _, item in ipairs(h.screen_stack[2].items) do details[#details + 1] = item.label end
+        assert_true(table.concat(details, "\n"):find("Format: WAV (PCM Integer)", 1, true) ~= nil, "Selected WAV header is parsed")
 
-        -- Navigate into Albums: replaces in place at depth 2!
-        local browser_screen = h.screen_stack[2]
-        local albums_idx = nil
-        for idx, item in ipairs(browser_screen.items) do
-            if item.label:find("Albums") then albums_idx = idx break end
+        local cancel = harness.new({ sd_root = test_dir })
+        cancel.load("plugins/TrackInspector/TrackInspector.lua")
+        cancel.registered_list_items[1].on_open()
+        cancel.screen_stack[1].on_select(6)
+        cancel.picker_calls[1].callback(nil)
+        assert_eq(#cancel.screen_stack, 1, "Picker cancellation does not open details")
+        assert_eq(#cancel.toasts, 0, "Picker cancellation is silent")
+
+        for _, opts in ipairs({ { picker_error = "busy" }, { picker_error = "picker failed" }, { picker_throws = "picker exception" } }) do
+            local failed = harness.new(opts)
+            failed.load("plugins/TrackInspector/TrackInspector.lua")
+            failed.registered_list_items[1].on_open()
+            failed.screen_stack[1].on_select(6)
+            assert_true(#failed.toasts > 0, "Picker failure reports a useful error")
+            assert_true(failed.toasts[1]:find("Update firmware") == nil, "Picker runtime errors do not recommend firmware update")
         end
-        assert_true(albums_idx ~= nil, "Found Albums directory row")
-        browser_screen.on_select(albums_idx)
-        assert_eq(#h.screen_stack, 2, "Entering subdir replaces browser in-place (depth remains 2)")
-
-        -- Navigate into Rock: replaces in place at depth 2!
-        browser_screen = h.screen_stack[2]
-        local rock_idx = nil
-        for idx, item in ipairs(browser_screen.items) do
-            if item.label:find("Rock") then rock_idx = idx break end
-        end
-        assert_true(rock_idx ~= nil, "Found Rock directory row")
-        browser_screen.on_select(rock_idx)
-        assert_eq(#h.screen_stack, 2, "Deep folder navigation maintains depth 2")
-
-        -- Tap Parent Folder: navigates back in place at depth 2!
-        browser_screen = h.screen_stack[2]
-        assert_eq(browser_screen.items[1].label, ".. (Parent Folder)", "Parent folder row present")
-        browser_screen.on_select(1)
-        assert_eq(#h.screen_stack, 2, "Parent navigation maintains depth 2")
-        assert_true(h.screen_stack[2].title:find("Albums") ~= nil, "Navigated back to Albums in place")
-
-        -- Tap a file row: pushes details screen at depth 3 <= 4!
-        browser_screen = h.screen_stack[2]
-        local file_idx = nil
-        for idx, item in ipairs(browser_screen.items) do
-            if item.label:find("song.flac") then file_idx = idx break end
-        end
-        assert_true(file_idx ~= nil, "Found song.flac row")
-        browser_screen.on_select(file_idx)
-        assert_eq(#h.screen_stack, 3, "File details screen pushes to depth 3 <= 4")
-
-        -- Pop details -> returns to folder browser (depth 2)
-        h.pop_screen()
-        assert_eq(#h.screen_stack, 2, "Popping details returns to folder browser at depth 2")
-
-        -- Pop browser -> returns to main menu (depth 1)
-        h.pop_screen()
-        assert_eq(#h.screen_stack, 1, "Popping browser returns to main menu at depth 1")
+        local busy = harness.new({ picker_error = "busy" })
+        busy.load("plugins/TrackInspector/TrackInspector.lua")
+        busy.registered_list_items[1].on_open()
+        busy.screen_stack[1].on_select(6)
+        assert_true(busy.toasts[1]:find("close the other file picker") ~= nil, "Busy picker suggests closing the active picker")
+        local missing = harness.new({ capabilities = {} })
+        missing.load("plugins/TrackInspector/TrackInspector.lua")
+        missing.registered_list_items[1].on_open()
+        missing.screen_stack[1].on_select(6)
+        assert_eq(#missing.picker_calls, 0, "Missing picker capability does not call API")
+        assert_true(missing.toasts[1]:find("Update firmware") ~= nil, "Missing picker suggests firmware update")
     end
 
     ----------------------------------------------------------------------------

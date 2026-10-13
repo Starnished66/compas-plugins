@@ -40,6 +40,7 @@ function harness.new(opts)
             ["ui.list_update"] = true,
             ["ui.settings"] = true,
             ["filesystem.sd"] = true,
+            ["ui.file_picker"] = true,
         },
         storage_data = {},
         storage_fail = opts.storage_fail or false,
@@ -52,7 +53,9 @@ function harness.new(opts)
         active_screens = {},
         toasts = {},
         files = opts.files or {},
-        dirs = opts.dirs or {},
+        picker_error = opts.picker_error,
+        picker_throws = opts.picker_throws,
+        picker_calls = {},
 
         -- Live playback mocks
         format_snapshot = opts.format_snapshot or nil,
@@ -80,8 +83,11 @@ function harness.new(opts)
         return self.sd_root_path
     end
 
-    function plugin.list_dir(path)
-        return self.dirs[path] or {}
+    function plugin.pick_file(folder, callback)
+        self.picker_calls[#self.picker_calls + 1] = { folder = folder, callback = callback }
+        if self.picker_throws then error(self.picker_throws) end
+        if self.picker_error then return nil, self.picker_error end
+        return true
     end
 
     function plugin.get_playback_format()
