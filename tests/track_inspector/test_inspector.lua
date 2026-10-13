@@ -157,7 +157,7 @@ return function(assert_eq, assert_true, assert_false)
         assert_true(h.defined ~= nil, "Plugin called plugin.define")
         assert_eq(h.defined.id, "compas.track_inspector", "Plugin stable ID")
         assert_eq(h.defined.name, "Track Inspector", "Plugin name")
-        assert_eq(h.defined.version, "1.1", "Plugin version v1.1")
+        assert_eq(h.defined.version, "1.2", "Plugin version v1.2")
         assert_eq(h.defined.api_min, 16, "Plugin api_min 16")
         assert_eq(h.count_active_intervals(), 0, "No timers allocated anywhere in plugin")
     end
@@ -190,9 +190,23 @@ return function(assert_eq, assert_true, assert_false)
         h.registered_list_items[1].on_open()
         assert_eq(#h.screen_stack, 1, "Main menu at stack depth 1")
 
+        -- The first row is now a playback overview; the first actionable row opens format details.
+        local overview = h.screen_stack[1]
+        assert_true(overview.items[1].label:find("PCM") ~= nil, "Main menu begins with a playback format overview")
+        assert_eq(overview.items[2].label, "Track and file details", "Track details remains the first menu action")
+        assert_eq(overview.items[3].label, "Output device", "Output device menu action is visible")
+        assert_eq(overview.items[4].label, "Sound processing", "Sound processing menu action is visible")
+
         -- Open format screen (depth 2)
-        h.screen_stack[1].on_select(1)
+        overview.on_select(2)
         assert_eq(#h.screen_stack, 2, "Format screen at stack depth 2")
+        assert_eq(h.screen_stack[2].title, "Playback details", "Track details opens playback overview screen")
+        local format_rows = {}
+        for _, item in ipairs(h.screen_stack[2].items) do format_rows[#format_rows + 1] = item.label end
+        local format_text = table.concat(format_rows, "\n")
+        assert_true(format_text:find("Source audio: " .. M.format_hz(44100) .. " · " .. M.format_depth(16) .. " · " .. M.format_channels(2), 1, true) ~= nil, "Playback details report source format")
+        assert_true(format_text:find("Audio engine output: " .. M.format_hz(44100) .. " · " .. M.format_depth(16), 1, true) ~= nil, "Playback details report engine output format")
+        assert_true(format_text:find("Output route: Wired output · active") ~= nil, "Playback details report active output route")
         local handle_before = h.screen_stack[2].handle
 
         -- Tap Refresh row (index 1) repeatedly 10 times
@@ -207,6 +221,25 @@ return function(assert_eq, assert_true, assert_false)
         -- Stale handle replacement returns nil
         local stale_res = h.plugin.show_list("Stale Test", { "Row" }, function() end, { replace = 99999 })
         assert_true(stale_res == nil, "Stale or non-top handle replacement returns nil")
+
+        -- Output and sound processing screens expose the current sink and DSP state.
+        h.pop_screen()
+        overview = h.screen_stack[1]
+        overview.on_select(3)
+        assert_eq(h.screen_stack[2].title, "Output details", "Output device opens output details")
+        local output_text = {}
+        for _, item in ipairs(h.screen_stack[2].items) do output_text[#output_text + 1] = item.label end
+        output_text = table.concat(output_text, "\n")
+        assert_true(output_text:find("Active output format: " .. M.format_hz(44100) .. " · " .. M.format_depth(16), 1, true) ~= nil, "Output details report active sink format")
+        h.pop_screen()
+        overview = h.screen_stack[1]
+        overview.on_select(4)
+        assert_eq(h.screen_stack[2].title, "Sound processing", "Sound processing opens DSP details")
+        local dsp_text = {}
+        for _, item in ipairs(h.screen_stack[2].items) do dsp_text[#dsp_text + 1] = item.label end
+        dsp_text = table.concat(dsp_text, "\n")
+        assert_true(dsp_text:find("Equalizer: Bypassed") ~= nil, "DSP details report equalizer bypass state")
+        assert_true(dsp_text:find("Software audio gain: 1.0000x") ~= nil, "DSP details report software audio gain")
     end
 
     ----------------------------------------------------------------------------
@@ -240,7 +273,7 @@ return function(assert_eq, assert_true, assert_false)
 
         -- Open file inspector from main menu (stack depth 2)
         h.registered_list_items[1].on_open()
-        h.screen_stack[1].on_select(5)
+        h.screen_stack[1].on_select(6)
         assert_eq(#h.screen_stack, 2, "File browser at stack depth 2")
 
         -- Navigate into Albums: replaces in place at depth 2!
@@ -357,6 +390,10 @@ return function(assert_eq, assert_true, assert_false)
         local h = harness.new({ sd_root = test_dir })
         local M = h.load("plugins/TrackInspector/TrackInspector.lua")
 
+        local assess_matching = M.assess_bit_perfect(base_fmt, out, eq)
+        assert_true(assess_matching.is_candidate, "Matching wired lossless PCM path remains a candidate")
+        assert_eq(assess_matching.status, "No changes detected (wired PCM candidate)", "Matching PCM candidate status")
+
         -- Small non-unity software volume (gain = 1.0001, diff 1e-4 > 1e-6)
         local fmt_small_vol = setmetatable({ software_volume_gain = 1.0001 }, { __index = base_fmt })
         local assess_vol = M.assess_bit_perfect(fmt_small_vol, out, eq)
@@ -468,7 +505,7 @@ return function(assert_eq, assert_true, assert_false)
         }
         local assess_dop = M.assess_bit_perfect(true_dop_fmt, true_dop_out, { bypass = true })
         assert_true(assess_dop.is_candidate, "True DoP is candidate")
-        assert_eq(assess_dop.status, "Bit-Perfect DoP Candidate (Wired)", "DoP candidate status")
+        assert_eq(assess_dop.status, "No changes detected (wired DoP candidate)", "DoP candidate status")
 
         -- DoP with carrier mismatch (e.g. carrier 44100 instead of 176400)
         local mismatch_dop_fmt = setmetatable({ output_sample_rate = 44100 }, { __index = true_dop_fmt })
@@ -553,7 +590,7 @@ return function(assert_eq, assert_true, assert_false)
         -- In true DoP, PCM DSP (EQ, preamp, width, software gain) is bypassed by native hardware DoP!
         local assess_dop_eq = M.assess_bit_perfect(dop_fmt, dop_out, configured_eq)
         assert_true(assess_dop_eq.is_candidate, "Configured EQ does not disqualify true DoP candidate (PCM DSP bypassed)")
-        assert_eq(assess_dop_eq.status, "Bit-Perfect DoP Candidate (Wired)", "DoP status is candidate")
+        assert_eq(assess_dop_eq.status, "No changes detected (wired DoP candidate)", "DoP status is candidate")
         local found_bypass_note = false
         for _, n in ipairs(assess_dop_eq.notes) do
             if n:find("bypasses PCM Equalizer") then found_bypass_note = true break end
@@ -603,7 +640,7 @@ return function(assert_eq, assert_true, assert_false)
         }
         local assess_bt = M.assess_bit_perfect(clean_fmt, bt_out, { bypass = true })
         assert_false(assess_bt.is_candidate, "Bluetooth route cannot certify bit-perfect")
-        assert_eq(assess_bt.status, "Route Uncertainty: End-to-End Uncertifiable (Bluetooth)", "Bluetooth status reflects route uncertainty")
+        assert_eq(assess_bt.status, "Bluetooth can change audio", "Bluetooth status reflects route uncertainty")
 
         local usb_out = {
             route = "usb_dac",
@@ -617,7 +654,7 @@ return function(assert_eq, assert_true, assert_false)
         }
         local assess_usb = M.assess_bit_perfect(clean_fmt, usb_out, { bypass = true })
         assert_false(assess_usb.is_candidate, "USB DAC route cannot certify bit-perfect without endpoint verification")
-        assert_eq(assess_usb.status, "Route Uncertainty: End-to-End Uncertifiable (USB DAC)", "USB DAC status reflects route uncertainty")
+        assert_eq(assess_usb.status, "USB output cannot be fully checked", "USB DAC status reflects route uncertainty")
     end
 
     ----------------------------------------------------------------------------
@@ -703,7 +740,7 @@ return function(assert_eq, assert_true, assert_false)
         local standby_out = { route = "wired", active = false }
         local assess_standby = M.assess_bit_perfect(clean_fmt, standby_out, { bypass = true })
         assert_false(assess_standby.is_candidate, "Standby sink is not candidate")
-        assert_eq(assess_standby.status, "Sink Inactive / Standby", "Standby sink status")
+        assert_eq(assess_standby.status, "Output is inactive", "Standby sink status")
     end
 
     os.execute("rm -rf '" .. test_dir .. "'")
