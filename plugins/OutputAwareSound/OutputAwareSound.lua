@@ -1,7 +1,7 @@
 plugin.define({
     id = "org.compas.output_aware_sound",
     name = "Output-Aware Sound",
-    version = "1.1",
+    version = "1.1.1",
     api_min = 16,
 })
 
@@ -62,12 +62,35 @@ local function num_eq(a, b)
     return math.abs(a - b) <= EPSILON
 end
 
+local function crossfeed_state_values(state)
+    local strength = state.crossfeed
+    if strength == nil then strength = 0 end -- Older snapshots omitted crossfeed entirely.
+    if type(strength) ~= "number" or strength ~= strength or strength == math.huge or strength == -math.huge
+       or strength < 0 or strength > 1 then
+        return nil
+    end
+
+    local angle = state.crossfeed_angle
+    if angle == nil then
+        angle = 0 -- Older firmware snapshots did not include the angle.
+    elseif type(angle) ~= "number" or angle ~= angle or angle == math.huge or angle == -math.huge
+       or (angle ~= 0 and angle ~= 30 and angle ~= 45 and angle ~= 60 and angle ~= 90) then
+        return nil
+    end
+
+    return strength, angle
+end
+
 local function eq_states_equal(a, b)
+    if type(a) ~= "table" or type(b) ~= "table" then return false end
+    local a_crossfeed, a_angle = crossfeed_state_values(a)
+    local b_crossfeed, b_angle = crossfeed_state_values(b)
+    if a_crossfeed == nil or b_crossfeed == nil then return false end
     if a == b then return true end
-    if not a or not b then return false end
     if a.bypass ~= b.bypass then return false end
     if not num_eq(a.preamp_db, b.preamp_db) then return false end
     if not num_eq(a.stereo_width, b.stereo_width) then return false end
+    if not num_eq(a_crossfeed, b_crossfeed) or a_angle ~= b_angle then return false end
     if not a.bands or not b.bands then return a.bands == b.bands end
     if #a.bands ~= #b.bands then return false end
     for i = 1, #a.bands do

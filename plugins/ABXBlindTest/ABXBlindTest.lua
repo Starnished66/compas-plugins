@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.abx_blind_test",
     name = "ABX Blind Test",
-    version = "1.1.0",
+    version = "1.1.1",
     api_min = 16,
 })
 
@@ -59,6 +59,22 @@ local function is_finite_number(n)
     return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
 end
 
+local function crossfeed_state_values(state)
+    local strength = state.crossfeed
+    if strength == nil then strength = 0 end -- Older snapshots omitted crossfeed entirely.
+    if not is_finite_number(strength) or strength < 0 or strength > 1 then return nil end
+
+    local angle = state.crossfeed_angle
+    if angle == nil then
+        angle = 0 -- Older firmware snapshots did not include the angle.
+    elseif not is_finite_number(angle)
+       or (angle ~= 0 and angle ~= 30 and angle ~= 45 and angle ~= 60 and angle ~= 90) then
+        return nil
+    end
+
+    return strength, angle
+end
+
 -- Binomial probability calculation for ABX testing:
 -- Under the null hypothesis of pure guessing (p = 0.5),
 -- calculate the one-tailed probability P(K >= k) of getting k or more correct out of n trials.
@@ -90,11 +106,15 @@ end
 -- Rejects missing or non-finite data. Detects manual edits of 0.01 dB gain/preamp or 0.01 Q/width.
 local function eq_states_match(s1, s2)
     if type(s1) ~= "table" or type(s2) ~= "table" then return false end
+    local crossfeed1, angle1 = crossfeed_state_values(s1)
+    local crossfeed2, angle2 = crossfeed_state_values(s2)
+    if crossfeed1 == nil or crossfeed2 == nil then return false end
     if s1.bypass ~= s2.bypass then return false end
     if not is_finite_number(s1.preamp_db) or not is_finite_number(s2.preamp_db) then return false end
     if math.abs(s1.preamp_db - s2.preamp_db) > 1e-6 then return false end
     if not is_finite_number(s1.stereo_width) or not is_finite_number(s2.stereo_width) then return false end
     if math.abs(s1.stereo_width - s2.stereo_width) > 1e-6 then return false end
+    if math.abs(crossfeed1 - crossfeed2) > 1e-6 or angle1 ~= angle2 then return false end
 
     local b1 = s1.bands
     local b2 = s2.bands
