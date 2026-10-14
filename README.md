@@ -1,5 +1,7 @@
 # Compás Plugins
 
+This repository contains plugin packages, examples and essential store publishing files. Keep tests, services and development artifacts outside it.
+
 Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. The **Plugin Store** (Settings > System > Plugin Manager) installs and updates plugins from the latest release. Player layouts have their own download page under **Settings > Display > Player Layout > Layout > Download**.
 
 ## Installing by hand
@@ -23,7 +25,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order. See [usage and compatibility](docs/MusicPlugins.md).
+Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
 
 ## ListenBrainz and Net Radio
 
@@ -84,9 +86,6 @@ These packages are published for Compás v1.1 and require Plugin API 16.
 Automatic EQ tools preserve later manual changes. If another tool changes EQ,
 automation suspends rather than continually overwriting it; use the plugin's
 reclaim control to resume. Profiles live in the SD card's `PEQ_Profiles` folder.
-
-The host tests exercise plugin callbacks and failure paths against API mocks.
-They do not replace verification on a device or against a live media server.
 
 ## Layout
 
