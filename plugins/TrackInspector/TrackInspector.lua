@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.track_inspector",
     name = "Track Inspector",
-    version = "1.3",
+    version = "1.4",
     api_min = 16,
 })
 
@@ -41,6 +41,12 @@ load_settings()
 
 local function is_valid_number(n)
     return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
+end
+
+local function has_capability(name)
+    if type(plugin.has_capability) ~= "function" then return false end
+    local ok, supported = pcall(plugin.has_capability, name)
+    return ok and supported == true
 end
 
 local function format_hz(hz)
@@ -452,7 +458,45 @@ end
 -- Bit-Perfect Candidate Evaluation
 --------------------------------------------------------------------------------
 
-local function assess_bit_perfect(fmt, out, eq)
+-- audio.crossfeed predates independent bypass behavior. The stock-MSEB
+-- capability identifies the first firmware boundary that guarantees it;
+-- older API 16 releases still bypass crossfeed with the manual EQ.
+local function crossfeed_runs_when_bypassed()
+    return has_capability("audio.mseb.stock")
+end
+
+local MSEB_FIELDS = {
+    "temperature", "bass_ext", "bass_texture", "thickness", "vocal_pos",
+    "female_vocal", "sibilance_lf", "sibilance_hf", "impulse_tone", "air",
+}
+
+local function get_mseb_snapshot()
+    local cap_ok, supported = pcall(plugin.has_capability, "audio.mseb.stock")
+    if not cap_ok or not supported or type(plugin.get_mseb_state) ~= "function" then
+        return nil, false
+    end
+    local ok, state = pcall(plugin.get_mseb_state)
+    if not ok or type(state) ~= "table" or type(state.enabled) ~= "boolean" then
+        return nil, true
+    end
+    return state, true
+end
+
+local function mseb_has_effect(state)
+    if type(state) ~= "table" then return nil end
+    for _, field in ipairs(MSEB_FIELDS) do
+        local value = state[field]
+        if not is_valid_number(value) or value < -100 or value > 100 or value % 1 ~= 0 then
+            return nil
+        end
+        if value ~= 0 then return true end
+    end
+    local width = state.width
+    if not is_valid_number(width) or width < 0 or width > 2 then return nil end
+    return width ~= 1
+end
+
+local function assess_bit_perfect(fmt, out, eq, mseb, mseb_supported)
     if not fmt then
         return {
             status = "No Active Playback",
@@ -580,24 +624,54 @@ local function assess_bit_perfect(fmt, out, eq)
             end
         end
 
+        -- Stock MSEB replaces manual EQ, preamp and stereo width while active.
+        local mseb_enabled = mseb_supported and mseb and mseb.enabled == true
+        if mseb_supported and not mseb then
+            table.insert(reasons, "Stock MSEB state is unavailable; cannot verify the PCM processing path.")
+        elseif mseb_enabled then
+            local mseb_effect = mseb_has_effect(mseb)
+            if mseb_effect == true then
+                table.insert(reasons, "Stock MSEB processing is enabled with non-neutral settings.")
+            elseif mseb_effect == nil then
+                table.insert(reasons, "Stock MSEB settings are incomplete or invalid; cannot verify a neutral PCM path.")
+            end
+        end
+
         -- Parametric EQ & Stereo Width
         if not eq or type(eq.bypass) ~= "boolean" then
             table.insert(reasons, "Equalizer state unavailable or unqueried; cannot verify flat DSP path.")
         elseif eq.bypass == true then
-            table.insert(notes, "Equalizer bypass is active; preamp, stereo width, crossfeed, and band filters are skipped.")
+            local crossfeed_independent = crossfeed_runs_when_bypassed()
+            table.insert(notes, crossfeed_independent
+                and "Equalizer bypass is active; preamp, stereo width, and band filters are skipped. Crossfeed remains independent."
+                or "Equalizer bypass is active; preamp, stereo width, crossfeed, and band filters are skipped.")
+            if crossfeed_independent then
+                local crossfeed = eq.crossfeed
+                if not is_valid_number(crossfeed) and (not is_valid_number(channels) or channels == 2) then
+                    table.insert(reasons, "Headphone crossfeed state is unknown.")
+                elseif is_valid_number(crossfeed) and (not is_valid_number(channels) or channels == 2) and crossfeed > 0 then
+                    table.insert(reasons, string.format("Headphone crossfeed is active at %.2f strength.", crossfeed))
+                end
+            end
         else
-            local preamp = eq.preamp_db
-            if not is_valid_number(preamp) then
-                table.insert(reasons, "EQ preamp gain is unknown or invalid.")
-            elseif preamp ~= 0 then
-                table.insert(reasons, string.format("EQ digital preamp gain active: %+.2f dB.", preamp))
+            if mseb_enabled then
+                table.insert(notes, "Manual EQ bands, preamp, and stereo width are overridden by stock MSEB while it is enabled.")
+            else
+                local preamp = eq.preamp_db
+                if not is_valid_number(preamp) then
+                    table.insert(reasons, "EQ preamp gain is unknown or invalid.")
+                elseif preamp ~= 0 then
+                    table.insert(reasons, string.format("EQ digital preamp gain active: %+.2f dB.", preamp))
+                end
             end
 
             local width = eq.stereo_width
-            if not is_valid_number(width) and (not is_valid_number(channels) or channels == 2) then
-                table.insert(reasons, "Stereo width is unknown or invalid.")
-            elseif (not is_valid_number(channels) or channels == 2) and width ~= 1.0 then
-                table.insert(reasons, string.format("Stereo width processing is active: %.4f.", width))
+            if not mseb_enabled then
+                if not is_valid_number(width) and (not is_valid_number(channels) or channels == 2) then
+                    table.insert(reasons, "Stereo width is unknown or invalid.")
+                elseif (not is_valid_number(channels) or channels == 2) and width ~= 1.0 then
+                    table.insert(reasons, string.format("Stereo width processing is active: %.4f.", width))
+                end
             end
 
             local crossfeed = eq.crossfeed
@@ -608,7 +682,9 @@ local function assess_bit_perfect(fmt, out, eq)
             end
 
             local active_bands = 0
-            if type(eq.bands) == "table" then
+            if mseb_enabled then
+                -- The manual bands remain stored but do not affect output.
+            elseif type(eq.bands) == "table" then
                 if #eq.bands ~= 10 then table.insert(reasons, "The full equalizer band state is unavailable.") end
                 for _, band in ipairs(eq.bands) do
                     if band.enabled == nil then
@@ -666,7 +742,7 @@ local function assess_bit_perfect(fmt, out, eq)
             table.insert(reasons, "Crossfade is enabled; the player does not report whether tracks are currently being mixed.")
         end
     else
-        table.insert(notes, "Native DoP hardware stream bypasses PCM Equalizer, stereo width, and software volume.")
+        table.insert(notes, "Native DoP hardware stream bypasses PCM Equalizer, stock MSEB, stereo width, and software volume.")
     end
 
     local status, is_candidate
@@ -992,9 +1068,20 @@ end
 show_dsp_screen = function(replace_handle)
     local eq = get_live_eq()
     local fmt = get_format_snapshot()
+    local mseb, mseb_supported = get_mseb_snapshot()
     local rows = {}
 
     table.insert(rows, { label = "Refresh sound details", text_size = "medium" })
+
+    if mseb_supported then
+        local status = mseb and (mseb.enabled and "Enabled" or "Disabled") or "State unknown"
+        table.insert(rows, { label = "Stock MSEB: " .. status, text_size = "medium" })
+        if mseb and mseb.enabled then
+            table.insert(rows, { label = fmt and fmt.dop == true
+                and "Native DoP bypasses stock MSEB during playback."
+                or "Stock MSEB overrides the stored manual EQ bands, preamp, and stereo width; crossfeed remains independent.", wrap = true })
+        end
+    end
 
     if not eq then
         table.insert(rows, { label = "Equalizer details unavailable", text_size = "medium" })
@@ -1010,7 +1097,9 @@ show_dsp_screen = function(replace_handle)
     local bypass = eq.bypass
     table.insert(rows, { label = "Equalizer: " .. (bypass == true and "Bypassed" or bypass == false and "Enabled" or "State unknown"), text_size = "medium" })
     if bypass == true then
-        table.insert(rows, { label = "Equalizer bypass also skips preamp, stereo width, crossfeed, and filters.", wrap = true })
+        table.insert(rows, { label = crossfeed_runs_when_bypassed()
+            and "Equalizer bypass skips preamp, stereo width, and filters; crossfeed remains independent."
+            or "Equalizer bypass also skips preamp, stereo width, crossfeed, and filters.", wrap = true })
     end
     if fmt and fmt.dop then
         table.insert(rows, { label = "DSD-over-PCM playback bypasses the equalizer and other PCM processing.", wrap = true })
@@ -1018,14 +1107,15 @@ show_dsp_screen = function(replace_handle)
         table.insert(rows, { label = "DSD is converted to PCM; the sound settings below can affect playback.", wrap = true })
     end
 
-    table.insert(rows, { label = "Preamp gain: " .. (is_valid_number(eq.preamp_db) and string.format("%+.2f dB", eq.preamp_db) or "Unknown") .. (bypass == true and " · bypassed" or ""), text_size = "medium", wrap = true })
+    local mseb_override = mseb and mseb.enabled == true and not (fmt and fmt.dop == true)
+    table.insert(rows, { label = "Preamp gain: " .. (is_valid_number(eq.preamp_db) and string.format("%+.2f dB", eq.preamp_db) or "Unknown") .. (bypass == true and " · bypassed" or mseb_override and " · stored; overridden by MSEB" or ""), text_size = "medium", wrap = true })
     local width = eq.stereo_width
     local width_desc = not is_valid_number(width) and "Unknown" or (width == 1.0 and "Neutral" or width == 0 and "Mono" or "Wider or narrower stereo")
-    table.insert(rows, { label = "Stereo width: " .. (is_valid_number(width) and string.format("%.3f · %s", width, width_desc) or width_desc), text_size = "medium", wrap = true })
+    table.insert(rows, { label = "Stereo width: " .. (is_valid_number(width) and string.format("%.3f · %s", width, width_desc) or width_desc) .. (mseb_override and " · stored; overridden by MSEB" or ""), text_size = "medium", wrap = true })
     local crossfeed = eq.crossfeed
     local angle = safe_call("eq_get_crossfeed_angle")
     if not is_valid_number(angle) then angle = eq.crossfeed_angle end
-    table.insert(rows, { label = "Headphone crossfeed: " .. (is_valid_number(crossfeed) and string.format("%d%% strength", math.floor(crossfeed * 100 + 0.5)) or "Unknown") .. (bypass == true and " · bypassed" or ""), wrap = true })
+    table.insert(rows, { label = "Headphone crossfeed: " .. (is_valid_number(crossfeed) and string.format("%d%% strength", math.floor(crossfeed * 100 + 0.5)) or "Unknown") .. (bypass == true and not crossfeed_runs_when_bypassed() and " · bypassed" or ""), wrap = true })
     if is_valid_number(angle) then
         table.insert(rows, { label = angle == 0 and "Crossfeed delay: none" or string.format("Crossfeed angle: %.1f°", angle), wrap = true })
     end
@@ -1064,7 +1154,7 @@ show_dsp_screen = function(replace_handle)
             end
         end
     end
-    table.insert(rows, { label = band_states_known and string.format("Enabled equalizer bands: %d / 10", active_count) or "Enabled equalizer bands: Not fully reported", text_size = "medium" })
+    table.insert(rows, { label = (band_states_known and string.format("Enabled equalizer bands: %d / 10", active_count) or "Enabled equalizer bands: Not fully reported") .. (mseb_override and " · stored; overridden by MSEB" or ""), text_size = "medium" })
     table.insert(rows, { label = "View all equalizer bands", text_size = "medium" })
 
     local current_handle
@@ -1094,7 +1184,8 @@ show_bitperfect_screen = function(replace_handle)
     local fmt = get_format_snapshot()
     local out = get_output_snapshot()
     local eq = get_live_eq()
-    local assess = assess_bit_perfect(fmt, out, eq)
+    local mseb, mseb_supported = get_mseb_snapshot()
+    local assess = assess_bit_perfect(fmt, out, eq, mseb, mseb_supported)
 
     local rows = {}
     table.insert(rows, { label = "Refresh signal path check", text_size = "medium" })
@@ -1258,6 +1349,8 @@ if rawget(_G, "COMPAS_PLUGIN_TEST") then
     _G.COMPAS_PLUGIN_UNDER_TEST = {
         parse_local_file_header = parse_local_file_header,
         assess_bit_perfect = assess_bit_perfect,
+        get_mseb_snapshot = get_mseb_snapshot,
+        mseb_has_effect = mseb_has_effect,
         decode_ieee_extended = decode_ieee_extended,
         format_hz = format_hz,
         format_depth = format_depth,

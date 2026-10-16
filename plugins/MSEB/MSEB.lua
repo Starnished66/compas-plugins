@@ -1,19 +1,25 @@
-plugin.define({ id = "example.mseb", name = "MSEB", version = "1.4", api_min = 16 })
+plugin.define({ id = "example.mseb", name = "MSEB", version = "1.5", api_min = 16 })
 
 -- Mood-based tone tuning on this app's 10-band parametric EQ
 -- (src/audio/peq.c). Adds an MSEB row under Settings -> Music Settings ->
--- Audio. Sound Stage uses the reusable stereo-width API:
--- stereo width is a normalized mid/side matrix saved in the same profile.
--- It is not crossfeed, delay, or convolution; Impulse remains tonal EQ.
+-- Audio. Sound Stage holds two separate things: Stereo Width, a normalized
+-- mid/side matrix saved in MSEB state (or the fallback PEQ profile), and Crossfeed, a headphone blend with
+-- its own strength and angle. Crossfeed is not stored by MSEB. It is the live
+-- EQ's setting, read at every apply, so tone and width changes leave it as it
+-- is, and turning MSEB off keeps the crossfeed you set while it was on.
+-- Presets (slots) hold tone and width only.
+-- On stock-MSEB builds Impulse is a tonal presence control. Legacy PEQ
+-- fallback maps it to a broad 7.5 kHz EQ level; neither path changes attack.
 --
 -- Seven controls are in both curves: Sound Temperature, Bass Extension,
 -- Bass Texture, Note Thickness, Vocal Position, Female Vocal, and Air.
 -- curve=legacy is the 1.1 mapping, including Instrument Presence, Bass
--- Bite, and Treble Bite. curve=new replaces those three with this plugin's
--- own Sibilance LF / HF peaks and a wide 7.5 kHz level called Impulse.
--- That level is not attack processing. A file with no curve marker is
--- legacy, so opening or upgrading does not retune an existing user. A
--- missing state file starts on curve=new. Switching is a confirmed action.
+-- Bite, and Treble Bite. curve=new replaces those three with Sibilance LF /
+-- HF and Impulse controls. Stock builds use native MSEB; older builds map
+-- these to PEQ bands, including a wide 7.5 kHz level for Impulse.
+-- A file with no curve marker is legacy, so opening or upgrading does not
+-- retune an existing user. A missing state file starts on curve=new.
+-- Switching is a confirmed action.
 local OLD_FREQS = { 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 }
 local OLD_Q     = { 0.2, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.2 }
 local NEW_FREQS = { 31, 62, 125, 250, 500, 1000, 7500, 5800, 9200, 16000 }
@@ -42,8 +48,15 @@ local AXES = {
     { key = "impulse_tone", mode = "new",    contrib = { { band = 7, db = 3 } } },
 }
 
+-- Crossfeed angles the player accepts (peq.c). Index 1 is no delay.
+local CROSSFEED_ANGLES = { 0, 30, 45, 60, 90 }
+local CROSSFEED_ANGLE_LABELS = { "No delay", "30°", "45°", "60°", "90°" }
+
 local PLUGIN_DIR = plugin.sd_root() .. "/.plugins"
 local STATE_PATH = PLUGIN_DIR .. "/.mseb_state"
+local PRESET_LIMIT = 20
+local PRESET_NAME_MAX = 64
+local RANGE_VALUES = { 20, 40, 100 }
 -- Snapshot of whatever manual PEQ curve was live right before MSEB was
 -- first enabled -- see set_enabled() below. Written/read only via
 -- plugin.eq_save_profile()/eq_load_profile(), never parsed here directly.
@@ -58,22 +71,27 @@ local function slot_path(n)
     return PLUGIN_DIR .. "/.mseb_slot" .. n
 end
 
+local function named_preset_path(n)
+    return PLUGIN_DIR .. "/.mseb_preset" .. tostring(n)
+end
+
 -- Reads a plain key=value\n file into a table via repeated single-line
 -- reads (same io pattern SoundProfiles.lua's own read_state() uses) --
 -- deliberately not f:lines(), to stay within the exact io usage already
 -- demonstrated as safe in this plugin sandbox.
 local function read_kv_file(path)
-    local out = {}
+    local out, raw_lines = {}, {}
     local f = io.open(path, "r")
-    if not f then return out, false end
+    if not f then return out, false, nil end
     local line = f:read("*l")
     while line do
+        raw_lines[#raw_lines + 1] = line .. "\n"
         local k, v = line:match("^([%w_]+)=(.-)$")
         if k then out[k] = v end
         line = f:read("*l")
     end
     f:close()
-    return out, true
+    return out, true, table.concat(raw_lines)
 end
 
 local function file_exists(path)
@@ -89,14 +107,17 @@ local function clamp_axis(raw)
     if type(v) ~= "number" or v ~= v or v == math.huge or v == -math.huge then
         return 0
     end
-    if v < -100 then return -100 end
-    if v > 100 then return 100 end
-    return v
+    if v < -100 then v = -100 end
+    if v > 100 then v = 100 end
+    if v < 0 then return math.ceil(v - 0.5) end
+    return math.floor(v + 0.5)
 end
 
 local values = {}
 for _, a in ipairs(AXES) do values[a.key] = 0 end
 local enabled = false
+local manual_backup_restored = false
+local axis_range = 100
 -- Missing state is a new install. An existing file without curve= is 1.1.
 local curve = "new"
 
@@ -113,6 +134,8 @@ do
     local kv, found = read_kv_file(STATE_PATH)
     if found then
         enabled = (kv.enabled == "1")
+        local saved_range = tonumber(kv.range)
+        if saved_range == 20 or saved_range == 40 or saved_range == 100 then axis_range = saved_range end
         curve = curve_from_marker(kv.curve)
         for _, a in ipairs(AXES) do
             if not axis_in_curve(a, curve) then
@@ -132,6 +155,7 @@ local function write_kv_file(path, include_enabled)
     ok = f:write("curve=" .. curve .. "\n")
     if ok and include_enabled then
         ok = f:write("enabled=" .. (enabled and "1" or "0") .. "\n")
+        if ok then ok = f:write("range=" .. tostring(axis_range) .. "\n") end
     end
     for _, a in ipairs(AXES) do
         if ok and axis_in_curve(a, curve) then
@@ -154,10 +178,6 @@ local function write_state()
     return write_kv_file(STATE_PATH, true)
 end
 
--- Builds a complete MSEB profile before loading it, so each change results
--- in one native profile load rather than a save for every EQ field.
--- MSEB owns the bands while active; the preamp stays the user's own, read
--- from the backup taken when MSEB was switched on.
 local function backup_preamp()
     local f = io.open(BACKUP_PATH, "r")
     if not f then return "0.00" end
@@ -173,14 +193,6 @@ local function backup_preamp()
     return preamp
 end
 
-local function read_whole(path)
-    local f = io.open(path, "r")
-    if not f then return nil end
-    local text = f:read("*a")
-    f:close()
-    return text
-end
-
 local function write_whole(path, text)
     if text == nil then return true end
     local f = io.open(path, "w")
@@ -190,12 +202,118 @@ local function write_whole(path, text)
     return ok and closed
 end
 
-local function apply_profile()
-    local temp_path = PROFILE_PATH .. ".tmp"
-    local f = io.open(temp_path, "w")
-    if not f then return false end
+local function write_atomic(path, text)
+    local temp_path = path .. ".tmp"
+    if not write_whole(temp_path, text) then
+        os.remove(temp_path)
+        return false
+    end
+    if not os.rename(temp_path, path) then
+        os.remove(temp_path)
+        return false
+    end
+    return true
+end
+
+local function angle_index(angle)
+    for i, a in ipairs(CROSSFEED_ANGLES) do
+        if a == angle then return i end
+    end
+    return nil
+end
+
+-- Detached snapshot of the live EQ, or nil on builds without the snapshot
+-- API. Every crossfeed build has it, so a non-nil live crossfeed implies a
+-- snapshot.
+local function live_snapshot()
+    if not plugin.has_capability("audio.peq.state") or not plugin.get_eq_state then return nil end
+    return plugin.get_eq_state()
+end
+
+-- Applies a snapshot from live_snapshot() through the native validator. The
+-- native side raises on refusal instead of returning false, so the call is
+-- wrapped. Applying saves the whole EQ unless persist is false (see
+-- set_live_crossfeed below).
+local function apply_snapshot(snapshot, persist)
+    if not snapshot then return false end
+    local opts = nil
+    if persist == false then opts = { persist = false } end
+    local ok, applied = pcall(plugin.eq_apply_state, snapshot, opts)
+    return ok and applied == true
+end
+
+local function native_mseb()
+    return plugin.has_capability("audio.mseb.stock") and plugin.mseb_apply_state
+        and plugin.get_mseb_state
+end
+
+local function native_state(on)
+    return {
+        enabled = on,
+        temperature = values.temperature, bass_ext = values.bass_ext,
+        bass_texture = values.bass_texture, thickness = values.thickness,
+        vocal_pos = values.vocal_pos, female_vocal = values.female_vocal,
+        sibilance_lf = values.sibilance_lf, sibilance_hf = values.sibilance_hf,
+        impulse_tone = values.impulse_tone, air = values.air,
+        width = 1.0 + values.sound_stage / 100.0,
+    }
+end
+
+local function apply_native(on)
+    if not native_mseb() then return true end
+    local ok, result = pcall(plugin.mseb_apply_state, native_state(on))
+    return ok and result == true
+end
+
+local function restore_native_state(state)
+    if not native_mseb() or not state then return true end
+    local ok, result = pcall(plugin.mseb_apply_state, state)
+    return ok and result == true
+end
+
+-- A rollback that returns the live EQ to MSEB's own curve must not save that
+-- curve to the native file. On a build with audio.peq.transient MSEB never
+-- saved it in the first place. Other builds saved it through the load
+-- anyway, so their rollbacks keep saving.
+local function rollback_persists()
+    return not plugin.has_capability("audio.peq.transient")
+end
+
+-- Live crossfeed, or nil when this build has no crossfeed. `angle_supported`
+-- is false on the early crossfeed builds that had strength but no angle.
+-- One snapshot serves both fields.
+local function read_crossfeed()
+    if not plugin.has_capability("audio.crossfeed") then return nil end
+    local state = live_snapshot()
+    if not state then return nil end
+    local strength = state.crossfeed
+    if type(strength) ~= "number" or strength ~= strength or strength < 0 or strength > 1 then
+        strength = 0
+    end
+    local live = { strength = strength, angle = 0, angle_supported = false }
+    if plugin.has_capability("audio.crossfeed.angle") then
+        live.angle_supported = true
+        if angle_index(state.crossfeed_angle) then live.angle = state.crossfeed_angle end
+    end
+    return live
+end
+
+-- Builds a complete MSEB profile before loading it, so each change results
+-- in one native profile load rather than a save for every EQ field.
+-- MSEB owns the bands while active; the preamp stays the user's own, read
+-- from the backup taken when MSEB was switched on. Crossfeed is not MSEB's:
+-- the current live strength and angle are written back unchanged. A profile
+-- without those keys would load them as off, which is the reset this avoids.
+local function profile_text()
     local width = 1.0 + values.sound_stage / 100.0
-    local ok = f:write("bypass=0\npreamp=" .. backup_preamp() .. "\nstereo_width=" .. string.format("%.6f", width) .. "\n")
+    local lines = { "bypass=0", "preamp=" .. backup_preamp(), string.format("stereo_width=%.6f", width) }
+    local live = read_crossfeed()
+    if live then
+        table.insert(lines, string.format("crossfeed=%.6f", live.strength))
+        if live.angle_supported then
+            table.insert(lines, string.format("crossfeed_angle=%d", live.angle))
+        end
+    end
     local freqs = (curve == "legacy") and OLD_FREQS or NEW_FREQS
     local qs = (curve == "legacy") and OLD_Q or NEW_Q
     local gains = {}
@@ -209,49 +327,172 @@ local function apply_profile()
     for i = 1, 10 do
         local gain = math.max(-12, math.min(12, gains[i] or 0))
         local band_type = (BAND_TYPE[i] == "low_shelf") and 1 or (BAND_TYPE[i] == "high_shelf") and 2 or 0
-        if ok then
-            ok = f:write(string.format("band%d_freq=%.2f\nband%d_gain=%.2f\nband%d_q=%.3f\nband%d_type=%d\nband%d_enabled=%d\n",
-                i - 1, freqs[i], i - 1, gain, i - 1, qs[i], i - 1, band_type, i - 1, gain ~= 0 and 1 or 0))
-        end
+        table.insert(lines, string.format("band%d_freq=%.2f", i - 1, freqs[i]))
+        table.insert(lines, string.format("band%d_gain=%.2f", i - 1, gain))
+        table.insert(lines, string.format("band%d_q=%.3f", i - 1, qs[i]))
+        table.insert(lines, string.format("band%d_type=%d", i - 1, band_type))
+        table.insert(lines, string.format("band%d_enabled=%d", i - 1, gain ~= 0 and 1 or 0))
     end
-    local closed = f:close()
-    if not ok or not closed or not os.rename(temp_path, PROFILE_PATH) then
-        os.remove(temp_path)
-        return false
+    return table.concat(lines, "\n") .. "\n"
+end
+
+-- Live-only apply when this build has it, so a tone change does not rewrite
+-- the native EQ file. Older API 16 builds use the saving load.
+local function load_active_profile()
+    if plugin.has_capability("audio.peq.transient") and plugin.eq_apply_profile then
+        return plugin.eq_apply_profile(PROFILE_PATH, { persist = false })
     end
-    if not plugin.eq_load_profile(PROFILE_PATH) then
-        return false
+    return plugin.eq_load_profile(PROFILE_PATH)
+end
+
+local function apply_profile()
+    if curve == "new" and native_mseb() then
+        return apply_native(true)
     end
+    if not write_atomic(PROFILE_PATH, profile_text()) then return false end
+    local loaded = load_active_profile()
+    if not loaded then return false end
+    -- A legacy PEQ curve takes ownership only after its profile was accepted.
+    if native_mseb() then return apply_native(false) end
     return true
 end
 
+-- Puts back the EQ saved before MSEB was enabled. The backup loads through
+-- the native loader, so no MSEB file is written and a read-only card cannot
+-- block it. Returns ok, message. ok is false only when the native loader
+-- refused the backup, and then nothing changed.
+--
+-- The backup can hold bands the snapshot validator refuses even though the
+-- loader accepted them (for example q=0 on an unused band). So crossfeed the
+-- user changed while MSEB was on is written back only when the loaded value
+-- differs. If that write-back is refused, the loaded backup stays live and the
+-- saved crossfeed is used. Turning MSEB off is never blocked by it. The
+-- message tells the user their changed crossfeed was lost.
+local function restore_backup()
+    local live = read_crossfeed()
+    if not plugin.eq_load_profile(BACKUP_PATH) then return false end
+    -- Preserve the native effect until the manual PEQ backup is safely live.
+    if native_mseb() and not apply_native(false) then return false end
+    if not live then return true end
+    local loaded = read_crossfeed()
+    local same = math.abs(loaded.strength - live.strength) < 1e-6
+        and (not live.angle_supported or loaded.angle == live.angle)
+    if same then return true end
+    local state = live_snapshot()
+    state.crossfeed = live.strength
+    if live.angle_supported then state.crossfeed_angle = live.angle end
+    if apply_snapshot(state) then return true end
+    return true, "MSEB off. Crossfeed was reset to its saved value."
+end
+
+-- Restore a manual PEQ snapshot without deleting its durable backup. Curve
+-- transitions only remove that backup after the matching state write commits.
+local function load_manual_backup()
+    local live = read_crossfeed()
+    if not file_exists(BACKUP_PATH) or not plugin.eq_load_profile(BACKUP_PATH) then return false end
+    manual_backup_restored = true
+    if not live then return true end
+    local loaded = read_crossfeed()
+    if math.abs(loaded.strength - live.strength) < 1e-6
+        and (not live.angle_supported or loaded.angle == live.angle) then return true end
+    local state = live_snapshot()
+    state.crossfeed = live.strength
+    if live.angle_supported then state.crossfeed_angle = live.angle end
+    apply_snapshot(state)
+    return true
+end
+
+-- Stock mode changes only the transient DSP and plugin state; it leaves the
+-- manual PEQ alone. Legacy mode also owns the PEQ bands and uses a manual-EQ
+-- backup. Each branch rolls its live state back if the plugin-state write
+-- fails.
 local function set_enabled(new_enabled)
     if new_enabled == enabled then return true end
     if new_enabled then
         if file_exists(OTHER_EQ_OWNER_BACKUP) then
             return false, "Turn off Loudness Boost first"
         end
-        -- A backup left by a restore that failed still holds the user's EQ
-        -- from before MSEB; keep it rather than snapshot the MSEB curve.
-        if not file_exists(BACKUP_PATH) and not plugin.eq_save_profile(BACKUP_PATH) then return false end
-        if not apply_profile() then return false end
+        if curve == "new" and native_mseb() then
+            if file_exists(BACKUP_PATH) and not manual_backup_restored and not load_manual_backup() then
+                return false
+            end
+            local native_before = plugin.get_mseb_state()
+            if not apply_native(true) then return false end
+            enabled = true
+            if not write_state() then
+                enabled = false
+                restore_native_state(native_before)
+                return false
+            end
+            if manual_backup_restored and file_exists(BACKUP_PATH) then os.remove(BACKUP_PATH) end
+            return true
+        end
+        -- The legacy PEQ curve owns the bands, so save the manual curve before
+        -- applying it. A leftover backup remains authoritative after a failed
+        -- earlier restore and must not be overwritten.
+        local created = not file_exists(BACKUP_PATH)
+        if created and not plugin.eq_save_profile(BACKUP_PATH) then return false end
+        local before = live_snapshot()
+        local native_before = native_mseb() and plugin.get_mseb_state() or nil
+        if not apply_profile() then
+            local restored = apply_snapshot(before) or plugin.eq_load_profile(BACKUP_PATH)
+            restore_native_state(native_before)
+            if created and restored then os.remove(BACKUP_PATH) end
+            return false
+        end
         enabled = true
         if not write_state() then
-            plugin.eq_load_profile(BACKUP_PATH)
             enabled = false
+            if not apply_snapshot(before) then plugin.eq_load_profile(BACKUP_PATH) end
+            restore_native_state(native_before)
+            if created then os.remove(BACKUP_PATH) end
             return false
         end
     else
-        if not file_exists(BACKUP_PATH) or not plugin.eq_load_profile(BACKUP_PATH) then return false end
+        if curve == "new" and native_mseb() then
+            local native_before = plugin.get_mseb_state()
+            if file_exists(BACKUP_PATH) and not manual_backup_restored and not load_manual_backup() then
+                return false
+            end
+            if not apply_native(false) then return false end
+            enabled = false
+            if not write_state() then
+                enabled = true
+                restore_native_state(native_before)
+                return false
+            end
+            -- A backup can only be left from an interrupted old-version
+            -- migration. It is removed only after it was restored and the
+            -- disabled state committed.
+            if manual_backup_restored and file_exists(BACKUP_PATH) then os.remove(BACKUP_PATH) end
+            return true
+        end
+        if not file_exists(BACKUP_PATH) then return false end
+        local before = live_snapshot()
+        local native_before = native_mseb() and plugin.get_mseb_state() or nil
+        local restored, message = restore_backup()
+        if not restored then return false end
         enabled = false
         if not write_state() then
             enabled = true
-            apply_profile()
+            if not apply_snapshot(before, rollback_persists()) then apply_profile() end
+            restore_native_state(native_before)
             return false
         end
         os.remove(BACKUP_PATH)
+        return true, message
     end
     return true
+end
+
+-- set_enabled() returns false with a reason when it refuses, and true with a
+-- message when the switch worked but the user should know something.
+local function show_enabled_result(ok, message)
+    if not ok then
+        plugin.show_toast(message or "Could not change MSEB. Try again.")
+    elseif message then
+        plugin.show_toast(message)
+    end
 end
 
 local function snapshot_values()
@@ -264,19 +505,351 @@ local function restore_values(previous)
     for _, a in ipairs(AXES) do values[a.key] = previous[a.key] end
 end
 
-local function reset_defaults()
+-- Every change to tone, width, or curve goes through here. Native mode
+-- updates transient MSEB state; legacy mode updates its PEQ profile. Curve
+-- transitions additionally preserve the manual PEQ backup until the state
+-- write commits.
+local function commit_values(change)
     local previous = snapshot_values()
-    for _, a in ipairs(AXES) do values[a.key] = 0 end
-    if enabled and not apply_profile() then
-        restore_values(previous)
-        return false
+    local previous_curve = curve
+    local previous_range = axis_range
+    local before = live_snapshot()
+    local native_before = native_mseb() and plugin.get_mseb_state() or nil
+    local was_stock = enabled and curve == "new" and native_mseb()
+    change()
+    local becomes_stock = enabled and curve == "new" and native_mseb()
+    local created_backup = false
+    local ok = true
+    if enabled and was_stock and not becomes_stock then
+        created_backup = not file_exists(BACKUP_PATH)
+        if created_backup then
+            ok = plugin.eq_save_profile(BACKUP_PATH)
+            if ok then manual_backup_restored = false end
+        end
+        if ok then ok = apply_profile() end
+    elseif enabled and not was_stock and becomes_stock then
+        -- Switching away from the PEQ-owned legacy curve restores the saved
+        -- manual EQ before stock MSEB takes over. Keep its backup until state
+        -- persistence succeeds, so a failed conversion can return to legacy.
+        ok = load_manual_backup()
+        if ok then ok = apply_profile() end
+    elseif enabled then
+        ok = apply_profile()
     end
-    if not write_state() then
-        restore_values(previous)
-        if enabled then apply_profile() end
-        return false
+    if ok then ok = write_state() end
+    if ok then
+        if was_stock and not becomes_stock and created_backup then
+            -- Legacy mode now owns PEQ and needs this backup for disable.
+        elseif not was_stock and becomes_stock and file_exists(BACKUP_PATH) then
+            os.remove(BACKUP_PATH)
+        end
+        return true
+    end
+    curve = previous_curve
+    axis_range = previous_range
+    restore_values(previous)
+    if enabled and was_stock and not becomes_stock then
+        local restored = apply_snapshot(before, rollback_persists())
+        if not restored and file_exists(BACKUP_PATH) then restored = plugin.eq_load_profile(BACKUP_PATH) end
+        restore_native_state(native_before)
+        if created_backup and restored then os.remove(BACKUP_PATH) end
+    elseif enabled and not was_stock and becomes_stock then
+        restore_native_state(native_before)
+        -- Reapply the old legacy curve after returning config fields; its
+        -- durable manual-EQ backup stays available for a later retry.
+        if not apply_snapshot(before, rollback_persists()) then apply_profile() end
+    else
+        if enabled and not apply_snapshot(before, rollback_persists()) then apply_profile() end
+        restore_native_state(native_before)
+    end
+    return false
+end
+
+-- Resets tone and width only. Crossfeed belongs to the live EQ and is kept.
+local function reset_defaults()
+    return commit_values(function()
+        for _, a in ipairs(AXES) do values[a.key] = 0 end
+    end)
+end
+
+local open_settings
+local choose_axis_range
+local set_axis_range
+
+local function encode_name(name)
+    return (name:gsub(".", function(ch) return string.format("%02X", string.byte(ch)) end))
+end
+
+local function decode_name(encoded)
+    if type(encoded) ~= "string" or #encoded == 0 or #encoded % 2 ~= 0 or encoded:find("[^%x]") then return nil end
+    local out = {}
+    for i = 1, #encoded, 2 do out[#out + 1] = string.char(tonumber(encoded:sub(i, i + 1), 16)) end
+    local name = table.concat(out)
+    if #name == 0 or #name > PRESET_NAME_MAX or name:find("[%c]") then return nil end
+    return name
+end
+
+local function clean_preset_name(raw)
+    if type(raw) ~= "string" then return nil end
+    local name = raw:gsub("^%s+", ""):gsub("%s+$", "")
+    if #name == 0 or #name > PRESET_NAME_MAX or name:find("[%c]") then return nil end
+    return name
+end
+
+local function valid_named_preset(kv)
+    if kv.format ~= "1" or (kv.curve ~= "new" and kv.curve ~= "legacy") then return false end
+    if kv.range ~= "20" and kv.range ~= "40" and kv.range ~= "100" then return false end
+    for _, axis in ipairs(AXES) do
+        if axis_in_curve(axis, kv.curve) then
+            local value = tonumber(kv[axis.key])
+            if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge
+                or value < -100 or value > 100 or value % 1 ~= 0 then return false end
+        end
     end
     return true
+end
+
+local function read_named_presets()
+    local entries, damaged = {}, {}
+    for i = 1, PRESET_LIMIT do
+        local kv, found, signature = read_kv_file(named_preset_path(i))
+        if found then
+            local name = decode_name(kv.name_hex)
+            if name and valid_named_preset(kv) then
+                entries[#entries + 1] = { id = i, name = name, kv = kv, signature = signature }
+            else
+                damaged[#damaged + 1] = { id = i, signature = signature, name = "Damaged preset " .. i }
+            end
+        end
+    end
+    return entries, damaged
+end
+
+local function current_named_preset(entry)
+    local kv, found, signature = read_kv_file(named_preset_path(entry.id))
+    local name = found and decode_name(kv.name_hex) or nil
+    if not name or not valid_named_preset(kv) or name ~= entry.name or signature ~= entry.signature then
+        plugin.show_toast("Preset changed; reopen the preset list")
+        return nil
+    end
+    return { id = entry.id, name = name, kv = kv, signature = signature }
+end
+
+local function preset_text(name)
+    local lines = { "format=1", "name_hex=" .. encode_name(name), "curve=" .. curve,
+                    "range=" .. tostring(axis_range) }
+    for _, a in ipairs(AXES) do
+        if axis_in_curve(a, curve) then lines[#lines + 1] = a.key .. "=" .. tostring(values[a.key]) end
+    end
+    return table.concat(lines, "\n") .. "\n"
+end
+
+local function write_named_preset(id, name)
+    return write_atomic(named_preset_path(id), preset_text(name))
+end
+
+local function prompt_preset_name(title, initial, callback)
+    if not plugin.show_text_input then
+        plugin.show_toast("Text input is unavailable")
+        return
+    end
+    local opened = plugin.show_text_input(title, initial, false, function(text)
+        local name = clean_preset_name(text)
+        if not name then
+            plugin.show_toast("Enter a short preset name without line breaks")
+            return
+        end
+        callback(name)
+    end)
+    if opened == false then plugin.show_toast("Could not open name entry") end
+end
+
+local function duplicate_preset_name(name, exclude_id)
+    local wanted = name:lower()
+    for _, entry in ipairs(read_named_presets()) do
+        if entry.id ~= exclude_id and entry.name:lower() == wanted then return true end
+    end
+    return false
+end
+
+local function choose_free_preset_id()
+    for i = 1, PRESET_LIMIT do
+        if not file_exists(named_preset_path(i)) then return i end
+    end
+    return nil
+end
+
+local function save_named_preset()
+    local entries = read_named_presets()
+    local actions = { "Create new preset" }
+    for _, entry in ipairs(entries) do actions[#actions + 1] = "Overwrite: " .. entry.name end
+    plugin.show_list("Save named preset", actions, function(index)
+        if index == 1 then
+            prompt_preset_name("New preset name", "", function(name)
+                if duplicate_preset_name(name) then plugin.show_toast("A preset with that name already exists"); return end
+                -- Re-scan after text entry: the list remains open after Return,
+                -- and another create action may already have consumed its old slot.
+                local free_id = choose_free_preset_id()
+                if not free_id then plugin.show_toast("Preset limit reached (" .. PRESET_LIMIT .. ")"); return end
+                if write_named_preset(free_id, name) then plugin.show_toast("Preset saved")
+                else plugin.show_toast("Could not save preset. Try again.") end
+            end)
+            return
+        end
+        local selected = entries[index - 1]
+        if not selected then return end
+        local current = current_named_preset(selected)
+        if not current then return end
+        plugin.show_list("Overwrite preset?", { "Cancel", "Overwrite " .. current.name }, function(confirm)
+            if confirm ~= 2 then return end
+            local latest = current_named_preset(current)
+            if not latest then return end
+            if duplicate_preset_name(latest.name, latest.id) then
+                plugin.show_toast("A preset with that name already exists")
+                return
+            end
+            if write_named_preset(latest.id, latest.name) then plugin.show_toast("Preset overwritten")
+            else plugin.show_toast("Could not save preset. Try again.") end
+        end)
+    end)
+end
+
+local function load_named_preset(entry)
+    local current = current_named_preset(entry)
+    if not current then return end
+    local kv = current.kv
+    local next_curve = curve_from_marker(kv.curve)
+    local next_range = tonumber(kv.range)
+    local ok = commit_values(function()
+        curve = next_curve
+        axis_range = next_range
+        for _, a in ipairs(AXES) do
+            if axis_in_curve(a, next_curve) then values[a.key] = clamp_axis(kv[a.key])
+            else values[a.key] = 0 end
+        end
+    end)
+    plugin.show_toast(ok and "Preset loaded" or "Could not load preset. Try again.")
+    if ok then open_settings({ update = true }) end
+end
+
+local function rename_named_preset(entry)
+    local current = current_named_preset(entry)
+    if not current then return end
+    prompt_preset_name("Rename preset", current.name, function(name)
+        local latest = current_named_preset(current)
+        if not latest then return end
+        if duplicate_preset_name(name, latest.id) then plugin.show_toast("A preset with that name already exists"); return end
+        local kv = latest.kv
+        local lines = { "format=1", "name_hex=" .. encode_name(name), "curve=" .. kv.curve,
+                        "range=" .. kv.range }
+        for _, a in ipairs(AXES) do
+            if kv[a.key] then lines[#lines + 1] = a.key .. "=" .. kv[a.key] end
+        end
+        if write_atomic(named_preset_path(latest.id), table.concat(lines, "\n") .. "\n") then
+            plugin.show_toast("Preset renamed")
+        else
+            plugin.show_toast("Could not rename preset. Try again.")
+        end
+    end)
+end
+
+local function delete_named_preset(entry)
+    local current = current_named_preset(entry)
+    if not current then return end
+    plugin.show_list("Delete preset?", { "Cancel", "Delete " .. current.name }, function(index)
+        if index ~= 2 then return end
+        local latest = current_named_preset(current)
+        if not latest then return end
+        if os.remove(named_preset_path(latest.id)) then plugin.show_toast("Preset deleted")
+        else plugin.show_toast("Could not delete preset. Try again.") end
+    end)
+end
+
+local function current_damaged_preset(entry)
+    local kv, found, signature = read_kv_file(named_preset_path(entry.id))
+    if not found or signature ~= entry.signature or (decode_name(kv.name_hex) and valid_named_preset(kv)) then
+        plugin.show_toast("Preset changed; reopen the preset list")
+        return nil
+    end
+    return true
+end
+
+local function delete_damaged_preset(entry)
+    if not current_damaged_preset(entry) then return end
+    plugin.show_list("Delete damaged preset?", { "Cancel", "Delete file " .. entry.id }, function(index)
+        if index ~= 2 or not current_damaged_preset(entry) then return end
+        if os.remove(named_preset_path(entry.id)) then plugin.show_toast("Damaged preset deleted")
+        else plugin.show_toast("Could not delete preset. Try again.") end
+    end)
+end
+
+local function manage_named_preset(entry)
+    local current = current_named_preset(entry)
+    if not current then return end
+    plugin.show_list(current.name, { "Load", "Overwrite", "Rename", "Delete" }, function(index)
+        local latest = current_named_preset(current)
+        if not latest then return end
+        if index == 1 then load_named_preset(latest)
+        elseif index == 2 then
+            plugin.show_list("Overwrite preset?", { "Cancel", "Overwrite " .. latest.name }, function(confirm)
+                if confirm ~= 2 then return end
+                local confirmed = current_named_preset(latest)
+                if not confirmed then return end
+                if write_named_preset(confirmed.id, confirmed.name) then plugin.show_toast("Preset overwritten")
+                else plugin.show_toast("Could not save preset. Try again.") end
+            end)
+        elseif index == 3 then rename_named_preset(latest)
+        elseif index == 4 then delete_named_preset(latest) end
+    end)
+end
+
+local function open_named_presets()
+    local entries, damaged = read_named_presets()
+    local labels, targets = {}, {}
+    for _, entry in ipairs(entries) do
+        labels[#labels + 1] = entry.name
+        targets[#targets + 1] = { kind = "valid", entry = entry }
+    end
+    for _, entry in ipairs(damaged) do
+        labels[#labels + 1] = entry.name .. " (delete to free slot)"
+        targets[#targets + 1] = { kind = "damaged", entry = entry }
+    end
+    if #labels == 0 then labels[1] = "No named presets saved" end
+    plugin.show_list("Named presets", labels, function(index)
+        local target = targets[index]
+        if not target then return end
+        if target.kind == "valid" then manage_named_preset(target.entry)
+        else delete_damaged_preset(target.entry) end
+    end)
+end
+
+choose_axis_range = function(refresh)
+    plugin.show_list("Adjustment Range", { "±20", "±40", "±100" }, function(index)
+        set_axis_range(RANGE_VALUES[index], refresh)
+    end)
+end
+
+set_axis_range = function(new_range, refresh)
+    if new_range ~= 20 and new_range ~= 40 and new_range ~= 100 then return end
+    if new_range == axis_range then return end
+    local previous = axis_range
+    axis_range = new_range
+    if not write_state() then
+        axis_range = previous
+        plugin.show_toast("Could not save range. Try again.")
+        return
+    end
+    local outside = false
+    for _, a in ipairs(AXES) do
+        if axis_in_curve(a, curve) and math.abs(values[a.key]) > new_range then outside = true end
+    end
+    if outside then
+        plugin.show_toast("Range saved. Existing values kept; widen the range to edit values beyond it.")
+    else
+        plugin.show_toast("Range set to ±" .. new_range)
+    end
+    open_settings({ update = true })
+    if refresh then refresh() end
 end
 
 local function save_slot(n)
@@ -285,80 +858,95 @@ end
 
 -- An unmarked slot is a 1.1 preset: legacy curve, and every axis the slot
 -- does not name (including sibilance) becomes 0. curve=new loads only the
--- new axes and clears the 1.1-only ones. Mode, values, and the live EQ
--- roll back together if the profile or the state file fails.
+-- new axes and clears the 1.1-only ones. Slots carry no crossfeed, so
+-- loading one leaves the live crossfeed alone.
 local function load_slot(n)
     local kv, found = read_kv_file(slot_path(n))
     if not found then
         plugin.show_toast("Slot is empty")
         return
     end
-    local previous = snapshot_values()
-    local previous_curve = curve
-    local previous_profile = read_whole(PROFILE_PATH)
     local next_curve = curve_from_marker(kv.curve)
-    curve = next_curve
-    for _, a in ipairs(AXES) do
-        if axis_in_curve(a, next_curve) then
-            values[a.key] = kv[a.key] and clamp_axis(kv[a.key]) or 0
-        else
-            values[a.key] = 0
+    local ok = commit_values(function()
+        curve = next_curve
+        for _, a in ipairs(AXES) do
+            if axis_in_curve(a, next_curve) then
+                values[a.key] = kv[a.key] and clamp_axis(kv[a.key]) or 0
+            else
+                values[a.key] = 0
+            end
         end
-    end
-    if enabled and not apply_profile() then
-        curve = previous_curve
-        restore_values(previous)
-        write_whole(PROFILE_PATH, previous_profile)
-        plugin.show_toast("Could not load slot. Try again.")
-        return
-    end
-    if not write_state() then
-        curve = previous_curve
-        restore_values(previous)
-        if enabled then apply_profile() end
-        plugin.show_toast("Could not load slot. Try again.")
-        return
-    end
-    plugin.show_toast("Slot loaded")
+    end)
+    plugin.show_toast(ok and "Slot loaded" or "Could not load slot. Try again.")
 end
 
 local function convert_to_new()
     if curve == "new" then return true end
-    local previous = snapshot_values()
-    local previous_curve = curve
-    local previous_profile = read_whole(PROFILE_PATH)
-    curve = "new"
-    for _, a in ipairs(AXES) do
-        if a.mode == "new" then values[a.key] = 0 end
-    end
-    if enabled and not apply_profile() then
-        curve = previous_curve
-        restore_values(previous)
-        write_whole(PROFILE_PATH, previous_profile)
-        return false
-    end
-    if not write_state() then
-        curve = previous_curve
-        restore_values(previous)
-        if enabled then apply_profile() end
-        return false
-    end
-    for _, a in ipairs(AXES) do
-        if a.mode == "legacy" then values[a.key] = 0 end
-    end
-    return true
+    return commit_values(function()
+        curve = "new"
+        for _, a in ipairs(AXES) do
+            if a.mode ~= nil then values[a.key] = 0 end
+        end
+    end)
+end
+
+-- Writes crossfeed strength and angle into the live EQ through the snapshot
+-- API. Every other field stays as it is. If the new snapshot is refused,
+-- the previous one is applied back.
+--
+-- Persistence: eq_apply_state saves by default, and the save covers the whole
+-- live EQ. While MSEB is on, that includes MSEB's tone bands, which normally
+-- stay out of the native file (load_active_profile). The native EQ screen's
+-- own crossfeed change does the same. Passing persist = false would keep
+-- the file clean, but the crossfeed change would then be lost at the next
+-- boot. MSEB accepts the trade-off. If MSEB is removed while on, the native
+-- EQ keeps the MSEB curve, so turn MSEB off first.
+local function set_live_crossfeed(strength, angle)
+    local live = read_crossfeed()
+    if not live then return false end
+    local before = live_snapshot()
+    local state = live_snapshot()
+    if not before or not state then return false end
+    state.crossfeed = strength
+    if live.angle_supported then state.crossfeed_angle = angle end
+    if apply_snapshot(state) then return true end
+    apply_snapshot(before)
+    return false
 end
 
 if enabled then
-    if file_exists(BACKUP_PATH) and file_exists(OTHER_EQ_OWNER_BACKUP) then
-        -- Both on is only possible with files left by older versions; step
-        -- aside and give the user back the EQ saved before MSEB.
-        local restored = plugin.eq_load_profile(BACKUP_PATH)
-        enabled = false
-        if write_state() and restored then os.remove(BACKUP_PATH) end
+    if file_exists(OTHER_EQ_OWNER_BACKUP) then
+        -- Loudness Boost owns the EQ snapshot. If stock MSEB has no snapshot,
+        -- simply turn off its transient override; never load the PEQ over the
+        -- boost's active profile.
+        local restored = true
+        if file_exists(BACKUP_PATH) then
+            restored = restore_backup()
+        elseif curve == "new" and native_mseb() then
+            restored = apply_native(false)
+        end
+        if restored then
+            enabled = false
+            if write_state() and file_exists(BACKUP_PATH) then os.remove(BACKUP_PATH) end
+        end
+    elseif curve == "new" and native_mseb() then
+        if file_exists(BACKUP_PATH) then
+            -- Upgrade from the former PEQ approximation. Restore the manual
+            -- EQ once, then let stock MSEB own playback. Keep the backup until
+            -- the enabled state is durably written so a failed migration can
+            -- be retried on the next launch.
+            local restored = load_manual_backup()
+            if restored and apply_native(true) and write_state() then
+                os.remove(BACKUP_PATH)
+            end
+        else
+            -- Native state is transient across manager reloads; persisted
+            -- plugin state is authoritative on each launch.
+            apply_native(true)
+        end
     elseif file_exists(BACKUP_PATH) then
         if not apply_profile() then
-            local restored = plugin.eq_load_profile(BACKUP_PATH)
+            local restored = restore_backup()
             enabled = false
             -- Keep the backup until the user's EQ is really back.
             if write_state() and restored then os.remove(BACKUP_PATH) end
@@ -369,63 +957,188 @@ if enabled then
     end
 end
 
-local function open_group(title, entries, note)
+local function show_screen(title, rows, options)
+    if options then
+        plugin.show_settings_list(title, rows, options)
+    else
+        plugin.show_settings_list(title, rows)
+    end
+end
+
+local open_sound_stage
+
+local function redraw_sound_stage()
+    open_sound_stage({ update = true })
+end
+
+-- Sliders report once, when the finger lifts. A cancelled drag never gets
+-- here, so it changes nothing. A value that did not change writes nothing.
+-- A refused change redraws the screen, so the slider shows the value that is
+-- actually applied, not the one the finger left it on.
+local function tone_slider(key, redraw)
+    return function(v)
+        local next_value = math.max(-axis_range, math.min(axis_range, clamp_axis(v)))
+        if next_value == values[key] then return end
+        if not commit_values(function() values[key] = next_value end) then
+            plugin.show_toast("Could not apply changes. Try again.")
+            redraw()
+        end
+    end
+end
+
+local function crossfeed_slider(v)
+    local live = read_crossfeed()
+    if not live or type(v) ~= "number" then return end
+    local percent = math.max(0, math.min(100, math.floor(v + 0.5)))
+    if percent == math.floor(live.strength * 100 + 0.5) then return end
+    if not set_live_crossfeed(percent / 100, live.angle) then
+        plugin.show_toast("Could not change crossfeed. Try again.")
+        redraw_sound_stage()
+    end
+end
+
+local function choose_crossfeed_angle()
+    local live = read_crossfeed()
+    if not live or not live.angle_supported then return end
+    plugin.show_list("Crossfeed Angle", CROSSFEED_ANGLE_LABELS, function(index)
+        local angle = CROSSFEED_ANGLES[index]
+        local current = read_crossfeed()
+        if not angle or not current or current.angle == angle then return end
+        if set_live_crossfeed(current.strength, angle) then
+            plugin.show_toast("Crossfeed angle set")
+        else
+            plugin.show_toast("Could not change crossfeed. Try again.")
+        end
+        -- Refresh the covered Sound Stage screen so its angle row is current.
+        open_sound_stage({ update = true })
+    end)
+end
+
+local function group_rows(entries, note, redraw)
     local rows = {}
+    local has_outside = false
+    for _, e in ipairs(entries) do
+        if math.abs(values[e[1]]) > axis_range then has_outside = true end
+    end
+    if has_outside then
+        table.insert(rows, {
+            type = "row",
+            label = "Some values exceed this range. Widen it to edit them.",
+            wrap = true,
+            on_select = function() plugin.show_toast("Stored values and sound are unchanged; widen the range to edit values outside it.") end,
+        })
+    end
     if note then
         table.insert(rows, {
             type = "row",
-            label = note,
+            label = note.label,
             wrap = true,
             on_select = function()
-                plugin.show_toast(note == "Stereo width" and "Negative narrows, positive widens with lower center level. Mono input is unchanged." or "Impulse shapes the 7.5 kHz region; it does not change attack time.")
+                plugin.show_toast(note.toast)
             end,
         })
     end
     for _, e in ipairs(entries) do
         local key, label = e[1], e[2]
+        if math.abs(values[key]) > axis_range then
+            table.insert(rows, {
+                type = "row",
+                label = label .. ": " .. tostring(values[key]) .. " (outside ±" .. tostring(axis_range) .. ")",
+                on_select = function() choose_axis_range(redraw) end,
+            })
+        else
+            table.insert(rows, {
+                type = "slider",
+                label = label,
+                min = -axis_range,
+                max = axis_range,
+                value = values[key],
+                on_change = tone_slider(key, redraw),
+            })
+        end
+    end
+    return rows
+end
+
+local function open_group(title, entries, note)
+    local redraw
+    redraw = function()
+        show_screen(title, group_rows(entries, note, redraw), { update = true })
+    end
+    show_screen(title, group_rows(entries, note, redraw))
+end
+
+-- Stereo width and crossfeed are separate controls on one screen. Crossfeed
+-- rows appear only on builds that report it; the angle row only on builds
+-- that also report the angle.
+open_sound_stage = function(options)
+    local rows = {
+        {
+            type = "row",
+            label = native_mseb()
+                and "Stock MSEB width changes the channel mix. Crossfeed blends the two channels for headphones."
+                or "Stereo width changes the channel mix. Crossfeed blends the two channels for headphones.",
+            wrap = true,
+            on_select = function()
+                plugin.show_toast(native_mseb()
+                    and "Width is normalized from 0.00 (mono) to 2.00 (wide), with 1.00 neutral. Mono input is unchanged. Crossfeed is separate and is not stored in MSEB presets."
+                    or "Negative narrows, positive widens with lower center level. Mono input is unchanged. Crossfeed is saved with the EQ, not in MSEB presets.")
+            end,
+        },
+    }
+    if math.abs(values.sound_stage) > axis_range then
+        table.insert(rows, {
+            type = "row",
+            label = "Stereo Width: " .. tostring(values.sound_stage) .. " (outside ±" .. tostring(axis_range) .. ")",
+            on_select = function() choose_axis_range(function() open_sound_stage({ update = true }) end) end,
+        })
+    else
+        table.insert(rows, { type = "slider", label = "Stereo Width", min = -axis_range, max = axis_range, value = values.sound_stage, on_change = tone_slider("sound_stage", redraw_sound_stage) })
+    end
+    local live = read_crossfeed()
+    if live then
         table.insert(rows, {
             type = "slider",
-            label = label,
-            min = -100,
+            label = "Crossfeed",
+            min = 0,
             max = 100,
-            value = values[key],
-            on_change = function(v)
-                local previous = values[key]
-                values[key] = clamp_axis(v)
-                if enabled and not apply_profile() then
-                    values[key] = previous
-                    plugin.show_toast("Could not apply changes. Try again.")
-                    return
-                end
-                if not write_state() then
-                    values[key] = previous
-                    if enabled then apply_profile() end
-                    plugin.show_toast("Could not save changes. Try again.")
-                end
-            end,
+            value = math.floor(live.strength * 100 + 0.5),
+            on_change = crossfeed_slider,
         })
+        if live.angle_supported then
+            table.insert(rows, {
+                type = "row",
+                label = "Crossfeed Angle: " .. CROSSFEED_ANGLE_LABELS[angle_index(live.angle)],
+                on_select = choose_crossfeed_angle,
+            })
+        end
     end
-    plugin.show_settings_list(title, rows)
+    show_screen("Sound Stage", rows, options)
 end
 
 -- At most four sliders per screen: show_settings_list() drops any slider
 -- past PLUGIN_SETTINGS_LIST_MAX_SLIDERS (4). Labels stay short so the
 -- native settings rows fit the 320-wide board as well as the larger ones;
 -- the note row uses wrap instead of a fixed width.
-local function open_settings()
+open_settings = function(options)
     local rows = {
         {
             type = "toggle",
             label = "Enabled",
             value = enabled,
             on_change = function(v)
-                local ok, reason = set_enabled(v)
-                if not ok then
-                    plugin.show_toast(reason or "Could not change MSEB. Try again.")
-                end
+                local ok, message = set_enabled(v)
+                show_enabled_result(ok, message)
                 if plugin.has_capability("ui.quick_toggle") then
                     plugin.set_quick_toggle("mseb", enabled)
                 end
+            end,
+        },
+        {
+            type = "row",
+            label = "Adjustment Range: ±" .. tostring(axis_range),
+            on_select = function()
+                choose_axis_range()
             end,
         },
         {
@@ -475,7 +1188,12 @@ local function open_settings()
                         { "sibilance_hf", "Sibilance HF" },
                         { "impulse_tone", "Impulse (7.5 kHz)" },
                         { "air", "Air" },
-                    }, "Impulse is tonal EQ")
+                    }, {
+                        label = native_mseb() and "Stock MSEB presence control" or "Impulse is tonal EQ",
+                        toast = native_mseb()
+                            and "Impulse adjusts stock MSEB presence; it does not change attack time."
+                            or "Impulse shapes the 7.5 kHz region; it does not change attack time.",
+                    })
                 end
             end,
         },
@@ -484,7 +1202,7 @@ local function open_settings()
         type = "row",
         label = "Sound Stage",
         on_select = function()
-            open_group("Sound Stage", { { "sound_stage", "Sound Stage" } }, "Stereo width")
+            open_sound_stage()
         end,
     })
     if curve == "legacy" then
@@ -520,6 +1238,16 @@ local function open_settings()
     })
     table.insert(rows, {
         type = "row",
+        label = "Named Presets",
+        on_select = open_named_presets,
+    })
+    table.insert(rows, {
+        type = "row",
+        label = "Save Named Preset",
+        on_select = save_named_preset,
+    })
+    table.insert(rows, {
+        type = "row",
         label = "Save to Slot",
         on_select = function()
             plugin.show_list("Save to Slot", { "Slot 1", "Slot 2", "Slot 3" }, function(index)
@@ -540,7 +1268,7 @@ local function open_settings()
             end)
         end,
     })
-    plugin.show_settings_list("MSEB", rows)
+    plugin.show_settings_list("MSEB", rows, options)
 end
 
 plugin.register_list_item("music_audio", "MSEB", open_settings, { group = "effects" })
@@ -551,9 +1279,9 @@ plugin.register_list_item("music_audio", "MSEB", open_settings, { group = "effec
 -- tile there. Same reasoning GainMode.lua documents for its own gating.
 if plugin.has_capability("ui.quick_toggle") then
     plugin.register_quick_toggle("mseb", "MSEB", function(on)
-        local ok, reason = set_enabled(on)
+        local ok, message = set_enabled(on)
+        show_enabled_result(ok, message)
         if not ok then
-            plugin.show_toast(reason or "Could not change MSEB. Try again.")
             plugin.set_quick_toggle("mseb", enabled)
         end
     end, {

@@ -1,4 +1,4 @@
-plugin.define({ id = "example.playback_extras", name = "Playback Extras", version = "1.1", api_min = 13 })
+plugin.define({ id = "example.playback_extras", name = "Playback Extras", version = "1.2", api_min = 13 })
 
 -- Reference implementation for plugin.register_list_item("music_audio", ...)
 -- and plugin.show_settings_list() (see PLUGINS.md): adds a "Loudness Boost"
@@ -16,10 +16,16 @@ plugin.define({ id = "example.playback_extras", name = "Playback Extras", versio
 local STATE_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_state"
 local BACKUP_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_backup.peq"
 local ACTIVE_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_active.peq"
--- MSEB also snapshots and restores the whole EQ; its backup exists exactly
--- while it is on. Two independent snapshots cannot be restored in any
--- order, so the boost refuses to turn on beside it.
+-- Legacy MSEB uses a PEQ snapshot; stock MSEB reports its transient owner
+-- state instead. Two effects cannot own the PEQ at the same time.
 local OTHER_EQ_OWNER_BACKUP = plugin.sd_root() .. "/.plugins/.mseb_pre_backup.peq"
+
+local function stock_mseb_active()
+    if not plugin.has_capability or not plugin.has_capability("audio.mseb.stock")
+        or type(plugin.get_mseb_state) ~= "function" then return false end
+    local ok, current = pcall(plugin.get_mseb_state)
+    return ok and type(current) == "table" and current.enabled == true
+end
 
 local function file_exists(path)
     local f = io.open(path, "r")
@@ -94,7 +100,7 @@ local function build_active_profile()
 end
 
 local function enable_boost()
-    if file_exists(OTHER_EQ_OWNER_BACKUP) then return false, "Turn off MSEB first" end
+    if file_exists(OTHER_EQ_OWNER_BACKUP) or stock_mseb_active() then return false, "Turn off MSEB first" end
     -- A backup left by a restore that failed still holds the user's EQ from
     -- before the boost; keep it rather than snapshot the current state.
     if not file_exists(BACKUP_PATH) and not plugin.eq_save_profile(BACKUP_PATH) then return false end
@@ -106,7 +112,7 @@ local function restore_profile()
     return true
 end
 
-if state.enabled and file_exists(OTHER_EQ_OWNER_BACKUP) then
+if state.enabled and (file_exists(OTHER_EQ_OWNER_BACKUP) or stock_mseb_active()) then
     -- Both on is only possible with files left by older versions; step aside
     -- and give the user back the EQ saved before the boost.
     local restored = file_exists(BACKUP_PATH) and plugin.eq_load_profile(BACKUP_PATH)
