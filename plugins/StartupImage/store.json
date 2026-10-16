@@ -1,0 +1,5 @@
+{
+  "description": "Choose a JPG, PNG, or BMP up to 3 MB for the device startup splash. Changes apply on the next boot.",
+  "category": "Customization",
+  "author": "Compás"
+}
