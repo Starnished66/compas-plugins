@@ -1,5 +1,5 @@
 {
-  "description": "Puts your own home_bg.jpg picture behind the Home screen tiles. Place it in the .plugins folder.",
+  "description": "Choose a JPG, PNG, or BMP up to 3 MB as a centered, full-screen Home wallpaper.",
   "category": "Customization",
   "author": "Compás"
 }
