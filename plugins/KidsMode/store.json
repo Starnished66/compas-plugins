@@ -1,5 +1,5 @@
 {
-  "description": "Keeps Home focused on music and books and adds a parent PIN prompt. This is not a full device lock.",
+  "description": "Choose and reorder visible Home entries, Music menus, shortcuts and Quick Drawer controls, with parent PIN recovery. Hiding controls does not turn off device features. This is not a full device lock.",
   "category": "Customization",
   "author": "Markus Seidl"
 }
