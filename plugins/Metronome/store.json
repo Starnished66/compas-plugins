@@ -1,0 +1,12 @@
+{
+  "description": "Metronome with tempo, time signature, subdivision figures and three click sounds. It uses the player's own playback, so starting it replaces what is playing.",
+  "category": "Audio",
+  "author": "Comp\u00e1s",
+  "publish": true,
+  "files": [
+    {
+      "src": "Metronome.png",
+      "dest": ".plugins/Metronome.png"
+    }
+  ]
+}

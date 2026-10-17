@@ -78,6 +78,7 @@ These packages are published for Compás v1.1 and require Plugin API 16.
 | MSEB | Settings > Sound | Mood-based tone tuning on top of the parametric EQ, with backup and restore. |
 | Album Playback Rules | Settings > Playback & Controls | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
 | A-B Repeat | Settings > Playback & Controls | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
+| Metronome | Settings > Playback & Controls, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Plays a rendered WAV bar looped natively, so starting it replaces what is playing; it can resume the previous track on stop. Crossfade is turned off while it runs. |
 | ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
 | Jellyfin & Emby | Stream Media | Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
 | Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Version 3.6.0. |
