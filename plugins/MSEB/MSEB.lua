@@ -1,22 +1,24 @@
-plugin.define({ id = "example.mseb", name = "MSEB", version = "1.5", api_min = 16 })
+plugin.define({ id = "example.mseb", name = "MSEB", version = "1.6", api_min = 16 })
 
--- Mood-based tone tuning on this app's 10-band parametric EQ
--- (src/audio/peq.c). Adds an MSEB row under Settings -> Music Settings ->
--- Audio. Sound Stage holds two separate things: Stereo Width, a normalized
--- mid/side matrix saved in MSEB state (or the fallback PEQ profile), and Crossfeed, a headphone blend with
--- its own strength and angle. Crossfeed is not stored by MSEB. It is the live
--- EQ's setting, read at every apply, so tone and width changes leave it as it
--- is, and turning MSEB off keeps the crossfeed you set while it was on.
+local modern_mseb_ui = plugin.has_capability("ui.settings_list_10_sliders")
+    and plugin.has_capability("audio.mseb.stock")
+    and plugin.mseb_apply_state and plugin.get_mseb_state
+
+-- Mood-based tone tuning for firmware's native 13-filter stock MSEB engine.
+-- This release requires native stock MSEB and the ten-slider settings UI.
+-- Legacy saved curves require an explicit conversion before editing.
+-- The plugin appears under Settings -> Sound. Sound Stage holds Stereo Width,
+-- a normalized mid/side matrix saved in MSEB state (or the fallback PEQ
+-- profile). Crossfeed remains separate in the native Sound settings; it is
+-- read from the live EQ so tone and width changes leave it unchanged.
 -- Presets (slots) hold tone and width only.
 -- On stock-MSEB builds Impulse is a tonal presence control. Legacy PEQ
 -- fallback maps it to a broad 7.5 kHz EQ level; neither path changes attack.
 --
--- Seven controls are in both curves: Sound Temperature, Bass Extension,
--- Bass Texture, Note Thickness, Vocal Position, Female Vocal, and Air.
--- curve=legacy is the 1.1 mapping, including Instrument Presence, Bass
--- Bite, and Treble Bite. curve=new replaces those three with Sibilance LF /
--- HF and Impulse controls. Stock builds use native MSEB; older builds map
--- these to PEQ bands, including a wide 7.5 kHz level for Impulse.
+-- The current stock curve exposes ten controls. curve=legacy is the earlier
+-- 1.1 mapping, including Instrument Presence, Bass Bite, and Treble Bite;
+-- the explicit conversion replaces those three with Sibilance LF / HF and
+-- Impulse controls.
 -- A file with no curve marker is legacy, so opening or upgrading does not
 -- retune an existing user. A missing state file starts on curve=new.
 -- Switching is a confirmed action.
@@ -50,7 +52,6 @@ local AXES = {
 
 -- Crossfeed angles the player accepts (peq.c). Index 1 is no delay.
 local CROSSFEED_ANGLES = { 0, 30, 45, 60, 90 }
-local CROSSFEED_ANGLE_LABELS = { "No delay", "30°", "45°", "60°", "90°" }
 
 local PLUGIN_DIR = plugin.sd_root() .. "/.plugins"
 local STATE_PATH = PLUGIN_DIR .. "/.mseb_state"
@@ -232,8 +233,8 @@ end
 
 -- Applies a snapshot from live_snapshot() through the native validator. The
 -- native side raises on refusal instead of returning false, so the call is
--- wrapped. Applying saves the whole EQ unless persist is false (see
--- set_live_crossfeed below).
+-- wrapped. Applying saves the whole EQ unless persist is false, as used by
+-- rollback paths.
 local function apply_snapshot(snapshot, persist)
     if not snapshot then return false end
     local opts = nil
@@ -573,6 +574,7 @@ local function reset_defaults()
 end
 
 local open_settings
+local open_options
 local choose_axis_range
 local set_axis_range
 
@@ -719,6 +721,10 @@ local function load_named_preset(entry)
     if not current then return end
     local kv = current.kv
     local next_curve = curve_from_marker(kv.curve)
+    if next_curve ~= "new" then
+        plugin.show_toast("Older MSEB controls are unsupported; preset was not loaded")
+        return
+    end
     local next_range = tonumber(kv.range)
     local ok = commit_values(function()
         curve = next_curve
@@ -856,10 +862,8 @@ local function save_slot(n)
     return write_kv_file(slot_path(n), false)
 end
 
--- An unmarked slot is a 1.1 preset: legacy curve, and every axis the slot
--- does not name (including sibilance) becomes 0. curve=new loads only the
--- new axes and clears the 1.1-only ones. Slots carry no crossfeed, so
--- loading one leaves the live crossfeed alone.
+-- Pre-stock slots are rejected before state or audio changes. Current stock
+-- slots carry tone and width only, so loading one leaves live crossfeed alone.
 local function load_slot(n)
     local kv, found = read_kv_file(slot_path(n))
     if not found then
@@ -867,6 +871,10 @@ local function load_slot(n)
         return
     end
     local next_curve = curve_from_marker(kv.curve)
+    if next_curve ~= "new" then
+        plugin.show_toast("Older MSEB controls are unsupported; slot was not loaded")
+        return
+    end
     local ok = commit_values(function()
         curve = next_curve
         for _, a in ipairs(AXES) do
@@ -878,6 +886,7 @@ local function load_slot(n)
         end
     end)
     plugin.show_toast(ok and "Slot loaded" or "Could not load slot. Try again.")
+    if ok then open_settings({ update = true }) end
 end
 
 local function convert_to_new()
@@ -890,31 +899,10 @@ local function convert_to_new()
     end)
 end
 
--- Writes crossfeed strength and angle into the live EQ through the snapshot
--- API. Every other field stays as it is. If the new snapshot is refused,
--- the previous one is applied back.
---
--- Persistence: eq_apply_state saves by default, and the save covers the whole
--- live EQ. While MSEB is on, that includes MSEB's tone bands, which normally
--- stay out of the native file (load_active_profile). The native EQ screen's
--- own crossfeed change does the same. Passing persist = false would keep
--- the file clean, but the crossfeed change would then be lost at the next
--- boot. MSEB accepts the trade-off. If MSEB is removed while on, the native
--- EQ keeps the MSEB curve, so turn MSEB off first.
-local function set_live_crossfeed(strength, angle)
-    local live = read_crossfeed()
-    if not live then return false end
-    local before = live_snapshot()
-    local state = live_snapshot()
-    if not before or not state then return false end
-    state.crossfeed = strength
-    if live.angle_supported then state.crossfeed_angle = angle end
-    if apply_snapshot(state) then return true end
-    apply_snapshot(before)
-    return false
-end
-
-if enabled then
+-- Restore saved audio only after confirming this release supports its UI and
+-- stock engine. Legacy settings are reapplied unchanged when their backup is
+-- available; conversion is still required before the new controls appear.
+if enabled and modern_mseb_ui then
     if file_exists(OTHER_EQ_OWNER_BACKUP) then
         -- Loudness Boost owns the EQ snapshot. If stock MSEB has no snapshot,
         -- simply turn off its transient override; never load the PEQ over the
@@ -952,8 +940,10 @@ if enabled then
             if write_state() and restored then os.remove(BACKUP_PATH) end
         end
     else
-        enabled = false
-        write_state()
+        if curve ~= "legacy" then
+            enabled = false
+            write_state()
+        end
     end
 end
 
@@ -986,35 +976,7 @@ local function tone_slider(key, redraw)
     end
 end
 
-local function crossfeed_slider(v)
-    local live = read_crossfeed()
-    if not live or type(v) ~= "number" then return end
-    local percent = math.max(0, math.min(100, math.floor(v + 0.5)))
-    if percent == math.floor(live.strength * 100 + 0.5) then return end
-    if not set_live_crossfeed(percent / 100, live.angle) then
-        plugin.show_toast("Could not change crossfeed. Try again.")
-        redraw_sound_stage()
-    end
-end
-
-local function choose_crossfeed_angle()
-    local live = read_crossfeed()
-    if not live or not live.angle_supported then return end
-    plugin.show_list("Crossfeed Angle", CROSSFEED_ANGLE_LABELS, function(index)
-        local angle = CROSSFEED_ANGLES[index]
-        local current = read_crossfeed()
-        if not angle or not current or current.angle == angle then return end
-        if set_live_crossfeed(current.strength, angle) then
-            plugin.show_toast("Crossfeed angle set")
-        else
-            plugin.show_toast("Could not change crossfeed. Try again.")
-        end
-        -- Refresh the covered Sound Stage screen so its angle row is current.
-        open_sound_stage({ update = true })
-    end)
-end
-
-local function group_rows(entries, note, redraw)
+local function group_rows(entries, note, redraw, refresh_range)
     local rows = {}
     local has_outside = false
     for _, e in ipairs(entries) do
@@ -1044,7 +1006,7 @@ local function group_rows(entries, note, redraw)
             table.insert(rows, {
                 type = "row",
                 label = label .. ": " .. tostring(values[key]) .. " (outside ±" .. tostring(axis_range) .. ")",
-                on_select = function() choose_axis_range(redraw) end,
+                on_select = function() choose_axis_range(refresh_range) end,
             })
         else
             table.insert(rows, {
@@ -1060,29 +1022,20 @@ local function group_rows(entries, note, redraw)
     return rows
 end
 
-local function open_group(title, entries, note)
-    local redraw
-    redraw = function()
-        show_screen(title, group_rows(entries, note, redraw), { update = true })
-    end
-    show_screen(title, group_rows(entries, note, redraw))
-end
-
--- Stereo width and crossfeed are separate controls on one screen. Crossfeed
--- rows appear only on builds that report it; the angle row only on builds
--- that also report the angle.
+-- Stereo width remains part of MSEB's state and presets. Crossfeed belongs to
+-- the native Sound page and is deliberately not exposed here.
 open_sound_stage = function(options)
     local rows = {
         {
             type = "row",
             label = native_mseb()
-                and "Stock MSEB width changes the channel mix. Crossfeed blends the two channels for headphones."
-                or "Stereo width changes the channel mix. Crossfeed blends the two channels for headphones.",
+                and "Stock MSEB width changes the channel mix."
+                or "Stereo width changes the channel mix.",
             wrap = true,
             on_select = function()
                 plugin.show_toast(native_mseb()
-                    and "Width is normalized from 0.00 (mono) to 2.00 (wide), with 1.00 neutral. Mono input is unchanged. Crossfeed is separate and is not stored in MSEB presets."
-                    or "Negative narrows, positive widens with lower center level. Mono input is unchanged. Crossfeed is saved with the EQ, not in MSEB presets.")
+                    and "Width is normalized from 0.00 (mono) to 2.00 (wide), with 1.00 neutral. Mono input is unchanged."
+                    or "Negative narrows, positive widens with lower center level. Mono input is unchanged.")
             end,
         },
     }
@@ -1095,32 +1048,119 @@ open_sound_stage = function(options)
     else
         table.insert(rows, { type = "slider", label = "Stereo Width", min = -axis_range, max = axis_range, value = values.sound_stage, on_change = tone_slider("sound_stage", redraw_sound_stage) })
     end
-    local live = read_crossfeed()
-    if live then
-        table.insert(rows, {
-            type = "slider",
-            label = "Crossfeed",
-            min = 0,
-            max = 100,
-            value = math.floor(live.strength * 100 + 0.5),
-            on_change = crossfeed_slider,
-        })
-        if live.angle_supported then
-            table.insert(rows, {
-                type = "row",
-                label = "Crossfeed Angle: " .. CROSSFEED_ANGLE_LABELS[angle_index(live.angle)],
-                on_select = choose_crossfeed_angle,
-            })
-        end
-    end
     show_screen("Sound Stage", rows, options)
 end
 
--- At most four sliders per screen: show_settings_list() drops any slider
--- past PLUGIN_SETTINGS_LIST_MAX_SLIDERS (4). Labels stay short so the
--- native settings rows fit the 320-wide board as well as the larger ones;
--- the note row uses wrap instead of a fixed width.
-open_settings = function(options)
+-- The new-release UI uses the native stock ten-control layout. Legacy saved
+-- curves must be explicitly converted before this screen is shown.
+local STOCK_AXES = {
+    { "temperature", "Overall Temperature" },
+    { "bass_ext", "Bass Extension" },
+    { "bass_texture", "Bass Texture" },
+    { "thickness", "Note Thickness" },
+    { "vocal_pos", "Vocals" },
+    { "female_vocal", "Female Overtones" },
+    { "sibilance_lf", "Sibilance LF" },
+    { "sibilance_hf", "Sibilance HF" },
+    { "impulse_tone", "Impulse Response" },
+    { "air", "Air" },
+}
+
+local function refresh_mseb_pages()
+    open_settings({ update = true })
+end
+
+open_options = function()
+    local items = {
+        "Adjustment Range",
+        "Sound Stage",
+        "Reset to Defaults",
+        "Named Presets",
+        "Save Named Preset",
+        "Save to Slot",
+        "Load from Slot",
+    }
+    local actions = {
+        function()
+            choose_axis_range()
+        end,
+        function()
+            open_sound_stage()
+        end,
+        function()
+            if reset_defaults() then
+                plugin.show_toast("MSEB reset")
+                refresh_mseb_pages()
+            else
+                plugin.show_toast("Could not reset MSEB. Try again.")
+            end
+        end,
+        open_named_presets,
+        save_named_preset,
+        function()
+            plugin.show_list("Save to Slot", { "Slot 1", "Slot 2", "Slot 3" }, function(index)
+                if save_slot(index) then plugin.show_toast("Saved to slot")
+                else plugin.show_toast("Could not save slot. Try again.") end
+            end)
+        end,
+        function()
+            plugin.show_list("Load from Slot", { "Slot 1", "Slot 2", "Slot 3" }, function(index)
+                load_slot(index)
+            end)
+        end,
+    }
+    plugin.show_list("MSEB Options", items, function(index)
+        local action = actions[index]
+        if action then action() end
+    end)
+end
+
+local function show_legacy_confirmation(after)
+    local rows = {
+        {
+            type = "row",
+            label = "This saved layout is unsupported. Switching replaces Instrument Presence, Bass Bite, and Treble Bite with the stock controls.",
+            wrap = true,
+            on_select = function()
+                plugin.show_toast("Switching replaces Instrument Presence, Bass Bite, and Treble Bite")
+            end,
+        },
+        {
+            type = "row",
+            label = "Switch to stock MSEB",
+            on_select = function()
+                if curve ~= "legacy" then
+                    plugin.show_toast("Stock MSEB controls are already selected")
+                    return
+                end
+                if not convert_to_new() then
+                    plugin.show_toast("Could not switch controls. Try again.")
+                    return
+                end
+                plugin.show_toast("Stock MSEB controls selected")
+                if after then after() end
+                open_settings({ update = true })
+            end,
+        },
+        {
+            type = "row",
+            label = "Cancel",
+            on_select = function()
+                plugin.show_toast("Kept existing MSEB settings")
+                if plugin.has_capability("ui.quick_toggle") then
+                    plugin.set_quick_toggle("mseb", enabled)
+                end
+            end,
+        },
+    }
+    plugin.show_settings_list("MSEB", rows, { update = true })
+end
+
+open_settings = function(options, after)
+    if curve == "legacy" then
+        show_legacy_confirmation(after)
+        return
+    end
     local rows = {
         {
             type = "toggle",
@@ -1136,149 +1176,37 @@ open_settings = function(options)
         },
         {
             type = "row",
-            label = "Adjustment Range: ±" .. tostring(axis_range),
-            on_select = function()
-                choose_axis_range()
-            end,
-        },
-        {
-            type = "row",
-            label = "Bass & Warmth",
-            on_select = function()
-                open_group("Bass & Warmth", {
-                    { "temperature", "Sound Temperature" },
-                    { "bass_ext", "Bass Extension" },
-                    { "bass_texture", "Bass Texture" },
-                })
-            end,
-        },
-        {
-            type = "row",
-            label = "Vocals",
-            on_select = function()
-                if curve == "legacy" then
-                    open_group("Vocals & Instruments", {
-                        { "thickness", "Note Thickness" },
-                        { "vocal_pos", "Vocal Position" },
-                        { "female_vocal", "Female Vocal" },
-                        { "instruments", "Instrument Presence" },
-                    })
-                else
-                    open_group("Vocals", {
-                        { "thickness", "Note Thickness" },
-                        { "vocal_pos", "Vocal Position" },
-                        { "female_vocal", "Female Vocal" },
-                    })
-                end
-            end,
-        },
-        {
-            type = "row",
-            label = "Treble",
-            on_select = function()
-                if curve == "legacy" then
-                    open_group("Treble & Air", {
-                        { "bass_bite", "Bass Bite" },
-                        { "treble_bite", "Treble Bite" },
-                        { "air", "Air" },
-                    })
-                else
-                    open_group("Treble", {
-                        { "sibilance_lf", "Sibilance LF" },
-                        { "sibilance_hf", "Sibilance HF" },
-                        { "impulse_tone", "Impulse (7.5 kHz)" },
-                        { "air", "Air" },
-                    }, {
-                        label = native_mseb() and "Stock MSEB presence control" or "Impulse is tonal EQ",
-                        toast = native_mseb()
-                            and "Impulse adjusts stock MSEB presence; it does not change attack time."
-                            or "Impulse shapes the 7.5 kHz region; it does not change attack time.",
-                    })
-                end
-            end,
+            label = "Options",
+            on_select = function() open_options() end,
         },
     }
-    table.insert(rows, {
-        type = "row",
-        label = "Sound Stage",
-        on_select = function()
-            open_sound_stage()
-        end,
-    })
-    if curve == "legacy" then
-        table.insert(rows, {
-            type = "row",
-            label = "Switching replaces Instrument Presence, Bass Bite, and Treble Bite.",
-            wrap = true,
-            on_select = function()
-                plugin.show_list("Replace custom axes?", { "Switch", "Cancel" }, function(index)
-                    if index ~= 1 then
-                        plugin.show_toast("Kept current controls")
-                        return
-                    end
-                    if convert_to_new() then
-                        plugin.show_toast("Custom axes replaced")
-                    else
-                        plugin.show_toast("Could not switch controls. Try again.")
-                    end
-                end)
-            end,
-        })
-    end
-    table.insert(rows, {
-        type = "row",
-        label = "Reset to Defaults",
-        on_select = function()
-            if reset_defaults() then
-                plugin.show_toast("MSEB reset")
-            else
-                plugin.show_toast("Could not reset MSEB. Try again.")
-            end
-        end,
-    })
-    table.insert(rows, {
-        type = "row",
-        label = "Named Presets",
-        on_select = open_named_presets,
-    })
-    table.insert(rows, {
-        type = "row",
-        label = "Save Named Preset",
-        on_select = save_named_preset,
-    })
-    table.insert(rows, {
-        type = "row",
-        label = "Save to Slot",
-        on_select = function()
-            plugin.show_list("Save to Slot", { "Slot 1", "Slot 2", "Slot 3" }, function(index)
-                if save_slot(index) then
-                    plugin.show_toast("Saved to slot")
-                else
-                    plugin.show_toast("Could not save slot. Try again.")
-                end
-            end)
-        end,
-    })
-    table.insert(rows, {
-        type = "row",
-        label = "Load from Slot",
-        on_select = function()
-            plugin.show_list("Load from Slot", { "Slot 1", "Slot 2", "Slot 3" }, function(index)
-                load_slot(index)
-            end)
-        end,
-    })
+
+    local redraw = function() open_settings({ update = true }) end
+    -- Range selection refreshes this root screen itself, so do not request a
+    -- second redraw from the flat settings list.
+    local flat_rows = group_rows(STOCK_AXES, nil, redraw, nil)
+    for _, row in ipairs(flat_rows) do rows[#rows + 1] = row end
     plugin.show_settings_list("MSEB", rows, options)
 end
 
-plugin.register_list_item("music_audio", "MSEB", open_settings, { group = "effects" })
+if modern_mseb_ui then
+    plugin.register_list_item("music_audio", "MSEB", open_settings)
+else
+    plugin.show_toast("Latest Compas firmware with stock MSEB is required")
+end
 
--- Quick drawer tile, mirroring the "Enabled" row above. Gated on the
--- capability rather than api_min so this plugin still loads on an older
--- player build that has no quick-toggle support -- it just doesn't get a
--- tile there. Same reasoning GainMode.lua documents for its own gating.
-if plugin.has_capability("ui.quick_toggle") then
+-- Quick drawer tile, mirroring the "Enabled" row above.
+if modern_mseb_ui and plugin.has_capability("ui.quick_toggle") then
     plugin.register_quick_toggle("mseb", "MSEB", function(on)
+        if on and curve == "legacy" then
+            plugin.set_quick_toggle("mseb", enabled)
+            open_settings({ update = true }, function()
+                local ok, message = set_enabled(true)
+                show_enabled_result(ok, message)
+                plugin.set_quick_toggle("mseb", enabled)
+            end)
+            return
+        end
         local ok, message = set_enabled(on)
         show_enabled_result(ok, message)
         if not ok then
