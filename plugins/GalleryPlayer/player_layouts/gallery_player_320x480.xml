@@ -47,7 +47,7 @@
         <lv_image name="more_btn" src="ic_more" x="273" y="421" width="30" height="30" inner_align="contain" />
         <lv_label name="title" text="" x="20" y="246" width="280" height="content" style_text_font="font_22" style_text_color="0xf2f3f4" style_text_align="center" style_pad_all="0" />
         <lv_label name="artist" text="" x="20" y="284" width="280" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="center" style_pad_all="0" />
-        <lv_label name="song_count" text="" x="20" y="325" width="58" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="left" style_pad_all="0" />
+        <lv_label name="song_count" text="" x="20" y="327" width="58" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="left" style_pad_all="0" />
         <lv_obj name="quality_pill" x="86" y="325" width="158" height="28" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
             <lv_label name="format_badge" text="" x="0" y="2" width="100%" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="center" style_pad_all="0" />
         </lv_obj>
