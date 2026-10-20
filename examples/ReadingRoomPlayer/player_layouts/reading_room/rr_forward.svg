@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+ <g transform="translate(96,0) scale(-1,1)">
+  <path d="M25.373 26.373 A32 32 0 1 0 48 17" fill="none" stroke="#e5e2d9" stroke-width="6" stroke-linecap="round"/>
+  <path d="M38 17 L52 7 L52 27 Z" fill="#e5e2d9"/>
+ </g>
+ <text x="48" y="64" text-anchor="middle" font-family="DejaVu Sans" font-size="31" font-weight="700" fill="#e5e2d9">15</text>
+</svg>

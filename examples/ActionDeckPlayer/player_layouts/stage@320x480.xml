@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<component>
+    <consts>
+        <bool name="compas_lyrics_enabled" value="true" />
+        <str name="compas_artist_action" value="artist_menu" />
+        <str name="compas_album_action" value="album_menu" />
+    </consts>
+    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_color="0x0b0f14" style_bg_opa="255" style_border_width="0" style_pad_all="0">
+        <lv_label text="ACTION DECK   /   NOW PLAYING" x="16" y="27" width="288" height="24" style_text_font="font_16" style_text_color="0x84d7c3" />
+        <lv_obj name="cover_card" x="70" y="55" width="180" height="180" scrollable="false" style_radius="22" style_clip_corner="true" style_bg_color="0x17212b" style_bg_opa="255" style_border_width="1" style_border_color="0x283846" style_pad_all="0">
+            <lv_image name="cover_img" src="default_cover" width="180" height="180" align="center" inner_align="stretch" />
+        </lv_obj>
+        <lv_label text="NOW PLAYING" x="16" y="235" width="160" height="19" style_text_font="font_16" style_text_color="0x718391" />
+        <lv_label name="title" text="" x="16" y="256" width="288" height="36" long_mode="dots" style_text_font="player_title" style_text_color="0xf4f1e9" />
+        <lv_label name="artist" text="" x="16" y="295" width="160" height="27" long_mode="dots" style_text_font="player_meta" style_text_color="0x9db1c1" />
+        <lv_label name="album" text="" x="16" y="323" width="160" height="25" long_mode="dots" style_text_font="player_meta" style_text_color="0x738796" />
+        <lv_button name="action_button" x="184" y="294" width="120" height="48" clickable="true" style_radius="14" style_bg_color="0x1d2935" style_bg_opa="255" style_border_width="1" style_border_color="0x35495a" style_pad_all="0">
+            <event_cb trigger="clicked" callback="compas_action" user_data="track_menu" />
+            <lv_label text="MENU" align="center" style_text_font="font_16" style_text_color="0x84d7c3" />
+        </lv_button>
+        <lv_label name="format_badge" hidden="true" text="LOCAL AUDIO" x="16" y="340" width="150" height="20" style_text_font="font_16" style_text_color="0x84d7c3" />
+        <lv_label name="song_count" hidden="true" text="" x="228" y="340" width="76" height="20" style_text_font="font_16" style_text_color="0x738796" style_text_align="right" />
+        <lv_slider name="progress_slider" x="16" y="354" width="288" height="12" style_bg_color="0x26343f" style_bg_opa="255" style_radius="6" />
+        <lv_label name="pos_label" text="0:00" x="16" y="372" width="80" height="22" style_text_font="font_16" style_text_color="0x8093a1" />
+        <lv_label name="dur_label" text="--:--" x="224" y="372" width="80" height="22" style_text_font="font_16" style_text_color="0x8093a1" style_text_align="right" />
+        <lv_image name="order_btn" src="order" x="22" y="399" width="44" height="44" inner_align="contain" />
+        <lv_image name="prev_btn" src="btn_prev" x="72" y="399" width="44" height="44" inner_align="contain" />
+        <lv_image name="play_btn" src="btn_play" x="136" y="395" width="48" height="48" inner_align="contain" />
+        <lv_image name="next_btn" src="btn_next" x="204" y="399" width="44" height="44" inner_align="contain" />
+        <lv_image name="more_btn" src="ic_more" x="254" y="399" width="44" height="44" inner_align="contain" />
+        <lv_slider name="volume_slider" width="100" height="10" hidden="true" />
+    </view>
+</component>

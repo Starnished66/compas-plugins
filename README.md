@@ -168,6 +168,17 @@ Each file is downloaded from `https://github.com/Starnished66/compas-plugins/rel
 
 A plugin may set `"preview": "preview.png"` (or a JPEG path) in `store.json`. The source stays in the repository; the builder accepts PNG/JPEG screenshots up to 8 MiB and 4096×4096 pixels, then creates aspect-preserving baseline JPEGs capped at 217×325 and 144×216 pixels. It does not crop or enlarge small sources. The plugin record's `preview` object describes the largest variant and its optional `variants` array describes smaller ones; the player selects the largest image that fits its card. Each entry includes the release asset name, SHA-256, size, width, and height. Generated files use deterministic `<Plugin>--preview-<width>x<height>.jpg` names and publish separately from install files, without a `dest` or entry in `files`; they do not affect installed files or install size. The builder uses Pillow 12.3.0 in CI and release jobs.
 
+## Player layout examples
+
+- [Action Deck · Stage](examples/ActionDeckPlayer/README.md): custom artist,
+  album and track menus on a dark Now Playing layout.
+- [Reading Room · Paper](examples/ReadingRoomPlayer/README.md): audiobook skip
+  controls, a speed menu, and optional folder-based layout switching.
+
+These require the player-action APIs added after firmware v1.2.0 and are held
+from Plugin Store publication. They are manual-install examples rather than store entries. Each includes
+480×800, 480×720 and 320×480 layouts and installation instructions.
+
 ## License
 
 GPL-3.0, the same as Compás. See [LICENSE](LICENSE).
