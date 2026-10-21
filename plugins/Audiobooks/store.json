@@ -1,7 +1,7 @@
 {
-  "description": "Listen to audiobooks with File Manager browsing, resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer.",
+  "description": "Listen to audiobooks with File Manager browsing, resume, bookmarks, chapters, optional 30 second transport skipping, and a sleep timer. Includes a Reading Room player layout with 15 second seek controls and playback speed.",
   "category": "Listening",
-  "author": "Comp\u00e1s",
+  "author": "Compás",
   "files": [
     {
       "src": "icons/audiobooks.png",
@@ -62,6 +62,30 @@
     {
       "src": "icons/settings.png",
       "dest": ".plugin-assets/Audiobooks/settings.png"
+    },
+    {
+      "src": "player_layouts/reading_room.xml",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room.xml"
+    },
+    {
+      "src": "player_layouts/reading_room_320x480.xml",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room_320x480.xml"
+    },
+    {
+      "src": "player_layouts/reading_room_480x720.xml",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room_480x720.xml"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_rewind.png",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room/rr_rewind.png"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_forward.png",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room/rr_forward.png"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_speed.png",
+      "dest": ".plugins/Audiobooks/player_layouts/reading_room/rr_speed.png"
     }
   ],
   "publish": true

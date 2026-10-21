@@ -81,8 +81,8 @@ These packages are published for Compás v1.1 and require Plugin API 16.
 | Metronome | Settings > Playback & Controls, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Plays a rendered WAV bar looped natively, so starting it replaces what is playing; it can resume the previous track on stop. Crossfade is turned off while it runs. |
 | ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
 | Jellyfin & Emby | Stream Media | Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
-| Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Version 3.6.0. |
-| Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Version 1.6.0. |
+| Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Includes Reading Room layouts and icons. Version 3.7.0 (unreleased). |
+| Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Includes Reading Room layouts and icons. Version 1.7.0 (unreleased). |
 
 Automatic EQ tools preserve later manual changes. If another tool changes EQ,
 automation suspends rather than continually overwriting it; use the plugin's
@@ -167,6 +167,25 @@ Built by `tools/build_index.py`; the player reads it from `https://github.com/St
 Each file is downloaded from `https://github.com/Starnished66/compas-plugins/releases/download/<tag>/<asset>`, and its size and SHA-256 are checked before it replaces anything on the card. Destinations are plain relative paths; nothing may be written to `.compas/` or as a firmware image.
 
 A plugin may set `"preview": "preview.png"` (or a JPEG path) in `store.json`. The source stays in the repository; the builder accepts PNG/JPEG screenshots up to 8 MiB and 4096×4096 pixels, then creates aspect-preserving baseline JPEGs capped at 217×325 and 144×216 pixels. It does not crop or enlarge small sources. The plugin record's `preview` object describes the largest variant and its optional `variants` array describes smaller ones; the player selects the largest image that fits its card. Each entry includes the release asset name, SHA-256, size, width, and height. Generated files use deterministic `<Plugin>--preview-<width>x<height>.jpg` names and publish separately from install files, without a `dest` or entry in `files`; they do not affect installed files or install size. The builder uses Pillow 12.3.0 in CI and release jobs.
+
+## Bundled listening layouts
+
+Audiobooks and Podcasts each include Reading Room's 480×800, 480×720 and
+320×480 layouts, plus the custom rewind, forward and speed icons. No separate
+ReadingRoomPlayer installation is needed. The packages require plugin API 17; older firmware refuses installation. The
+owning plugin selects its
+layout for tracks below its exact `Audiobooks/` or `Podcasts/` folder and
+restores the preferred player layout when playback leaves that folder.
+Podcast HTTP streams remain on the preferred layout. The Speed button opens
+the owning plugin's existing speed choices and saves its existing speed
+preference. The outer controls seek 15 seconds; previous/next keep their normal
+track behavior.
+
+Both plugins provide an auto-layout option. The separate ReadingRoomPlayer
+example remains available for development; disable it when using the native
+bundles to avoid competing auto-layout selections. These bundle changes are
+committed for a future release; pushing `main` runs checks and does not publish
+a Plugin Store release.
 
 ## Player layout examples
 

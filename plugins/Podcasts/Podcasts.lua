@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.6.0", api_min = 16 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.0", api_min = 17 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
@@ -10,6 +10,13 @@ plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.6.0", a
 -- 40 newest episodes per show. Chapters are not provided.
 
 local ROOT = plugin.sd_root() .. "/Podcasts"
+local READING_ROOM = {
+    id = "example.podcasts.reading_room",
+    name = "Podcasts · Reading Room",
+    xml = "Podcasts/player_layouts/reading_room.xml",
+}
+local READING_ROOM_AUTO_KEY = "reading_room_auto_apply"
+local reading_room_auto = plugin.storage.get(READING_ROOM_AUTO_KEY, "1") ~= "0"
 local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Podcasts"
 local ICON = {
     show = ICON_ROOT .. "/show.png",
@@ -69,7 +76,7 @@ local playback_speed, speed_retry_pending = 1.0, false
 local SPEEDS = { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0 }
 local fetch_feed, feed_response, confirm_unsubscribe, open_episode
 local enqueue_download, cancel_download, resolve_redirect
-local open_settings
+local open_settings, open_speed_menu
 local has_required_capabilities = plugin.has_capability("network.http.async")
     and plugin.has_capability("network.http.download")
     and plugin.has_capability("filesystem.mkdir")
@@ -134,6 +141,21 @@ local function speed_supported()
         and type(plugin.set_playback_speed) == "function"
 end
 
+local function is_podcast_path(path)
+    return type(path) == "string" and path:sub(1, #ROOT + 1) == ROOT .. "/"
+end
+
+local function restore_reading_room()
+    local ok, changed = pcall(plugin.restore_player_layout)
+    return ok and changed == true
+end
+
+local function apply_reading_room(quiet)
+    local ok = pcall(plugin.set_player_layout, READING_ROOM)
+    if ok and not quiet then plugin.show_toast(READING_ROOM.name .. " applied for this session") end
+    return ok
+end
+
 local function current_download_path()
     local path = plugin.get_current_track_path()
     if type(path) ~= "string" then
@@ -184,57 +206,130 @@ local function save_settings()
     end)
 end
 
-open_settings = function(update_existing)
-    local function choose_speed()
-        if not speed_supported() then
-            plugin.show_toast("Playback speed requires a newer player")
+open_speed_menu = function(require_download)
+    if not speed_supported() then
+        plugin.show_toast("Playback speed requires a newer player")
+        return
+    end
+    local choices = {}
+    for _, value in ipairs(SPEEDS) do
+        choices[#choices + 1] = tostring(value) .. "x"
+    end
+    plugin.show_list("Playback speed", choices, function(choice)
+        local speed = SPEEDS[choice]
+        if not speed then return end
+        local current_path = current_download_path()
+        if require_download and not current_path then
+            plugin.show_toast("Playback speed is available for downloaded episodes")
             return
         end
-        local choices = {}
-        for _, value in ipairs(SPEEDS) do
-            choices[#choices + 1] = tostring(value) .. "x"
+        local defer_until_resume = current_path and pending_seek and not pending_seek.failed and pending_seek.path == current_path
+        if current_path and not defer_until_resume and not apply_speed(speed) then
+            plugin.show_toast("Speed is unavailable for this audio format")
+            return
         end
-        plugin.show_list("Playback speed", choices, function(choice)
-            local speed = SPEEDS[choice]
-            if not speed then return end
-            local current_path = current_download_path()
-            local defer_until_resume = current_path and pending_seek and not pending_seek.failed and pending_seek.path == current_path
-            if current_path and not defer_until_resume and not apply_speed(speed) then
-                plugin.show_toast("Speed is unavailable for this audio format")
-                return
+        local previous = playback_speed
+        playback_speed = speed
+        if not save_settings() then
+            playback_speed = previous
+            if current_path then
+                speed_retry_pending = defer_until_resume == true or not apply_speed(previous)
+            else
+                speed_retry_pending = true
             end
-            local previous = playback_speed
-            playback_speed = speed
-            if not save_settings() then
-                playback_speed = previous
-                if current_path then
-                    speed_retry_pending = defer_until_resume == true or not apply_speed(previous)
-                else
-                    speed_retry_pending = true
-                end
-                plugin.show_toast("Could not save playback speed")
-                return
-            end
-            speed_retry_pending = current_path == nil or defer_until_resume == true
-            open_settings(true)
-            plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
-        end)
-    end
-    local row = {
+            plugin.show_toast("Could not save playback speed")
+            return
+        end
+        speed_retry_pending = current_path == nil or defer_until_resume == true
+        if not require_download then open_settings(true) end
+        plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
+    end)
+end
+
+open_settings = function(update_existing)
+    local rows = { {
         type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
-        icon = ICON.manage, text_size = "medium", on_select = choose_speed,
+        icon = ICON.manage, text_size = "medium", on_select = function() open_speed_menu(false) end,
+    } }
+    rows[#rows + 1] = {
+            type = "row",
+            label = "Reading Room: " .. (reading_room_auto and "On" or "Off"),
+            icon = ICON.manage,
+            text_size = "medium",
+            on_select = function()
+                reading_room_auto = not reading_room_auto
+                plugin.storage.set(READING_ROOM_AUTO_KEY, reading_room_auto and "1" or "0")
+                local path = plugin.get_current_track_path()
+                if reading_room_auto and is_podcast_path(path) then
+                    apply_reading_room(true)
+                elseif not reading_room_auto and is_podcast_path(path) then
+                    restore_reading_room()
+                end
+                open_settings(true)
+            end,
+    }
+    rows[#rows + 1] = {
+            type = "row", label = "Return to preferred player layout",
+            icon = ICON.manage, text_size = "medium",
+            on_select = function()
+                plugin.show_toast(restore_reading_room()
+                    and "Preferred player layout restored"
+                    or "No Podcasts Reading Room layout is active")
+            end,
     }
     if type(plugin.show_settings_list) == "function" then
-        plugin.show_settings_list("Podcasts settings", { row },
+        plugin.show_settings_list("Podcasts settings", rows,
             update_existing and { update = true } or nil)
     else
         -- API-min-2 builds predate the settings-list helper. They also lack
         -- playback.speed, so retain a tappable row that explains the limit.
-        plugin.show_list("Podcasts settings", { row.label }, function(index)
-            if index == 1 then choose_speed() end
+        plugin.show_list("Podcasts settings", { rows[1].label }, function(index)
+            if index == 1 then open_speed_menu(false) end
         end)
     end
 end
+
+local function show_podcast_reading_menu()
+    local title, artist, album = plugin.get_now_playing()
+    local rows = {
+        "Episode · " .. tostring(title or "Nothing playing"),
+        "Host · " .. tostring(artist or "Unknown host"),
+        "Show · " .. tostring(album or "Unknown show"),
+        "Return to preferred layout",
+    }
+    plugin.show_list("Podcasts · Reading Room", rows, function(index)
+        if index == 4 then
+            plugin.show_toast(restore_reading_room()
+                and "Preferred player layout restored"
+                or "No Podcasts Reading Room layout is active")
+        end
+    end)
+end
+
+local function skip_podcast_seconds(delta)
+    if not is_podcast_path(plugin.get_current_track_path()) then return end
+    local position = tonumber(plugin.get_position()) or 0
+    local target = math.max(0, position + delta)
+    local duration = tonumber(plugin.get_duration()) or 0
+    if duration and duration > 0 then target = math.min(target, duration) end
+    plugin.seek(target)
+end
+
+-- set_player_layout registers this session-owned layout for the picker.
+plugin.set_player_layout(READING_ROOM)
+plugin.register_player_action("reading_menu", show_podcast_reading_menu)
+plugin.register_player_action("speed_menu", function()
+    if not current_download_path() then
+        plugin.show_toast("Podcast speed is available for downloaded episodes")
+        return
+    end
+    open_speed_menu(true)
+end)
+plugin.register_player_action("rewind_15", function() skip_podcast_seconds(-15) end)
+plugin.register_player_action("forward_15", function() skip_podcast_seconds(15) end)
+plugin.register_list_item("display", READING_ROOM.name, function()
+    apply_reading_room(false)
+end, { group = "player_layout" })
 
 local function valid_url(url)
     return type(url) == "string"
@@ -2616,6 +2711,11 @@ plugin.on("track_started", function()
     last_saved_position = -1
     speed_retry_pending = true
     local path = plugin.get_current_track_path()
+    if is_podcast_path(path) and reading_room_auto then
+        apply_reading_room(true)
+    else
+        restore_reading_room()
+    end
     local k = path and path_to_key[path]
     if not k and path and path:sub(1, #ROOT + 1) == ROOT .. "/" then
         for key, p in pairs(progress) do

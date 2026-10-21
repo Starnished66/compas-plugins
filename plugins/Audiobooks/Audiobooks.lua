@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.6.0", api_min = 16 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.0", api_min = 17 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Series/Title/files, with optional disc folders,
@@ -13,6 +13,7 @@ local STATE_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_state_v3"
 local OLD_STATE_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_state_v2"
 local SETTINGS_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_settings"
 local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Audiobooks/"
+local READING_ROOM_AUTO_KEY = "reading_room_auto_apply"
 local ICON_BOOK, ICON_PLAY, ICON_CHAPTERS = ICON_ROOT .. "audiobooks.png", ICON_ROOT .. "play.png", ICON_ROOT .. "chapters.png"
 local ICON_BOOKMARK, ICON_BOOKMARKS = ICON_ROOT .. "bookmark.png", ICON_ROOT .. "bookmarks.png"
 local ICON_HISTORY, ICON_SETTINGS = ICON_ROOT .. "history.png", ICON_ROOT .. "settings.png"
@@ -66,6 +67,7 @@ local function current_audiobook_path()
     local path = plugin.get_current_track_path()
     return type(path) == "string" and path:sub(1, #ROOT + 1) == ROOT .. "/" and path or nil
 end
+
 local function speed_waiting_for_resume(path)
     return (pending_seek and pending_seek.path == path) or (open_guard and open_guard.path == path)
 end
@@ -106,6 +108,7 @@ local function set_transport_skip(enabled)
 end
 
 local open_settings
+local open_speed_menu
 open_settings = function(update_existing)
     local available = plugin.has_capability and plugin.has_capability("playback.transport_skip")
     local rows = {
@@ -136,48 +139,51 @@ open_settings = function(update_existing)
     rows[#rows + 1] = {
         type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
         icon = ICON_SETTINGS, text_size = "medium",
-        on_select = function()
-            if not speed_supported() then
-                plugin.show_toast("Playback speed requires a newer player")
-                return
-            end
-            local choices = {}
-            for _, value in ipairs(SPEEDS) do
-                choices[#choices + 1] = tostring(value) .. "x"
-            end
-            plugin.show_list("Playback speed", choices, function(index)
-                local speed = SPEEDS[index]
-                if not speed then return end
-                local active_path = current_audiobook_path()
-                local defer_until_ready = active_path and speed_waiting_for_resume(active_path)
-                local previous = playback_speed
-                if active_path and not defer_until_ready and not apply_speed(speed) then
-                    plugin.show_toast("Speed is unavailable for this audio format")
-                    return
-                end
-                playback_speed = speed
-                if not save_settings() then
-                    playback_speed = previous
-                    if active_path then
-                        speed_retry_pending = defer_until_ready or not apply_speed(previous)
-                    else
-                        speed_retry_pending = true
-                    end
-                    plugin.show_toast("Could not save playback speed")
-                    return
-                end
-                speed_retry_pending = active_path == nil or defer_until_ready == true
-                -- Keep the speed chooser in front; refresh the covered parent
-                -- in place so Back returns to the updated label. `show_list`
-                -- has its own screen pool, separate from the two native
-                -- settings-list slots this flow already uses.
-                open_settings(true)
-                plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
-            end)
-        end,
+        on_select = function() open_speed_menu(true) end,
     }
     plugin.show_settings_list("Audiobooks settings", rows,
         update_existing and { update = true } or nil)
+end
+
+open_speed_menu = function(refresh_settings)
+    if not speed_supported() then
+        plugin.show_toast("Playback speed requires a newer player")
+        return
+    end
+    local choices = {}
+    for _, value in ipairs(SPEEDS) do
+        choices[#choices + 1] = tostring(value) .. "x"
+    end
+    plugin.show_list("Playback speed", choices, function(index)
+        local speed = SPEEDS[index]
+        if not speed then return end
+        if not refresh_settings and not current_audiobook_path() then return end
+        local active_path = current_audiobook_path()
+        local defer_until_ready = active_path and speed_waiting_for_resume(active_path)
+        local previous = playback_speed
+        if active_path and not defer_until_ready and not apply_speed(speed) then
+            plugin.show_toast("Speed is unavailable for this audio format")
+            return
+        end
+        playback_speed = speed
+        if not save_settings() then
+            playback_speed = previous
+            if active_path then
+                speed_retry_pending = defer_until_ready or not apply_speed(previous)
+            else
+                speed_retry_pending = true
+            end
+            plugin.show_toast("Could not save playback speed")
+            return
+        end
+        speed_retry_pending = active_path == nil or defer_until_ready == true
+        if refresh_settings then
+            -- Keep the chooser in front and refresh the covered settings list
+            -- so Back returns to the updated playback-speed label.
+            open_settings(true)
+        end
+        plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
+    end)
 end
 
 local function cap(s, n)
@@ -2812,3 +2818,85 @@ plugin.set_interval(1, function()
 end)
 
 plugin.register_list_item("books", "Audiobooks", open_library, { icon = ICON_BOOK })
+
+-- The Reading Room is registered by Audiobooks itself so its actions can use
+-- the existing book controls and persisted speed setting.
+local reading_room = {
+    id = "example.audiobooks.reading_room",
+    name = "Audiobooks · Reading Room",
+    xml = "Audiobooks/player_layouts/reading_room.xml",
+}
+local auto_apply = not (plugin.storage.get(READING_ROOM_AUTO_KEY, "1") == "0")
+
+local function apply_reading_room(quiet)
+    local ok, err = pcall(plugin.set_player_layout, reading_room)
+    if not ok then
+        if not quiet then plugin.show_toast("Could not apply Reading Room: " .. tostring(err)) end
+        return false
+    end
+    if not quiet then plugin.show_toast("Audiobooks Reading Room applied for this session") end
+    return true
+end
+
+local function restore_reading_room()
+    local ok, changed = pcall(plugin.restore_player_layout)
+    return ok and changed == true
+end
+
+local function reading_menu()
+    local book = book_for_path(plugin.get_current_track_path())
+    if book then
+        open_book(book)
+    else
+        plugin.show_toast("Reading Room controls are for Audiobooks")
+    end
+end
+
+local function skip_seconds(delta)
+    if not current_audiobook_path() then return end
+    local position = tonumber(plugin.get_position())
+    if not finite(position, 0, 10000000) then return end
+    local target = math.max(0, position + delta)
+    local duration = tonumber(plugin.get_duration()) or 0
+    if finite(duration, 0, 10000000) and duration > 0 then
+        target = math.min(target, duration)
+    end
+    pcall(plugin.seek, target)
+end
+
+plugin.set_player_layout(reading_room)
+plugin.register_player_action("reading_menu", reading_menu)
+plugin.register_player_action("speed_menu", function()
+    if current_audiobook_path() then open_speed_menu(false) end
+end)
+plugin.register_player_action("rewind_15", function() skip_seconds(-15) end)
+plugin.register_player_action("forward_15", function() skip_seconds(15) end)
+
+plugin.register_list_item("display", reading_room.name, function()
+    apply_reading_room(false)
+end, { group = "player_layout" })
+plugin.register_list_item("display", "Use Reading Room for Audiobooks", function()
+    auto_apply = not auto_apply
+    plugin.storage.set(READING_ROOM_AUTO_KEY, auto_apply and "1" or "0")
+    if auto_apply then
+        if current_audiobook_path() then apply_reading_room(true) end
+        plugin.show_toast("Reading Room auto-apply enabled for Audiobooks")
+    else
+        local restored = current_audiobook_path() and restore_reading_room()
+        plugin.show_toast(restored and "Reading Room auto-apply disabled; preferred layout restored"
+            or "Reading Room auto-apply disabled for Audiobooks")
+    end
+end, { group = "player_layout" })
+plugin.register_list_item("display", "Audiobooks Reading Room · Return to preferred layout", function()
+    plugin.show_toast(restore_reading_room()
+        and "Preferred player layout restored"
+        or "No Audiobooks Reading Room layout is active")
+end, { group = "player_layout" })
+
+plugin.on("track_started", function()
+    if current_audiobook_path() then
+        if auto_apply then apply_reading_room(true) end
+    else
+        restore_reading_room()
+    end
+end)

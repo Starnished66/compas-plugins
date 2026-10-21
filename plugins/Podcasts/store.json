@@ -1,7 +1,7 @@
 {
-  "description": "Search and subscribe to podcasts, manage downloads with File Manager, and resume where you left off.",
+  "description": "Search and subscribe to podcasts, manage downloads with File Manager, and resume where you left off. Includes a Reading Room player layout with 15 second seek controls and playback speed.",
   "category": "Listening",
-  "author": "Comp\u00e1s",
+  "author": "Compás",
   "files": [
     {
       "src": "icons/show.png",
@@ -38,6 +38,30 @@
     {
       "src": "icons/link.png",
       "dest": ".plugin-assets/Podcasts/link.png"
+    },
+    {
+      "src": "player_layouts/reading_room.xml",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room.xml"
+    },
+    {
+      "src": "player_layouts/reading_room_320x480.xml",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room_320x480.xml"
+    },
+    {
+      "src": "player_layouts/reading_room_480x720.xml",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room_480x720.xml"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_rewind.png",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room/rr_rewind.png"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_forward.png",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room/rr_forward.png"
+    },
+    {
+      "src": "player_layouts/reading_room/rr_speed.png",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room/rr_speed.png"
     }
   ],
   "publish": true

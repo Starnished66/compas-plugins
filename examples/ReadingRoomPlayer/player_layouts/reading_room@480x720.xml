@@ -24,28 +24,28 @@
     <lv_label name="dur_label" text="--:--" x="366" y="471" width="90" height="22" style_text_color="0xadb7ad" style_text_align="right"/>
 
     <!-- Main transport: the 15-second actions flank the centered play control. -->
-    <lv_button name="rewind_button" x="138" y="502" width="64" height="64" clickable="true"
+    <lv_button name="rewind_button" x="72" y="502" width="64" height="64" clickable="true"
                style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
       <lv_image src="rr_rewind" width="56" height="56" align="center" inner_align="contain"/>
       <event_cb trigger="clicked" callback="compas_action" user_data="rewind_15"/>
     </lv_button>
     <lv_image name="play_btn" src="btn_play" x="210" y="504" width="60" height="60"
               inner_align="contain" style_image_recolor="0xe5e2d9" style_image_recolor_opa="255"/>
-    <lv_button name="forward_button" x="278" y="502" width="64" height="64" clickable="true"
+    <lv_button name="forward_button" x="344" y="502" width="64" height="64" clickable="true"
                style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
       <lv_image src="rr_forward" width="56" height="56" align="center" inner_align="contain"/>
       <event_cb trigger="clicked" callback="compas_action" user_data="forward_15"/>
     </lv_button>
 
     <!-- Secondary row: previous chapter, speed, next chapter. -->
-    <lv_image name="prev_btn" src="btn_prev" x="126" y="584" width="52" height="52"
+    <lv_image name="prev_btn" src="btn_prev" x="78" y="584" width="52" height="52"
               inner_align="contain" style_image_recolor="0xe5e2d9" style_image_recolor_opa="255"/>
     <lv_button name="speed_button" x="214" y="584" width="52" height="52" clickable="true"
                style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
       <lv_image src="rr_speed" width="44" height="44" align="center" inner_align="contain"/>
       <event_cb trigger="clicked" callback="compas_action" user_data="speed_menu"/>
     </lv_button>
-    <lv_image name="next_btn" src="btn_next" x="302" y="584" width="52" height="52"
+    <lv_image name="next_btn" src="btn_next" x="350" y="584" width="52" height="52"
               inner_align="contain" style_image_recolor="0xe5e2d9" style_image_recolor_opa="255"/>
     <lv_label text="Speed" x="202" y="637" width="76" height="28"
               style_text_color="0xadb7ad" style_text_align="center" style_text_font="font_16"/>
