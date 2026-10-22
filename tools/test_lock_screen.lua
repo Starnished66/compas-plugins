@@ -11,7 +11,7 @@ photo_file:close()
 plugin = {
   define = function(info)
     assert(info.api_min == 19)
-    assert(info.version == "1.7")
+    assert(info.version == "1.7.1")
   end,
   has_capability = function() return true end,
   sd_root = function() return folder end,
@@ -51,7 +51,7 @@ open_settings()
 assert(settings_title == "Lock Screen")
 assert(settings_options.preview.mode == "album_art")
 assert(settings[2].value == false)
-assert(settings[2].label:find("Hold Power + turn volume up", 1, true))
+assert(settings[2].label == "Unlock with buttons\nHold Power + turn volume up")
 settings[2].on_change(true)
 assert(configure_calls[#configure_calls] == true and values.button_lock == "1")
 settings[2].on_change(false)
@@ -63,6 +63,9 @@ reject = false
 values.button_lock = "1"
 assert(loadfile(folder .. "/../plugins/LockScreen/LockScreen.lua"))()
 assert(configure_calls[#configure_calls] == true)
+open_settings()
+assert(settings[2].value == true)
+assert(settings[2].label == "Unlock with buttons\nHold Power + turn volume up")
 values.background = "image"
 values.image_path = photo_path
 values.image_fit = "contain"
@@ -103,4 +106,4 @@ assert(settings_options.preview.image_path == photo_path)
 assert(settings_options.preview.image_fit == "contain")
 assert(settings[3].label == "Background\nPhoto")
 os.remove(photo_path)
-print("Lock Screen native background preview modes, photo return, and button-lock option: PASS")
+print("Lock Screen native background preview modes, photo return, and button-unlock option: PASS")

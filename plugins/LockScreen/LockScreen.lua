@@ -1,7 +1,7 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.7",
+  version = "1.7.1",
   api_min = 19,
 })
 
@@ -292,7 +292,7 @@ open_lock_settings = function(update)
     },
     {
       type = "toggle",
-      label = "Button lock\n" .. button_lock_shortcut,
+      label = "Unlock with buttons\n" .. button_lock_shortcut,
       value = is_button_lock_enabled(),
       wrap = true,
       on_change = function(value) set_button_lock_enabled(value) end,
