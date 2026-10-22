@@ -1,7 +1,10 @@
 -- Host test for examples/ReadingRoomPlayer/ReadingRoomPlayer.lua.
 -- Run with: lua tools/test_reading_room_player.lua
 local SD = "/sd"
-local storage, actions, items, events, layouts = {}, {}, {}, {}, {}
+local storage, actions, items, events, layouts = {
+    use_for_audiobooks_folder = "0",
+    use_for_podcasts_folder = "0",
+}, {}, {}, {}, {}
 local current, speed_root, restored, position = nil, nil, 0, 20
 plugin = {
     define = function(def) assert(def.api_min == 17, "Reading Room requires API 17") end,
@@ -28,13 +31,13 @@ plugin = {
 dofile("examples/ReadingRoomPlayer/ReadingRoomPlayer.lua")
 
 local function check(value, message) assert(value, message) end
-check(storage.use_for_podcasts_folder == nil, "default Podcast preference should not be written eagerly")
-check(items["Use for Podcasts folder"] ~= nil, "Podcast toggle registered")
-check(items["Use for Audiobooks folder"] ~= nil, "Audiobook toggle registered")
+check(storage.use_for_audiobooks_folder == "0" and storage.use_for_podcasts_folder == "0",
+    "legacy folder opt-outs remain untouched")
+check(next(items) == nil, "Reading Room adds no display configuration rows")
 
 current = "/sd/Podcasts/Show/episode.mp3"
 events.track_started()
-check(#layouts == 2, "Podcast auto-layout is enabled by default")
+check(#layouts == 2, "Podcast playback automatically applies the layout")
 actions.speed_menu()
 last_list_callback(4)
 check(speed_root == "/sd/Podcasts", "Podcast speed uses the Podcast root")
@@ -52,9 +55,8 @@ events.track_started()
 check(restored == 2, "music restores the preferred layout")
 
 current = "/sd/Audiobooks/Book/chapter.mp3"
-items["Use for Audiobooks folder"]()
 events.track_started()
-check(#layouts == 4, "Audiobook toggle still enables its existing behavior")
+check(#layouts == 3, "Audiobook playback automatically applies the layout")
 actions.speed_menu()
 last_list_callback(4)
 check(speed_root == "/sd/Audiobooks", "Audiobook speed uses the Audiobook root")
@@ -65,14 +67,6 @@ position = 95
 actions.forward_15()
 check(last_seek == 100, "forward clamps to duration")
 
-current = "/sd/Audiobooks/Book/chapter.mp3"
-local restored_before_other_toggle = restored
-items["Use for Podcasts folder"]()
-check(storage.use_for_podcasts_folder == "0", "Podcast toggle persists disabled state")
-check(restored == restored_before_other_toggle, "disabling Podcasts does not restore while Audiobook plays")
-current = "/sd/Podcasts/Show/episode.mp3"
-events.track_started()
-check(restored == restored_before_other_toggle + 1, "disabled Podcast track restores preferred layout")
 local seeks_before_music = last_seek
 current = "/sd/Music/song.mp3"
 actions.forward_15()

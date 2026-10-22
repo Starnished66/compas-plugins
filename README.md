@@ -181,9 +181,9 @@ the owning plugin's existing speed choices and saves its existing speed
 preference. The outer controls seek 15 seconds; previous/next keep their normal
 track behavior.
 
-Both plugins provide an auto-layout option. The separate ReadingRoomPlayer
-example remains available for development; disable it when using the native
-bundles to avoid competing auto-layout selections. These bundle changes are
+The separate ReadingRoomPlayer example remains available for development;
+avoid running it alongside the native bundles to prevent competing automatic
+layout selections. These bundle changes are
 committed for a future release; pushing `main` runs checks and does not publish
 a Plugin Store release.
 
@@ -192,7 +192,7 @@ a Plugin Store release.
 - [Action Deck · Stage](examples/ActionDeckPlayer/README.md): custom artist,
   album and track menus on a dark Now Playing layout.
 - [Reading Room · Paper](examples/ReadingRoomPlayer/README.md): audiobook skip
-  controls, a speed menu, and optional folder-based layout switching.
+  controls, a speed menu, and automatic folder-based layout switching.
 
 These require the player-action APIs added after firmware v1.2.0 and are held
 from Plugin Store publication. They are manual-install examples rather than store entries. Each includes

@@ -48,7 +48,7 @@ end
 
 local function boot(capabilities)
     local state = {
-        storage = {}, actions = {}, events = {}, layouts = {}, restores = 0,
+        storage = { reading_room_auto_apply = "0" }, actions = {}, events = {}, layouts = {}, restores = 0,
         settings_calls = 0, speed_calls = {}, seeks = {}, current = episode,
         position = 20, toasts = {}, minimum_api = nil,
     }
@@ -67,7 +67,10 @@ local function boot(capabilities)
         set_player_layout = function(layout) state.layouts[#state.layouts + 1] = layout end,
         restore_player_layout = function() state.restores = state.restores + 1; return true end,
         register_player_action = function(name, callback) state.actions[name] = callback end,
-        register_list_item = function(_, name, callback) state.list_items = state.list_items or {}; state.list_items[name] = callback end,
+        register_list_item = function(category, name, callback)
+            assert(category ~= "display", "Podcasts must not add player-layout configuration rows")
+            state.list_items = state.list_items or {}; state.list_items[name] = callback
+        end,
         on = function(name, callback) state.events[name] = callback end,
         show_list = function(title, rows, callback)
             state.last_list = { title = title, rows = rows, callback = callback }
@@ -106,13 +109,13 @@ local state = boot(all)
 assert(state.minimum_api == 17, "plugin should require firmware API 17")
 assert(#state.layouts == 1, "layout should be registered")
 assert(state.layouts[1].id == "example.podcasts.reading_room", "layout should use its unique ID")
-assert(state.storage.reading_room_auto_apply == nil, "auto-apply should default on without writing a preference")
+assert(state.storage.reading_room_auto_apply == "0", "legacy opt-out preference should be ignored")
 for _, action in ipairs({ "reading_menu", "speed_menu", "rewind_15", "forward_15" }) do
     assert(type(state.actions[action]) == "function", action .. " should be registered")
 end
 
 state.events.track_started()
-assert(#state.layouts == 2, "Podcast playback should auto-apply the Reading Room")
+assert(#state.layouts == 2, "Podcast playback should auto-apply despite a legacy opt-out")
 state.position = 5
 state.actions.rewind_15()
 assert(state.seeks[#state.seeks] == 0, "rewind should clamp at zero")
@@ -131,8 +134,10 @@ assert(state.settings_calls == settings_before_speed, "direct speed choice shoul
 
 state.home()
 state.last_list.callback(#state.last_list.rows)
-local settings_speed_row = state.last_settings.rows[1]
-settings_speed_row.on_select()
+local settings_rows = state.last_settings.rows
+assert(#settings_rows == 1 and settings_rows[1].label:match("^Playback speed:"),
+    "Podcasts settings should retain speed and omit Reading Room configuration rows")
+settings_rows[1].on_select()
 state.last_list.callback(4)
 assert(state.settings_calls == settings_before_speed + 2,
     "the Settings speed row should refresh its open settings page after selection")
@@ -145,19 +150,6 @@ assert(state.restores == 1, "leaving Podcasts should restore the preferred layou
 local seeks_before_music = #state.seeks
 state.actions.forward_15()
 assert(#state.seeks == seeks_before_music, "skip actions should ignore music")
-
-state.current = episode
-state.events.track_started()
-local row
-for _, candidate in ipairs(state.last_settings.rows) do
-    if candidate.label == "Reading Room: On" then row = candidate end
-end
-assert(row and row.on_select, "settings should expose the auto-apply toggle")
-row.on_select()
-assert(state.storage.reading_room_auto_apply == "0", "toggle should persist disabled preference")
-local layouts_before_disabled_start = #state.layouts
-state.events.track_started()
-assert(#state.layouts == layouts_before_disabled_start, "disabled auto-apply should not select the layout")
 
 local ungated = boot({})
 assert(#ungated.layouts == 1, "API 17 should register the layout without capability checks")

@@ -16,7 +16,7 @@ local registration_start = assert(source:find("-- The Reading Room is registered
 local registration_block = source:sub(registration_start)
 
 local current, position, duration = nil, 9, 100
-local storage, layouts, actions, items, events = {}, {}, {}, {}, {}
+local storage, layouts, actions, items, events = { reading_room_auto_apply = "0" }, {}, {}, {}, {}
 local restored, seeks, applied_speeds = 0, {}, {}
 local save_fails, saved_speed, settings_refreshes = false, nil, 0
 local last_title, last_choices, last_choice_callback
@@ -99,11 +99,12 @@ check(actions.speed_menu ~= nil and events.track_started ~= nil, "native actions
 check(actions.reading_menu and actions.rewind_15 and actions.forward_15,
     "player actions register when the runtime capability API reports false")
 check(layouts[1].id == "example.audiobooks.reading_room", "native layout identity")
-check(storage.reading_room_auto_apply == nil, "auto-apply defaults on without eager storage write")
+check(storage.reading_room_auto_apply == "0", "legacy opt-out preference remains untouched")
+check(next(items) == nil, "Audiobooks adds no Reading Room display configuration rows")
 
 current = "/sd/Audiobooks/Book/chapter.m4b"
 events.track_started()
-check(#layouts == 2, "Audiobook descendant auto-applies")
+check(#layouts == 2, "Audiobook descendant auto-applies even with a legacy opt-out")
 actions.speed_menu()
 check(last_title == "Playback speed" and #last_choices == 7, "speed action opens the existing choices directly")
 last_choice_callback(6)
@@ -133,15 +134,6 @@ current = "/sd/Music/song.mp3"
 events.track_started()
 check(restored == 1, "music playback does not restore a layout the plugin no longer owns")
 
-current = "/sd/Audiobooks/Book/chapter.m4b"
-items["Use Reading Room for Audiobooks"]()
-events.track_started()
-check(#layouts == before_near_match, "opt-out disables auto-apply")
-current = "/sd/Music/song.mp3"
-events.track_started()
-check(restored == 1, "music playback remains outside ReadingRoom ownership")
-
-items["Use Reading Room for Audiobooks"]()
 current = "/sd/Audiobooks/Book/chapter.m4b"
 events.track_started()
 position = 4

@@ -13,7 +13,6 @@ local STATE_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_state_v3"
 local OLD_STATE_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_state_v2"
 local SETTINGS_PATH = plugin.sd_root() .. "/.plugins/.audiobooks_settings"
 local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Audiobooks/"
-local READING_ROOM_AUTO_KEY = "reading_room_auto_apply"
 local ICON_BOOK, ICON_PLAY, ICON_CHAPTERS = ICON_ROOT .. "audiobooks.png", ICON_ROOT .. "play.png", ICON_ROOT .. "chapters.png"
 local ICON_BOOKMARK, ICON_BOOKMARKS = ICON_ROOT .. "bookmark.png", ICON_ROOT .. "bookmarks.png"
 local ICON_HISTORY, ICON_SETTINGS = ICON_ROOT .. "history.png", ICON_ROOT .. "settings.png"
@@ -2826,8 +2825,6 @@ local reading_room = {
     name = "Audiobooks · Reading Room",
     xml = "Audiobooks/player_layouts/reading_room.xml",
 }
-local auto_apply = not (plugin.storage.get(READING_ROOM_AUTO_KEY, "1") == "0")
-
 local function apply_reading_room(quiet)
     local ok, err = pcall(plugin.set_player_layout, reading_room)
     if not ok then
@@ -2872,30 +2869,9 @@ end)
 plugin.register_player_action("rewind_15", function() skip_seconds(-15) end)
 plugin.register_player_action("forward_15", function() skip_seconds(15) end)
 
-plugin.register_list_item("display", reading_room.name, function()
-    apply_reading_room(false)
-end, { group = "player_layout" })
-plugin.register_list_item("display", "Use Reading Room for Audiobooks", function()
-    auto_apply = not auto_apply
-    plugin.storage.set(READING_ROOM_AUTO_KEY, auto_apply and "1" or "0")
-    if auto_apply then
-        if current_audiobook_path() then apply_reading_room(true) end
-        plugin.show_toast("Reading Room auto-apply enabled for Audiobooks")
-    else
-        local restored = current_audiobook_path() and restore_reading_room()
-        plugin.show_toast(restored and "Reading Room auto-apply disabled; preferred layout restored"
-            or "Reading Room auto-apply disabled for Audiobooks")
-    end
-end, { group = "player_layout" })
-plugin.register_list_item("display", "Audiobooks Reading Room · Return to preferred layout", function()
-    plugin.show_toast(restore_reading_room()
-        and "Preferred player layout restored"
-        or "No Audiobooks Reading Room layout is active")
-end, { group = "player_layout" })
-
 plugin.on("track_started", function()
     if current_audiobook_path() then
-        if auto_apply then apply_reading_room(true) end
+        apply_reading_room(true)
     else
         restore_reading_room()
     end

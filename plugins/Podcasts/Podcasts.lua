@@ -15,8 +15,6 @@ local READING_ROOM = {
     name = "Podcasts · Reading Room",
     xml = "Podcasts/player_layouts/reading_room.xml",
 }
-local READING_ROOM_AUTO_KEY = "reading_room_auto_apply"
-local reading_room_auto = plugin.storage.get(READING_ROOM_AUTO_KEY, "1") ~= "0"
 local ICON_ROOT = plugin.sd_root() .. "/.plugin-assets/Podcasts"
 local ICON = {
     show = ICON_ROOT .. "/show.png",
@@ -251,32 +249,6 @@ open_settings = function(update_existing)
         type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
         icon = ICON.manage, text_size = "medium", on_select = function() open_speed_menu(false) end,
     } }
-    rows[#rows + 1] = {
-            type = "row",
-            label = "Reading Room: " .. (reading_room_auto and "On" or "Off"),
-            icon = ICON.manage,
-            text_size = "medium",
-            on_select = function()
-                reading_room_auto = not reading_room_auto
-                plugin.storage.set(READING_ROOM_AUTO_KEY, reading_room_auto and "1" or "0")
-                local path = plugin.get_current_track_path()
-                if reading_room_auto and is_podcast_path(path) then
-                    apply_reading_room(true)
-                elseif not reading_room_auto and is_podcast_path(path) then
-                    restore_reading_room()
-                end
-                open_settings(true)
-            end,
-    }
-    rows[#rows + 1] = {
-            type = "row", label = "Return to preferred player layout",
-            icon = ICON.manage, text_size = "medium",
-            on_select = function()
-                plugin.show_toast(restore_reading_room()
-                    and "Preferred player layout restored"
-                    or "No Podcasts Reading Room layout is active")
-            end,
-    }
     if type(plugin.show_settings_list) == "function" then
         plugin.show_settings_list("Podcasts settings", rows,
             update_existing and { update = true } or nil)
@@ -295,15 +267,8 @@ local function show_podcast_reading_menu()
         "Episode · " .. tostring(title or "Nothing playing"),
         "Host · " .. tostring(artist or "Unknown host"),
         "Show · " .. tostring(album or "Unknown show"),
-        "Return to preferred layout",
     }
-    plugin.show_list("Podcasts · Reading Room", rows, function(index)
-        if index == 4 then
-            plugin.show_toast(restore_reading_room()
-                and "Preferred player layout restored"
-                or "No Podcasts Reading Room layout is active")
-        end
-    end)
+    plugin.show_list("Podcasts · Reading Room", rows, function() end)
 end
 
 local function skip_podcast_seconds(delta)
@@ -327,9 +292,6 @@ plugin.register_player_action("speed_menu", function()
 end)
 plugin.register_player_action("rewind_15", function() skip_podcast_seconds(-15) end)
 plugin.register_player_action("forward_15", function() skip_podcast_seconds(15) end)
-plugin.register_list_item("display", READING_ROOM.name, function()
-    apply_reading_room(false)
-end, { group = "player_layout" })
 
 local function valid_url(url)
     return type(url) == "string"
@@ -2711,7 +2673,7 @@ plugin.on("track_started", function()
     last_saved_position = -1
     speed_retry_pending = true
     local path = plugin.get_current_track_path()
-    if is_podcast_path(path) and reading_room_auto then
+    if is_podcast_path(path) then
         apply_reading_room(true)
     else
         restore_reading_room()

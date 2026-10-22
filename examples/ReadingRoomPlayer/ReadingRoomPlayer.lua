@@ -1,5 +1,5 @@
 -- Reading Room Player is an example of a calm, book-focused player layout.
--- It demonstrates session-owned layouts and optional folder-based switching;
+-- It demonstrates session-owned layouts and automatic folder-based switching;
 -- it does not change the separate Audiobooks plugin.
 
 plugin.define({
@@ -12,15 +12,9 @@ plugin.define({
 local SD_ROOT = plugin.sd_root()
 local AUDIOBOOKS_ROOT = SD_ROOT .. "/Audiobooks"
 local PODCASTS_ROOT = SD_ROOT .. "/Podcasts"
-local AUDIOBOOKS_KEY = "use_for_audiobooks_folder"
-local PODCASTS_KEY = "use_for_podcasts_folder"
-local auto_enabled = {
-    [AUDIOBOOKS_ROOT] = plugin.storage.get(AUDIOBOOKS_KEY, "0") == "1",
-    [PODCASTS_ROOT] = plugin.storage.get(PODCASTS_KEY, "1") ~= "0",
-}
 local roots = {
-    { path = AUDIOBOOKS_ROOT, label = "Audiobooks", key = AUDIOBOOKS_KEY },
-    { path = PODCASTS_ROOT, label = "Podcasts", key = PODCASTS_KEY },
+    { path = AUDIOBOOKS_ROOT, label = "Audiobooks" },
+    { path = PODCASTS_ROOT, label = "Podcasts" },
 }
 
 local layout = {
@@ -89,15 +83,8 @@ local function show_reading_menu()
         "Now playing · " .. title,
         author_label .. " · " .. artist,
         book_label .. " · " .. album,
-        "Return to preferred layout",
     }
-    plugin.show_list("Reading Room", rows, function(index)
-        if index == 4 then
-            plugin.show_toast(restore_owned_layout()
-                and "Preferred player layout restored"
-                or "No Reading Room layout is active")
-        end
-    end)
+    plugin.show_list("Reading Room", rows, function() end)
 end
 
 local function skip_seconds(delta)
@@ -117,41 +104,14 @@ plugin.register_player_action("speed_menu", show_speed_menu)
 plugin.register_player_action("rewind_15", function() skip_seconds(-15) end)
 plugin.register_player_action("forward_15", function() skip_seconds(15) end)
 
--- Registration lists the layout but deliberately does not select it.
+-- Registration makes the layout available to the player without selecting it.
 plugin.set_player_layout(layout)
-
-plugin.register_list_item("display", layout.name, function()
-    apply_layout(layout, false)
-end, { group = "player_layout" })
-
-for _, root in ipairs(roots) do
-    plugin.register_list_item("display", "Use for " .. root.label .. " folder", function()
-        auto_enabled[root.path] = not auto_enabled[root.path]
-        plugin.storage.set(root.key, auto_enabled[root.path] and "1" or "0")
-        if auto_enabled[root.path] then
-            if matching_root(plugin.get_current_track_path()) == root then apply_layout(layout, true) end
-            plugin.show_toast("Auto-apply enabled for " .. root.label)
-        else
-            local restored = matching_root(plugin.get_current_track_path()) == root
-                and restore_owned_layout()
-            plugin.show_toast(restored and "Auto-apply disabled; preferred layout restored"
-                or "Auto-apply disabled for " .. root.label)
-        end
-    end, { group = "player_layout" })
-end
-
-plugin.register_list_item("display", "Reading Room · Return to preferred layout", function()
-    plugin.show_toast(restore_owned_layout()
-        and "Preferred player layout restored"
-        or "No Reading Room layout is active")
-end, { group = "player_layout" })
 
 plugin.on("track_started", function()
     local path = plugin.get_current_track_path()
     local root = matching_root(path)
     if root then
-        if auto_enabled[root.path] then apply_layout(layout, true) end
-        if not auto_enabled[root.path] then restore_owned_layout() end
+        apply_layout(layout, true)
     else
         restore_owned_layout()
     end

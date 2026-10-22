@@ -1,7 +1,7 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.5",
+  version = "1.6",
   api_min = 18,
 })
 
@@ -91,6 +91,22 @@ local function get_custom_image_fit()
   return "cover"
 end
 
+local function get_preview_options()
+  local preview = {
+    mode = get_background(),
+    image_fit = get_custom_image_fit(),
+  }
+  if preview.mode == "image" then
+    local image_path = get_custom_image_path()
+    if has_readable_photo(image_path) then
+      preview.image_path = image_path
+    else
+      preview.mode = "clock"
+    end
+  end
+  return preview
+end
+
 local function trigger_lock_screen(preview)
   if not preview and not is_enabled() then return end
 
@@ -120,6 +136,7 @@ local function is_photo(name)
 end
 
 local open_lock_settings
+local open_background_settings
 
 local function open_photo_picker(dir_path)
   dir_path = dir_path or plugin.sd_root()
@@ -197,6 +214,7 @@ local function open_photo_picker(dir_path)
       set_background("image")
       plugin.show_toast("Lock screen photo selected")
       open_lock_settings(true)
+      open_background_settings(true)
     end
   end)
 end
@@ -205,7 +223,7 @@ local function open_framing_settings()
   plugin.show_settings_list("Framing", {
     {
       type = "row",
-      label = (get_custom_image_fit() == "cover" and "✓ " or "") .. "Fill screen",
+      label = "Fill screen" .. (get_custom_image_fit() == "cover" and " (selected)" or ""),
       text_size = "large",
       on_select = function()
         plugin.storage.set(KEY_IMAGE_FIT, "cover")
@@ -215,7 +233,7 @@ local function open_framing_settings()
     },
     {
       type = "row",
-      label = (get_custom_image_fit() == "contain" and "✓ " or "") .. "Keep whole image",
+      label = "Keep whole image" .. (get_custom_image_fit() == "contain" and " (selected)" or ""),
       text_size = "large",
       on_select = function()
         plugin.storage.set(KEY_IMAGE_FIT, "contain")
@@ -226,27 +244,39 @@ local function open_framing_settings()
   })
 end
 
-local function open_background_settings()
-  local items = {}
-  local destinations = {}
+open_background_settings = function(update)
+  local rows = {}
   for _, background in ipairs(BACKGROUNDS) do
     local selected_background = background.key
     local background_label = background.label
-    local marker = get_background() == selected_background and "✓ " or ""
-    items[#items + 1] = { label = marker .. background_label }
-    destinations[#destinations + 1] = { key = selected_background, label = background_label }
+    local marker = get_background() == selected_background and " (selected)" or ""
+    rows[#rows + 1] = {
+      type = "row",
+      label = background_label .. marker,
+      text_size = "large",
+      on_select = function()
+        if selected_background == "image" and not has_readable_photo(get_custom_image_path()) then
+          open_photo_picker()
+        else
+          set_background(selected_background)
+          open_lock_settings(true)
+          open_background_settings(true)
+        end
+      end,
+    }
   end
-  plugin.show_list("Lock Screen Background", items, function(index)
-    local selected = destinations[index]
-    if not selected then return end
-    if selected.key == "image" then
-      open_photo_picker()
-    else
-      set_background(selected.key)
-      plugin.show_toast("Lock screen background: " .. selected.label)
-      open_lock_settings(true)
-    end
-  end, { layout = "grid", columns = 2 })
+
+  if get_background() == "image" then
+    rows[#rows + 1] = {
+      type = "row", label = "Choose photo", text_size = "large",
+      on_select = function() open_photo_picker() end,
+    }
+  end
+
+  plugin.show_settings_list("Lock Screen Background", rows, {
+    update = update == true,
+    preview = get_preview_options(),
+  })
 end
 
 open_lock_settings = function(update)
@@ -298,26 +328,12 @@ open_lock_settings = function(update)
     on_select = function() trigger_lock_screen(true) end,
   }
 
-  local preview = {
-    mode = background,
-    image_fit = get_custom_image_fit(),
-  }
-  if background == "image" then
-    local image_path = get_custom_image_path()
-    if has_readable_photo(image_path) then
-      preview.image_path = image_path
-    else
-      preview.mode = "clock"
-    end
-  end
-
   plugin.show_settings_list("Lock Screen", rows, {
     update = update == true,
-    preview = preview,
+    preview = get_preview_options(),
   })
 end
 
 plugin.register_list_item("display", "Lock Screen", open_lock_settings, {
-  group = "player_layout",
   text_size = "large",
 })
