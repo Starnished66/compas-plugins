@@ -1,8 +1,8 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.4",
-  api_min = 15,
+  version = "1.5",
+  api_min = 18,
 })
 
 -- Lock Screen companion plugin.
@@ -15,6 +15,8 @@ end
 
 local KEY_MODE = "mode" -- Kept for migration from versions before 1.3.
 local KEY_ENABLED = "enabled"
+local KEY_BUTTON_LOCK = "button_lock"
+local button_lock_shortcut
 local KEY_BACKGROUND = "background"
 local KEY_IMAGE = "image_path"
 local KEY_IMAGE_FIT = "image_fit"
@@ -45,6 +47,18 @@ local function set_enabled(enabled)
   -- Preserve the old on/off representation for older plugin versions.
   plugin.storage.set(KEY_MODE, enabled and get_background() or "off")
 end
+
+local function is_button_lock_enabled()
+  local saved = plugin.storage.get(KEY_BUTTON_LOCK)
+  return saved == "1" or saved == "true"
+end
+
+local function set_button_lock_enabled(enabled)
+  button_lock_shortcut = plugin.configure_button_lock(enabled)
+  plugin.storage.set(KEY_BUTTON_LOCK, enabled and "1" or "0")
+end
+
+button_lock_shortcut = plugin.configure_button_lock(is_button_lock_enabled())
 
 get_background = function()
   local saved = plugin.storage.get(KEY_BACKGROUND)
@@ -249,6 +263,14 @@ open_lock_settings = function(update)
       value = is_enabled(),
       text_size = "large",
       on_change = function(value) set_enabled(value) end,
+    },
+    {
+      type = "toggle",
+      label = "Button lock\n" .. button_lock_shortcut,
+      value = is_button_lock_enabled(),
+      wrap = true,
+      text_size = "large",
+      on_change = function(value) set_button_lock_enabled(value) end,
     },
     {
       type = "row",

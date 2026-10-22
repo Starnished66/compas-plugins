@@ -1,5 +1,5 @@
 {
-  "description": "A lock screen with album art, your own image or a clock when the screen wakes.",
+  "description": "A lock screen with album art, your own image or a clock when the screen wakes, plus an optional Power + Volume Up hardware button lock.",
   "category": "Customization",
   "author": "Compás"
 }
