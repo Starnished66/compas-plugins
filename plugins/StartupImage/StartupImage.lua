@@ -4,8 +4,8 @@
 plugin.define({
     id = "org.compas.startup_image",
     name = "Startup Image",
-    version = "1.0.0",
-    api_min = 16,
+    version = "1.0.1",
+    api_min = 19,
 })
 
 local plugin_dir = plugin.sd_root() .. "/.plugins/StartupImage"
@@ -51,7 +51,7 @@ local restore_default
 local function menu_items()
     local function info_row(label)
         if plugin.has_capability("ui.list_wrap") then
-            return { label = label, wrap = true, text_size = "small" }
+            return { label = label, wrap = true }
         end
         return label
     end

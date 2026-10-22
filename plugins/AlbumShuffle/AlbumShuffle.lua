@@ -1,16 +1,16 @@
 plugin.define({
     id = "example.album_shuffle",
     name = "Album Shuffle",
-    version = "1.0.0",
-    api_min = 15,
+    version = "1.1.0",
+    api_min = 19,
 })
 
 -- Plays a random album with tracks in album order, then another when the
 -- queue is exhausted forward. library_get_albums() rows are {name, count,
 -- first_song_id, album_artist}. Identity prefers group.album_artist or
 -- song.album_artist so compilations keep every track, then song.artist.
--- There is no plugin.set_play_mode: native shuffle would scramble track
--- order, so this plugin only runs while the player is already sequential.
+-- Native shuffle would scramble album track order, so confirmation switches
+-- the player to sequential mode before starting a random album.
 
 local PAGE = 50
 local MAX_SKIP = 8
@@ -184,16 +184,12 @@ end
 math.randomseed(os.time())
 
 local function start_from_ui()
+    plugin.set_play_mode("sequential")
     session.last_id = nil
     session.last_artist = nil
     session.last_album = nil
     session.active = true
     play_random_album()
-end
-
-local function stop_from_ui()
-    stop_session()
-    toast("Album shuffle stopped")
 end
 
 plugin.on("stopped", function()
@@ -237,36 +233,10 @@ plugin.set_interval(1, function()
     continue_next()
 end)
 
-local function open_settings()
-    local status = session.active and "Album shuffle is on" or "Album shuffle is off"
-    plugin.show_settings_list("Album Shuffle", {
-        {
-            type = "row",
-            label = session.active and "Stop album shuffle" or "Start album shuffle",
-            on_select = function()
-                if session.active then stop_from_ui() else start_from_ui() end
-            end,
-        },
-        {
-            type = "row",
-            label = status,
-            on_select = function() end,
-        },
-        {
-            type = "row",
-            label = "How it works",
-            on_select = function()
-                plugin.show_list("About Album Shuffle", {
-                    "Picks a random album, plays its tracks in order, then another when it ends or you press Next at the end.",
-                    "Select sequential playback mode before starting to keep tracks in album order.",
-                    "Stop, picking another queue, or turning this off ends the session so playback is not taken over.",
-                }, function() end)
-            end,
-        },
-    })
-end
-
-plugin.register_list_item("playback", "Album Shuffle", open_settings)
+local SHUFFLE_ICON = plugin.sd_root() .. "/.plugin-assets/AlbumShuffle/shuffle.png"
+plugin.register_list_item("music", "Album Shuffle", function()
+    plugin.show_confirmation("Album Shuffle", "Start Album Shuffle", start_from_ui)
+end, { icon = SHUFFLE_ICON })
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
     _G.COMPAS_PLUGIN_UNDER_TEST = {

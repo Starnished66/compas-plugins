@@ -1,5 +1,11 @@
 {
-  "description": "Play whole albums in random order while preserving their track order. Start in sequential mode; stops when you explicitly stop playback.",
+  "description": "Open Album Shuffle from the Music menu to play whole albums in random order while preserving track order. Confirmation switches to sequential mode; stops when you explicitly stop playback.",
   "category": "Listening",
-  "author": "Compás"
+  "author": "Compás",
+  "files": [
+    {
+      "src": "icons/shuffle.png",
+      "dest": ".plugin-assets/AlbumShuffle/shuffle.png"
+    }
+  ]
 }

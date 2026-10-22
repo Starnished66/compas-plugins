@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.0", api_min = 17 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.1", api_min = 19 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
@@ -247,7 +247,7 @@ end
 open_settings = function(update_existing)
     local rows = { {
         type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
-        icon = ICON.manage, text_size = "medium", on_select = function() open_speed_menu(false) end,
+        icon = ICON.manage, on_select = function() open_speed_menu(false) end,
     } }
     if type(plugin.show_settings_list) == "function" then
         plugin.show_settings_list("Podcasts settings", rows,

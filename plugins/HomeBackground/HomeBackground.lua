@@ -5,8 +5,8 @@
 plugin.define({
     id = "org.example.home_background",
     name = "Home Background",
-    version = "1.2.0",
-    api_min = 16,
+    version = "1.2.1",
+    api_min = 19,
 })
 
 local sd_root = plugin.sd_root()
@@ -193,7 +193,7 @@ local function open_wallpaper_menu()
     end
     local function info_row(label)
         if plugin.has_capability("ui.list_wrap") then
-            return { label = label, wrap = true, text_size = "small" }
+            return { label = label, wrap = true }
         end
         return label
     end

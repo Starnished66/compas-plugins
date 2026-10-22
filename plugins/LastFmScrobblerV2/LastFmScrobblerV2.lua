@@ -1,4 +1,4 @@
-plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.0", api_min = 2 })
+plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.0.1", api_min = 19 })
 
 -- Last.fm scrobbler with guided setup, queue inspection, and bounded offline queue.
 
@@ -1534,7 +1534,7 @@ local function render_main_items(items)
   if not (plugin.has_capability and plugin.has_capability("ui.list_wrap")) then return items end
   local rows = {}
   for i, label in ipairs(items) do
-    rows[i] = { label = label, wrap = true, text_size = "small" }
+    rows[i] = { label = label, wrap = true }
   end
   return rows
 end

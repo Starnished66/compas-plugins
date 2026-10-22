@@ -1,8 +1,8 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.6",
-  api_min = 18,
+  version = "1.7",
+  api_min = 19,
 })
 
 -- Lock Screen companion plugin.
@@ -181,14 +181,14 @@ local function open_photo_picker(dir_path)
     if parent_path and #parent_path >= #root then parent = parent_path end
   end
   if parent then
-    items[#items + 1] = { label = "..", text_size = "large" }
+    items[#items + 1] = { label = ".." }
     destinations[#destinations + 1] = { path = parent }
   end
 
   local limit = 500 - #items
   for _, name in ipairs(folders) do
     if #items >= limit then break end
-    items[#items + 1] = { label = "Folder: " .. name, text_size = "large" }
+    items[#items + 1] = { label = "Folder: " .. name }
     destinations[#destinations + 1] = { path = dir_path .. "/" .. name }
   end
   for _, name in ipairs(photos) do
@@ -224,7 +224,6 @@ local function open_framing_settings()
     {
       type = "row",
       label = "Fill screen" .. (get_custom_image_fit() == "cover" and " (selected)" or ""),
-      text_size = "large",
       on_select = function()
         plugin.storage.set(KEY_IMAGE_FIT, "cover")
         plugin.show_toast("Framing: Fill screen")
@@ -234,7 +233,6 @@ local function open_framing_settings()
     {
       type = "row",
       label = "Keep whole image" .. (get_custom_image_fit() == "contain" and " (selected)" or ""),
-      text_size = "large",
       on_select = function()
         plugin.storage.set(KEY_IMAGE_FIT, "contain")
         plugin.show_toast("Framing: Keep whole image")
@@ -253,7 +251,6 @@ open_background_settings = function(update)
     rows[#rows + 1] = {
       type = "row",
       label = background_label .. marker,
-      text_size = "large",
       on_select = function()
         if selected_background == "image" and not has_readable_photo(get_custom_image_path()) then
           open_photo_picker()
@@ -268,7 +265,7 @@ open_background_settings = function(update)
 
   if get_background() == "image" then
     rows[#rows + 1] = {
-      type = "row", label = "Choose photo", text_size = "large",
+      type = "row", label = "Choose photo",
       on_select = function() open_photo_picker() end,
     }
   end
@@ -291,7 +288,6 @@ open_lock_settings = function(update)
       type = "toggle",
       label = "Lock screen",
       value = is_enabled(),
-      text_size = "large",
       on_change = function(value) set_enabled(value) end,
     },
     {
@@ -299,14 +295,12 @@ open_lock_settings = function(update)
       label = "Button lock\n" .. button_lock_shortcut,
       value = is_button_lock_enabled(),
       wrap = true,
-      text_size = "large",
       on_change = function(value) set_button_lock_enabled(value) end,
     },
     {
       type = "row",
       label = "Background\n" .. background_label,
       wrap = true,
-      text_size = "large",
       on_select = open_background_settings,
     },
   }
@@ -316,7 +310,6 @@ open_lock_settings = function(update)
       type = "row",
       wrap = true,
       label = "Framing\n" .. (get_custom_image_fit() == "cover" and "Fill screen" or "Keep whole image"),
-      text_size = "large",
       on_select = open_framing_settings,
     }
   end
@@ -324,7 +317,6 @@ open_lock_settings = function(update)
   rows[#rows + 1] = {
     type = "row",
     label = "Preview lock screen",
-    text_size = "large",
     on_select = function() trigger_lock_screen(true) end,
   }
 
@@ -334,6 +326,4 @@ open_lock_settings = function(update)
   })
 end
 
-plugin.register_list_item("display", "Lock Screen", open_lock_settings, {
-  text_size = "large",
-})
+plugin.register_list_item("display", "Lock Screen", open_lock_settings, {})

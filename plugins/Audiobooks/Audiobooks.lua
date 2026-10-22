@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.0", api_min = 17 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.1", api_min = 19 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Series/Title/files, with optional disc folders,
@@ -113,7 +113,7 @@ open_settings = function(update_existing)
     local rows = {
         {
             type = "toggle", label = "Skip by 30 seconds", value = skip_by_30,
-            icon = ICON_SETTINGS, text_size = "medium",
+            icon = ICON_SETTINGS,
             on_change = function(value)
                 if not available then
                     plugin.show_toast("30 second skip requires a newer player")
@@ -137,7 +137,7 @@ open_settings = function(update_existing)
     }
     rows[#rows + 1] = {
         type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
-        icon = ICON_SETTINGS, text_size = "medium",
+        icon = ICON_SETTINGS,
         on_select = function() open_speed_menu(true) end,
     }
     plugin.show_settings_list("Audiobooks settings", rows,
@@ -1847,7 +1847,7 @@ local function open_continue_list(page)
     local function add_row(label, icon, action, wrap)
         local limit = wrap and settings_wrap and 511 or 95
         rows[#rows + 1] = {
-            type = "row", label = cap(label, limit), icon = icon, text_size = "medium",
+            type = "row", label = cap(label, limit), icon = icon,
             wrap = wrap == true and settings_wrap == true, on_select = action,
         }
     end
@@ -1887,7 +1887,7 @@ local function open_library()
     local function add_row(label, icon, action, wrap)
         local limit = (wrap and settings_wrap) and 511 or 159
         rows[#rows + 1] = {
-            type = "row", label = cap(label, limit), icon = icon, text_size = "medium",
+            type = "row", label = cap(label, limit), icon = icon,
             wrap = wrap and settings_wrap == true or false, on_select = action,
         }
     end
@@ -1923,7 +1923,7 @@ open_legacy_library = function()
     local function add_row(label, icon, action, wrap)
         local limit = (wrap and settings_wrap) and 511 or 159
         rows[#rows + 1] = {
-            type = "row", label = cap(label, limit), icon = icon, text_size = "medium",
+            type = "row", label = cap(label, limit), icon = icon,
             wrap = wrap and settings_wrap == true or false, on_select = action,
         }
     end
@@ -2262,7 +2262,7 @@ open_book = function(book)
     local function add_row(label, icon, action, wrap)
         rows[#rows + 1] = {
             type = "row", label = cap(label, wrap and settings_wrap and 511 or 159),
-            icon = icon, text_size = "medium", wrap = wrap and settings_wrap == true or false, on_select = action,
+            icon = icon, wrap = wrap and settings_wrap == true or false, on_select = action,
         }
     end
     local heading = book.title .. (book.author ~= "" and ("\n" .. book.author) or "")
@@ -2319,7 +2319,7 @@ open_book = function(book)
     add_row("Sleep timer", ICON_SLEEP, function() sleep_menu(book) end)
     rows[#rows + 1] = {
         type = "toggle", label = "Mark as finished", value = s.finished == true,
-        icon = ICON_FINISHED, text_size = "medium", on_change = function(value)
+        icon = ICON_FINISHED, on_change = function(value)
             local now = ensure_state(book.key)
             now.finished, now.finished_manual = value == true, true
             if not save_state() then plugin.show_toast("Finished state could not be saved") end

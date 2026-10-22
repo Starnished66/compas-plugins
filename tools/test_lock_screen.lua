@@ -10,8 +10,8 @@ photo_file:write("test photo")
 photo_file:close()
 plugin = {
   define = function(info)
-    assert(info.api_min == 18)
-    assert(info.version == "1.6")
+    assert(info.api_min == 19)
+    assert(info.version == "1.7")
   end,
   has_capability = function() return true end,
   sd_root = function() return folder end,

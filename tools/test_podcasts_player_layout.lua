@@ -106,7 +106,7 @@ local all = {
     ["filesystem.mkdir"] = true,
 }
 local state = boot(all)
-assert(state.minimum_api == 17, "plugin should require firmware API 17")
+assert(state.minimum_api == 19, "plugin should require firmware API 19")
 assert(#state.layouts == 1, "layout should be registered")
 assert(state.layouts[1].id == "example.podcasts.reading_room", "layout should use its unique ID")
 assert(state.storage.reading_room_auto_apply == "0", "legacy opt-out preference should be ignored")
