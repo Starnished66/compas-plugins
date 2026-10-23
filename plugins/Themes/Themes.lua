@@ -130,20 +130,20 @@ local ASSETS = {
     "sub_back/bg_search.png", "sub_back/btn_back.png", "sub_back/btn_search.png", "sub_back/close.png",
     "sub_back/btn_playlist.png", "sub_back/set.png",
     -- Status bar glyphs. The clock, battery, volume, transport, Wi-Fi and
-    -- Bluetooth indicators all render from the lucide set; the sprite digits,
+    -- Bluetooth indicators all render from the Breeze set; the sprite digits,
     -- colon/percent/am/pm and the older battery/bluetooth/play/pause/speaker/
     -- po/usb/a2dp/wifi_unconnect glyphs they replaced are no longer resolved
     -- by the app and are deliberately absent here.
-    "topbar/lucide_audio_lines.png", "topbar/lucide_headphones.png",
-    "topbar/lucide_volume_2.png", "topbar/lucide_usb.png",
-    "topbar/lucide_play.png", "topbar/lucide_pause.png",
-    "topbar/lucide_battery.png", "topbar/lucide_battery_charging.png",
-    "topbar/lucide_battery_full.png", "topbar/lucide_battery_medium.png",
-    "topbar/lucide_battery_low.png",
-    "topbar/lucide_bluetooth.png", "topbar/lucide_bluetooth_off.png",
-    "topbar/lucide_wifi.png", "topbar/lucide_wifi_high.png",
-    "topbar/lucide_wifi_low.png", "topbar/lucide_wifi_zero.png",
-    "topbar/lucide_wifi_off.png",
+    "topbar/breeze_audio_lines.png", "topbar/breeze_headphones.png",
+    "topbar/breeze_volume_2.png", "topbar/breeze_usb.png",
+    "topbar/breeze_play.png", "topbar/breeze_pause.png",
+    "topbar/breeze_battery.png", "topbar/breeze_battery_charging.png",
+    "topbar/breeze_battery_full.png", "topbar/breeze_battery_medium.png",
+    "topbar/breeze_battery_low.png",
+    "topbar/breeze_bluetooth.png", "topbar/breeze_bluetooth_off.png",
+    "topbar/breeze_wifi.png", "topbar/breeze_wifi_high.png",
+    "topbar/breeze_wifi_low.png", "topbar/breeze_wifi_zero.png",
+    "topbar/breeze_wifi_off.png",
     -- Per-network signal strength in the Wi-Fi list, built as
     -- topbar/wifi_connect_<level>.png at runtime.
     "topbar/wifi_connect_0.png", "topbar/wifi_connect_1.png", "topbar/wifi_connect_2.png", "topbar/wifi_connect_3.png",
