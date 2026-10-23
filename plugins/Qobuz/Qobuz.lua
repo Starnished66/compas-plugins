@@ -11,9 +11,9 @@ plugin.register_stream_media_tile().
 
 Playback goes through plugin.play_remote(). A stream link is only good for
 a few minutes, the player cannot ask for a fresh one when a later track
-starts, and a remote stream is 16-bit with no seeking. "Play these" therefore
-resolves at most 12 tracks and starts them immediately. Tap a single row
-when a later track fails to open.
+starts, and a remote stream is 16-bit with no seeking. "Play these" and
+selected rows resolve at most 12 tracks and start them immediately. A
+selected row queues the following available tracks too.
 
 Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 ]]
@@ -21,7 +21,7 @@ Copy Qobuz.lua to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.qobuz",
     name = "Qobuz",
-    version = "1.3.4",
+    version = "1.3.5",
     api_min = 14,
 })
 
@@ -380,28 +380,18 @@ local function file_url(track, callback)
     end)
 end
 
-local function play_one(track)
-    if track.streamable == false then
-        toast("Not in this subscription")
-        return
-    end
-    playback_generation = playback_generation + 1
-    local generation = playback_generation
-    file_url(track, function(remote, err)
-        if generation ~= playback_generation then return end
-        if not remote then
-            toast(err)
-            return
-        end
-        plugin.play_remote(remote)
-    end)
-end
-
-local function play_these(tracks)
+local function play_these(tracks, start_index)
+    local require_selected_track = start_index ~= nil
+    start_index = start_index or 1
     playback_generation = playback_generation + 1
     local generation = playback_generation
     local pending = {}
-    for i, track in ipairs(tracks) do
+    for i = start_index, #tracks do
+        local track = tracks[i]
+        if require_selected_track and i == start_index and track.streamable == false then
+            toast("Not in this subscription")
+            return
+        end
         if track.streamable ~= false and #pending < QUEUE_CAP then
             pending[#pending + 1] = track
         end
@@ -430,6 +420,13 @@ local function play_these(tracks)
                 resolved[#resolved + 1] = remote
             elseif not first_failure_reason then
                 first_failure_reason = err
+                -- The selected track must be first. Starting a later track
+                -- after its stream URL failed would make the user's choice
+                -- appear to have been ignored.
+                if require_selected_track and index == 1 then
+                    toast(err or "No stream link")
+                    return
+                end
             end
             step(index + 1)
         end)
@@ -457,7 +454,16 @@ local function show_tracks(title, rows)
     local shown = { { label = "Play these", play_all = true } }
     for i, row in ipairs(rows) do shown[#shown + 1] = row end
     show_rows(title, shown, function(row)
-        if row.play_all then play_these(rows) else play_one(row) end
+        if row.play_all then
+            play_these(rows)
+        else
+            for i, candidate in ipairs(rows) do
+                if candidate == row then
+                    play_these(rows, i)
+                    break
+                end
+            end
+        end
     end)
 end
 

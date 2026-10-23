@@ -16,9 +16,10 @@ theme-relative icon path Net Radio and Podcasts pass to
 plugin.register_stream_media_tile().
 
 Lossless is the quality that comes back as one FLAC file, which
-plugin.play_remote() can stream. Low and High are offered too; if the
-manifest is an MP4 rather than a bare FLAC or ADTS AAC, playback stops
-with an explanation. Hi-res arrives as DASH segments, and this player
+plugin.play_remote() can stream. Tapping a track starts a queue at that
+track, followed by up to 11 later playable tracks. Low and High are offered
+too; if the manifest is an MP4 rather than a bare FLAC or ADTS AAC, playback
+stops with an explanation. Hi-res arrives as DASH segments, and this player
 cannot reassemble those, so that quality is not listed.
 
 Stream links expire in a few minutes, a remote stream does not seek, and
@@ -29,7 +30,7 @@ to <SD card>/.plugins/ and restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.3",
+    version = "1.3.4",
     api_min = 14,
 })
 
@@ -73,7 +74,8 @@ local function toast(message)
     if message == "Logged out of Tidal" or message == "Nothing in this list can be streamed"
         or message == "No tracks" or message == "No albums" or message == "No artists"
         or message == "No playlists" or message == "No results"
-        or message == "Not available to stream" or message == "Still waiting for the phone"
+        or message == "Not available to stream" or message == "No stream link"
+        or message == "Still waiting for the phone"
         or message == "Quality updated" or message == "This quality is unavailable. Choose Lossless."
         or message == "Sign-in expired. Open the tile to try again." then
         plugin.show_toast(message)
@@ -506,25 +508,16 @@ local function stream_for(track, callback)
     end)
 end
 
-local function play_one(track)
-    if track.streamable == false then
-        toast("Not available to stream")
-        return
-    end
-    playback_generation = playback_generation + 1
-    local generation = playback_generation
-    stream_for(track, function(remote, err)
-        if generation ~= playback_generation then return end
-        if not remote then toast(err) return end
-        plugin.play_remote(remote)
-    end)
-end
-
-local function play_these(tracks)
+local function play_these(tracks, require_selected, start_index)
     playback_generation = playback_generation + 1
     local generation = playback_generation
     local pending = {}
-    for _, track in ipairs(tracks) do
+    for i = start_index or 1, #tracks do
+        local track = tracks[i]
+        if track.streamable == false and require_selected and #pending == 0 then
+            toast("Not available to stream")
+            return
+        end
         if track.streamable ~= false and #pending < QUEUE_CAP then
             pending[#pending + 1] = track
         end
@@ -546,9 +539,14 @@ local function play_these(tracks)
             plugin.queue_remote_list(resolved, 1)
             return
         end
-        stream_for(pending[index], function(remote)
+        stream_for(pending[index], function(remote, err)
             if generation ~= playback_generation then return end
-            if remote then resolved[#resolved + 1] = remote end
+            if remote then
+                resolved[#resolved + 1] = remote
+            elseif require_selected and index == 1 then
+                toast(err or "No stream link")
+                return
+            end
             step(index + 1)
         end)
     end
@@ -572,7 +570,17 @@ local function show_tracks(title, rows)
     local shown = { { label = "Play these", play_all = true } }
     for _, row in ipairs(rows) do shown[#shown + 1] = row end
     show_rows(title, shown, function(row)
-        if row.play_all then play_these(rows) else play_one(row) end
+        if row.play_all then
+            play_these(rows)
+        else
+            local selected_index
+            for i, candidate in ipairs(rows) do
+                if candidate == row then selected_index = i; break end
+            end
+            if selected_index then
+                play_these(rows, true, selected_index)
+            end
+        end
     end)
 end
 
