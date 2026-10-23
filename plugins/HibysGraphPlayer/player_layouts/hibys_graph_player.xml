@@ -15,9 +15,10 @@
             <animation prop="text_align" target="artist" start="1" end="1" duration="1" early_apply="false" />
             <animation prop="translate_x" target="album" start="0" end="88" duration="260" />
             <animation prop="translate_y" target="album" start="0" end="-458" duration="260" />
-            <animation prop="width" target="album" start="440" end="352" duration="260" />
+            <animation prop="width" target="album" start="300" end="352" duration="260" />
             <animation prop="text_align" target="album" start="1" end="1" duration="1" early_apply="false" />
             <animation prop="opa" target="quality_pill" start="255" end="0" duration="180" />
+            <animation prop="opa" target="song_count" start="255" end="0" duration="180" />
             <animation prop="opa" target="favorite_circle" start="255" end="0" duration="180" />
             <animation prop="opa" target="order_btn" start="255" end="0" duration="180" />
             <animation prop="opa" target="prev_btn" start="255" end="0" duration="180" />
@@ -44,9 +45,10 @@
             <animation prop="text_align" target="artist" start="1" end="1" duration="1" early_apply="false" />
             <animation prop="translate_x" target="album" start="88" end="0" duration="260" />
             <animation prop="translate_y" target="album" start="-458" end="0" duration="260" />
-            <animation prop="width" target="album" start="352" end="440" duration="260" />
+            <animation prop="width" target="album" start="352" end="300" duration="260" />
             <animation prop="text_align" target="album" start="1" end="1" duration="1" early_apply="false" />
             <animation prop="opa" target="quality_pill" start="0" end="255" duration="180" />
+            <animation prop="opa" target="song_count" start="0" end="255" duration="180" />
             <animation prop="opa" target="favorite_circle" start="0" end="255" duration="180" />
             <animation prop="opa" target="order_btn" start="0" end="255" duration="180" />
             <animation prop="opa" target="prev_btn" start="0" end="255" duration="180" />
@@ -77,7 +79,8 @@
         <lv_obj name="quality_pill" x="235" y="548" width="225" height="content" scrollable="false" clickable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
             <lv_label name="format_badge" text="" x="0" y="0" width="100%" height="content" style_text_font="font_16" style_text_align="right" style_pad_all="0" />
         </lv_obj>
-        <lv_label name="album" text="" x="20" y="580" width="440" height="content" style_text_font="font_16" style_text_align="left" style_pad_all="0" />
+        <lv_label name="song_count" text="" x="340" y="580" width="120" height="content" style_text_font="font_16" style_text_color="0x8a8a8a" style_text_align="right" style_pad_all="0" />
+        <lv_label name="album" text="" x="20" y="580" width="300" height="content" style_text_font="font_16" style_text_align="left" style_pad_all="0" />
         <lv_label name="seek_style" text="waveform_envelope" hidden="true" />
         <lv_slider name="progress_slider" x="20" y="618" width="440" height="32" style_radius="6" />
         <lv_label name="pos_label" text="0:00" x="20" y="658" width="100" height="content" style_text_font="font_16" style_text_align="left" style_pad_all="0" />

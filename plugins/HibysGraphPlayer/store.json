@@ -1,5 +1,5 @@
 {
-  "description": "A HiBy-style Now Playing screen with edge-to-edge artwork, a frosted glass footer, filled-envelope waveform seeking, and tap-to-open lyrics.",
+  "description": "A HiBy-style Now Playing screen with album artwork, codec and queue position, waveform seeking, and tap-to-open lyrics.",
   "category": "Customization",
   "author": "Compás",
   "files": [
