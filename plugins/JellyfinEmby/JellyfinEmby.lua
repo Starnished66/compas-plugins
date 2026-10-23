@@ -470,7 +470,8 @@ local function http_call(opts, callback)
 end
 
 -- Authenticated API requests guarded by account, navigation generation and list visibility
-local function request_api(method, endpoint, query_params, body, callback)
+-- background: stream lookups for the player, answered whatever screen is up.
+local function request_api(method, endpoint, query_params, body, callback, background)
     local token = nil
     if plugin.secrets and plugin.secrets.get then
         token = plugin.secrets.get("access_token")
@@ -517,11 +518,16 @@ local function request_api(method, endpoint, query_params, body, callback)
         read_timeout_ms = 20000,
         total_timeout_ms = 35000,
     }, function(status, resp_body, err, resp_headers)
-        if req_acc_gen ~= account_generation or req_nav_gen ~= nav_generation then
+        if req_acc_gen ~= account_generation then
+            if background then callback(nil, "Signed out") end
             return
         end
 
-        if req_handle and plugin.has_capability("ui.list_showing") and not plugin.is_list_showing(req_handle) then
+        if not background and req_nav_gen ~= nav_generation then
+            return
+        end
+
+        if not background and req_handle and plugin.has_capability("ui.list_showing") and not plugin.is_list_showing(req_handle) then
             return
         end
 
@@ -856,7 +862,7 @@ local function evaluate_track_compatibility(item)
 end
 
 -- Resolve detailed item metadata if missing before playback
-local function resolve_item_media(item, callback)
+local function resolve_item_media(item, callback, background)
     if not item or type(item) ~= "table" then
         callback(nil, nil, "Invalid track item")
         return
@@ -887,16 +893,18 @@ local function resolve_item_media(item, callback)
                 return
             end
             callback(detailed_item, d_compat, nil)
-        end)
+        end, background)
     else
         callback(nil, nil, err or "Unsupported audio format")
     end
 end
 
-local function build_remote_track(item, compat, token, server_kind)
+local function item_id(item)
+    return (type(item.Id) == "string" or type(item.Id) == "number") and tostring(item.Id) or "unknown"
+end
+
+local function stream_link(item, compat, token, server_kind)
     local token_param = (server_kind == "emby") and "api_key" or "ApiKey"
-    local it_id = (type(item.Id) == "string" or type(item.Id) == "number") and tostring(item.Id) or "unknown"
-    local endpoint = "Audio/" .. it_id .. "/stream." .. compat.container
     local stream_query = {
         static = "true",
         [token_param] = token,
@@ -904,10 +912,14 @@ local function build_remote_track(item, compat, token, server_kind)
     if compat.source_id then
         stream_query["mediaSourceId"] = compat.source_id
     end
+    local raw_url = api_url("Audio/" .. item_id(item) .. "/stream." .. compat.container, stream_query)
+    return raw_url and (raw_url .. "#." .. compat.container) or ""
+end
 
-    local raw_url = api_url(endpoint, stream_query)
-    local stream_url = raw_url and (raw_url .. "#." .. compat.container) or ""
-
+-- Queue entry without a stream link; the resolver fetches it on demand.
+local function track_metadata(item, token, server_kind)
+    local token_param = (server_kind == "emby") and "api_key" or "ApiKey"
+    local it_id = item_id(item)
     local art_id = (type(item.AlbumId) == "string" or type(item.AlbumId) == "number") and tostring(item.AlbumId) or it_id
     local artwork_url = api_url("Items/" .. art_id .. "/Images/Primary", {
         [token_param] = token,
@@ -924,20 +936,64 @@ local function build_remote_track(item, compat, token, server_kind)
     return {
         provider = (server_kind == "emby") and "emby" or "jellyfin",
         track_id = it_id,
-        stream_url = stream_url,
         verify_tls = is_tls_verify_enabled(),
         title = title,
         artist = artist,
         album = album,
         duration_ms = duration_ms,
         artwork_url = artwork_url,
-        codec = compat.codec,
-        sample_rate = compat.sample_rate,
-        bit_depth = compat.bit_depth,
-        channels = compat.channels,
-        bitrate_kbps = compat.bitrate_kbps,
     }
 end
+
+local function build_remote_track(item, compat, token, server_kind)
+    local track = track_metadata(item, token, server_kind)
+    track.stream_url = stream_link(item, compat, token, server_kind)
+    track.codec = compat.codec
+    track.sample_rate = compat.sample_rate
+    track.bit_depth = compat.bit_depth
+    track.channels = compat.channels
+    track.bitrate_kbps = compat.bitrate_kbps
+    return track
+end
+
+-- With playback.remote_resolve the player asks for each link when the track
+-- is about to play, so a whole album or page can be queued at once.
+local ON_DEMAND = plugin.has_capability("playback.remote_resolve")
+local EAGER_QUEUE_CAP = 12
+
+local function stream_error_reason(err)
+    err = tostring(err or "")
+    if err:find("Network error") then return "network" end
+    if err:find("Not logged in") or err:find("Signed out") or err:find("401") then return "auth" end
+    if err:find("Unsupported") or err:find("unsupported") then return "quality" end
+    return "unavailable"
+end
+
+local function on_remote_stream_needed(provider, track_id, request_id)
+    if provider ~= "jellyfin" and provider ~= "emby" then return end
+    local token = plugin.secrets and plugin.secrets.get and plugin.secrets.get("access_token")
+    if not token or token == "" then
+        plugin.provide_remote_stream(request_id, { error = "Not logged in", reason = "auth" })
+        return
+    end
+    resolve_item_media({ Id = track_id }, function(item, compat, err)
+        if not compat then
+            plugin.provide_remote_stream(request_id, { error = err or "No stream link", reason = stream_error_reason(err) })
+            return
+        end
+        plugin.provide_remote_stream(request_id, {
+            stream_url = stream_link(item, compat, token, plugin.storage.get("server_kind", "jellyfin")),
+            codec = compat.codec,
+            sample_rate = compat.sample_rate,
+            bit_depth = compat.bit_depth,
+            channels = compat.channels,
+            bitrate_kbps = compat.bitrate_kbps,
+            -- The link carries the session token, valid until sign-out.
+            url_ttl_s = 3600,
+        })
+    end, true)
+end
+if ON_DEMAND then plugin.on("remote_stream_needed", on_remote_stream_needed) end
 
 local function play_single_item(item)
     resolve_item_media(item, function(detailed_item, compat, err)
@@ -970,78 +1026,77 @@ local function play_items_queue(items, selected_item_id)
         plugin.show_toast("Please log in first")
         return
     end
+    local server_kind = plugin.storage.get("server_kind", "jellyfin")
 
-    local function proceed_queue(resolved_items)
-        local server_kind = plugin.storage.get("server_kind", "jellyfin")
-        local tracks = {}
-        local selected_queue_index = 1
-        local unsupported_count = 0
-        local unresolved_count = 0
-
-        for _, it in ipairs(resolved_items) do
-            if #tracks >= 500 then break end
-            local compat, err = evaluate_track_compatibility(it)
-            if compat then
-                local meta = build_remote_track(it, compat, token, server_kind)
-                tracks[#tracks + 1] = meta
-                if selected_item_id and tostring(it.Id) == tostring(selected_item_id) then
-                    selected_queue_index = #tracks
-                end
-            elseif err == "missing_metadata" then
-                unresolved_count = unresolved_count + 1
-            else
-                unsupported_count = unsupported_count + 1
-            end
-        end
-
-        if #tracks == 0 then
-            plugin.show_toast("No compatible playable tracks found in album")
-            return
-        end
-
-        if unsupported_count > 0 and unresolved_count > 0 then
-            plugin.show_toast(string.format("Queued %d tracks (%d unsupported, %d unresolved metadata)", #tracks, unsupported_count, unresolved_count))
-        elseif unresolved_count > 0 then
-            plugin.show_toast(string.format("Queued %d tracks (%d unresolved metadata skipped)", #tracks, unresolved_count))
-        elseif unsupported_count > 0 then
-            plugin.show_toast(string.format("Queued %d tracks (%d unsupported skipped)", #tracks, unsupported_count))
-        else
-            plugin.show_toast(string.format("Queued %d tracks", #tracks))
-        end
-
-        plugin.queue_remote_list(tracks, selected_queue_index)
-    end
-
+    local start_index = 1
     if selected_item_id then
-        local selected_item = nil
-        local selected_index = nil
+        start_index = nil
         for idx, it in ipairs(items) do
-            if type(it) == "table" and (tostring(it.Id) == tostring(selected_item_id)) then
-                selected_item = it
-                selected_index = idx
+            if type(it) == "table" and tostring(it.Id) == tostring(selected_item_id) then
+                start_index = idx
                 break
             end
         end
-
-        if not selected_item then
+        if not start_index then
             plugin.show_toast("Selected track not found in list")
             return
         end
+    end
 
-        resolve_item_media(selected_item, function(detailed_item, sel_compat, sel_err)
-            if not sel_compat then
-                plugin.show_toast("Selected track is unsupported: " .. tostring(sel_err or "format"))
+    if ON_DEMAND then
+        local queue, queue_start = {}, 1
+        for idx, it in ipairs(items) do
+            if #queue >= 500 then break end
+            if type(it) == "table" and it.Id then
+                queue[#queue + 1] = track_metadata(it, token, server_kind)
+                if idx == start_index then queue_start = #queue end
+            end
+        end
+        if #queue == 0 then
+            plugin.show_toast("No tracks to play")
+            return
+        end
+        plugin.show_toast(string.format("Queued %d tracks", #queue))
+        plugin.queue_remote_list(queue, queue_start)
+        return
+    end
+
+    -- Older players need every link before the queue starts: resolve a
+    -- short queue from the selected track, like Qobuz and Tidal.
+    local pending = {}
+    for idx = start_index, #items do
+        if type(items[idx]) == "table" then pending[#pending + 1] = items[idx] end
+        if #pending >= EAGER_QUEUE_CAP then break end
+    end
+    plugin.show_toast("Preparing playback")
+    local tracks, skipped = {}, 0
+    local function step(k)
+        if k > #pending then
+            if #tracks == 0 then
+                plugin.show_toast("No compatible playable tracks found")
                 return
             end
-            local items_copy = {}
-            for i, it in ipairs(items) do
-                items_copy[i] = (i == selected_index) and detailed_item or it
+            if skipped > 0 then
+                plugin.show_toast(string.format("Queued %d tracks (%d unsupported skipped)", #tracks, skipped))
+            else
+                plugin.show_toast(string.format("Queued %d tracks", #tracks))
             end
-            proceed_queue(items_copy)
-        end)
-    else
-        proceed_queue(items)
+            plugin.queue_remote_list(tracks, 1)
+            return
+        end
+        resolve_item_media(pending[k], function(detailed_item, compat, err)
+            if compat then
+                tracks[#tracks + 1] = build_remote_track(detailed_item, compat, token, server_kind)
+            elseif k == 1 and selected_item_id then
+                plugin.show_toast("Selected track is unsupported: " .. tostring(err or "format"))
+                return
+            else
+                skipped = skipped + 1
+            end
+            step(k + 1)
+        end, true)
     end
+    step(1)
 end
 
 -- Dynamic format inspection
