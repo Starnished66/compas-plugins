@@ -1,4 +1,4 @@
-plugin.define({ id = "example.themes", name = "Themes", version = "3.16.2", api_min = 9 })
+plugin.define({ id = "example.themes", name = "Themes", version = "3.16.3", api_min = 9 })
 
 -- Loader/switcher for theme DEFINITION FILES, not a hardcoded theme list --
 -- every *.theme file under SD/Themes/ becomes its own selectable entry,
@@ -204,9 +204,10 @@ local ASSETS = {
 -- explicit reset call is the only way back to native once anything else
 -- has called it this session).
 local DEFAULT_THEME = {
-    name = "Default",
-    colors = { screen = 0x000000, card = 0x202020, list_row = 0x1C1C1E,
-               text_primary = 0xE6E6E6, text_muted = 0xA0A0A0 },
+    name = "Breeze Dark",
+    -- The player's native palette (KDE Breeze Dark), so Default matches it.
+    colors = { screen = 0x141618, card = 0x292C30, list_row = 0x1D1F22,
+               text_primary = 0xFCFCFC, text_muted = 0xA1A9B1 },
     icon_root = "theme2",
     icon_overrides = {},
     home_tiles = {},

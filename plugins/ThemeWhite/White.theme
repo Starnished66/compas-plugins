@@ -11,10 +11,12 @@
 # unreadable either way, if something interrupted the apply mid-way -- see
 # Themes.lua's own apply_theme() comment for the actual fix (colors first,
 # each independently pcall'd).
-name=White
-screen=0xE6F6FF
-card=0xF2F2F2
-list_row=0xECECEC
-text_primary=0x1A1A1A
-text_muted=0x696969
+# KDE Breeze Light (Plasma 6): Window background behind white View/Button
+# surfaces, Normal and Inactive text.
+name=Breeze Light
+screen=0xEFF0F1
+card=0xFCFCFC
+list_row=0xFFFFFF
+text_primary=0x232629
+text_muted=0x707D8A
 icon_root=theme1
