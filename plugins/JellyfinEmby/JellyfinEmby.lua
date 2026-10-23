@@ -1202,7 +1202,16 @@ execute_view = function(view)
     if view.type == "libraries" then
         local endpoint = (user_id ~= "") and ("Users/" .. user_id .. "/Views") or "UserViews"
         request_api("GET", endpoint, nil, nil, function(data, err)
-            if err then plugin.show_toast(err) return end
+            if err then
+                -- Settings & Account lives in this list, so a failed load
+                -- must still offer it (wrong server, sign out).
+                plugin.show_toast(err)
+                render_screen("Music Libraries", { "Retry", "Settings & Account" }, function(index)
+                    if index == 1 then execute_view(view)
+                    elseif index == 2 then open_settings() end
+                end)
+                return
+            end
 
             local items = (type(data) == "table" and type(data.Items) == "table") and data.Items or {}
             local music_libs = {}
