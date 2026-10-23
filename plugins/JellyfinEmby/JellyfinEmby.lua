@@ -271,8 +271,10 @@ local function save_servers(list)
     return plugin.storage.set("servers", plugin.json_encode(list))
 end
 
+-- json_decode returns numbers as floats; format the id as an integer so
+-- the key matches the one written at sign-in ("token_1", not "token_1.0").
 local function server_token_key(server)
-    return "token_" .. tostring(server.id)
+    return string.format("token_%d", math.floor(tonumber(server.id) or 0))
 end
 
 local function server_label(server)
