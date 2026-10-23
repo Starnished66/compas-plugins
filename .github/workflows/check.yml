@@ -17,11 +17,8 @@ jobs:
         run: .github/scripts/setup-lua.sh
       - name: Compile every plugin
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
-      - name: Test listening player layouts
-        run: |
-          lua tools/test_reading_room_player.lua
-          lua tools/test_audiobooks_player_layout.lua
-          lua tools/test_podcasts_player_layout.lua
+      - name: Run the plugin tests
+        run: for t in tools/test_*.lua; do echo "$t"; lua "$t"; done
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
       - name: Validate the store index

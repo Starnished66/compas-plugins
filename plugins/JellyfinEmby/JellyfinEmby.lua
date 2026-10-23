@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.jellyfin_emby",
     name = "Jellyfin & Emby",
-    version = "1.1.1",
+    version = "1.1.2",
     api_min = 16,
 })
 
@@ -1670,7 +1670,11 @@ local function open_stream_media_tile()
 end
 
 -- Plugin entry registrations
-plugin.register_stream_media_tile("Jellyfin / Emby", open_stream_media_tile, "stream_media/radio.png")
+-- Players with ui.breeze_stream_icons ship a Jellyfin-tinted Breeze server
+-- icon; older ones keep the generic stream tile art.
+local tile_icon = plugin.has_capability and plugin.has_capability("ui.breeze_stream_icons")
+    and "stream_media/jellyfin_row.png" or "stream_media/radio.png"
+plugin.register_stream_media_tile("Jellyfin / Emby", open_stream_media_tile, tile_icon)
 plugin.register_list_item("settings", "Jellyfin & Emby", open_settings)
 
 -- Test export hook

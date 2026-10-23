@@ -16,23 +16,28 @@ theme-relative icon path Net Radio and Podcasts pass to
 plugin.register_stream_media_tile().
 
 Lossless is the quality that comes back as one FLAC file, which
-plugin.play_remote() can stream. Tapping a track starts a queue at that
-track, followed by up to 11 later playable tracks. Low and High are offered
+plugin.play_remote() can stream. Tapping a track starts it first, then the
+queue wraps through the available collection up to 500 tracks. Low and High are offered
 too; if the manifest is an MP4 rather than a bare FLAC or ADTS AAC, playback
 stops with an explanation. Hi-res arrives as DASH segments, and this player
 cannot reassemble those, so that quality is not listed.
 
-Stream links expire in a few minutes, a remote stream does not seek, and
-it stays 16-bit. "Play these" resolves at most 12 tracks. Copy Tidal.lua
-to <SD card>/.plugins/ and restart.
+Stream links expire within minutes. Players with playback.remote_resolve
+resolve fresh links on demand for up to 500 tracks; older players get 12
+tracks resolved up front. Stream format and server support determine
+quality and seeking behavior. Copy Tidal.lua to <SD card>/.plugins/ and
+restart.
 ]]
 
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.4",
-    api_min = 14,
+    version = "1.3.6",
+    api_min = 17,
 })
+
+-- Older API 17 players lack on-demand links and keep the short eager queue.
+local ON_DEMAND = plugin.has_capability("playback.remote_resolve")
 
 if not plugin.has_capability("playback.remote") then
     plugin.show_toast("Tidal needs a player build with remote playback")
@@ -50,7 +55,10 @@ local CLIENT_VERSION = "2025.7.16"
 local PAGE = 25
 local BROWSE_CAP = 475 -- plus the "Play these" row, within show_list's 500 rows
 local SEARCH_CAP = 100
-local QUEUE_CAP = 12
+local REMOTE_QUEUE_CAP = 500
+local EAGER_QUEUE_CAP = 12
+local TRACK_FETCH_CAP = REMOTE_QUEUE_CAP
+local remote_tracks = {}
 local JSON_LIMIT = 524288
 local QUALITIES = {
     { id = "LOSSLESS", label = "Lossless FLAC (CD)" },
@@ -376,6 +384,13 @@ local function album_from(obj)
     }
 end
 
+local function known_codec(value)
+    if type(value) ~= "string" then return nil end
+    value = value:lower()
+    if value == "flac" or value == "mp3" or value == "aac" then return value end
+    return nil
+end
+
 local function track_from(obj, album_hint)
     if type(obj) ~= "table" or obj.id == nil then return nil end
     local hint = album_hint or {}
@@ -386,6 +401,8 @@ local function track_from(obj, album_hint)
     local cover = ""
     if album and album.cover then cover = image_url(album.cover, 320) end
     if cover == "" then cover = hint.cover or "" end
+    local verify_tls
+    if type(obj.verify_tls) == "boolean" then verify_tls = obj.verify_tls end
     local streamable = true
     if obj.allowStreaming == false or obj.streamReady == false then streamable = false end
     return {
@@ -396,6 +413,13 @@ local function track_from(obj, album_hint)
         album_id = album_id,
         cover = cover,
         duration = tonumber(obj.duration) or 0,
+        sample_rate = tonumber(obj.sampleRate or obj.sample_rate),
+        bit_depth = tonumber(obj.bitDepth or obj.bit_depth),
+        channels = tonumber(obj.channels),
+        bitrate_kbps = tonumber(obj.bitrateKbps or obj.bitrate_kbps),
+        replaygain_db = tonumber(obj.replayGainDb or obj.replaygain_db),
+        verify_tls = verify_tls,
+        codec = known_codec(obj.codec),
         streamable = streamable,
     }
 end
@@ -502,13 +526,120 @@ local function stream_for(track, callback)
             duration_ms = math.floor((track.duration or 0) * 1000),
             artwork_url = track.cover,
             codec = codec,
-            sample_rate = tonumber(data.sampleRate) or 0,
-            bit_depth = tonumber(data.bitDepth) or 16,
+            sample_rate = tonumber(data.sampleRate) or track.sample_rate or 0,
+            bit_depth = tonumber(data.bitDepth) or track.bit_depth or 16,
+            channels = tonumber(data.channels) or track.channels,
+            bitrate_kbps = tonumber(data.bitrateKbps or data.bitrate_kbps) or track.bitrate_kbps,
         })
     end)
 end
 
-local function play_these(tracks, require_selected, start_index)
+-- Maps this plugin's English errors to player reason codes, which the
+-- player shows translated.
+local function error_reason(err)
+    err = tostring(err or "")
+    if err:find("subscription") then return "subscription" end
+    if err:find("quality") then return "quality" end
+    if err:find("encrypted") then return "protected" end
+    if err:find("unavailable") or err:find("no longer available") then return "unavailable" end
+    if err:find("[Ss]ign") or err:find("[Ss]ession") or err:find("[Ll]og") then return "auth" end
+    return nil
+end
+
+local function on_remote_stream_needed(provider, track_id, request_id)
+    if provider ~= "tidal" then return end
+    -- After a plugin reload the queue outlives remote_tracks; the id is enough.
+    local track = remote_tracks[tostring(track_id)] or { id = track_id }
+    local generation = playback_generation
+    stream_for(track, function(remote, err)
+        if generation ~= playback_generation then
+            plugin.provide_remote_stream(request_id, { error = "Playback request was replaced" })
+            return
+        end
+        if not remote then
+            plugin.provide_remote_stream(request_id, { error = err or "No stream link", reason = error_reason(err) })
+            return
+        end
+        plugin.provide_remote_stream(request_id, {
+            stream_url = remote.stream_url,
+            codec = remote.codec,
+            sample_rate = remote.sample_rate,
+            bit_depth = remote.bit_depth,
+            channels = remote.channels,
+            bitrate_kbps = remote.bitrate_kbps,
+            url_ttl_s = 60,
+        })
+    end)
+end
+if ON_DEMAND then plugin.on("remote_stream_needed", on_remote_stream_needed) end
+
+local function queue_on_demand(tracks, start_index, require_selected)
+    playback_generation = playback_generation + 1
+    local generation = playback_generation
+    local start = start_index or 1
+    local first = tracks[start]
+    if require_selected and first and first.streamable == false then
+        toast("Not available to stream")
+        return
+    end
+    local ordered = {}
+    local function append_range(from, to)
+        for i = from, to do
+            local track = tracks[i]
+            if track.streamable ~= false then ordered[#ordered + 1] = track end
+            if #ordered >= REMOTE_QUEUE_CAP then return true end
+        end
+        return false
+    end
+    if append_range(start, #tracks) then
+        -- The queue cap was reached after the selected track.
+    elseif start > 1 then
+        append_range(1, start - 1)
+    end
+    if #ordered == 0 then
+        toast("Nothing in this list can be streamed")
+        return
+    end
+    remote_tracks = {}
+    local queue = {}
+    for _, track in ipairs(ordered) do
+        local id = tostring(track.id)
+        remote_tracks[id] = {
+            id = track.id,
+            title = clip_utf8(track.title, 127),
+            artist = clip_utf8(track.artist, 127),
+            album = clip_utf8(track.album, 127),
+            duration = track.duration,
+            cover = track.cover,
+            sample_rate = track.sample_rate,
+            bit_depth = track.bit_depth,
+            channels = track.channels,
+            bitrate_kbps = track.bitrate_kbps,
+        }
+        queue[#queue + 1] = {
+            provider = "tidal",
+            track_id = id,
+            title = track.title,
+            artist = track.artist,
+            album = track.album,
+            duration_ms = math.floor((tonumber(track.duration) or 0) * 1000),
+            artwork_url = track.cover,
+            sample_rate = track.sample_rate,
+            bit_depth = track.bit_depth,
+            channels = track.channels,
+            bitrate_kbps = track.bitrate_kbps,
+            replaygain_db = track.replaygain_db,
+            verify_tls = track.verify_tls,
+            codec = track.codec,
+        }
+    end
+    if generation ~= playback_generation then return end
+    plugin.queue_remote_list(queue, 1)
+end
+
+-- Players without playback.remote_resolve need every link before the
+-- queue starts, and links expire, so only a short queue is resolved.
+local function play_these_eager(tracks, require_selected, start_index)
     playback_generation = playback_generation + 1
     local generation = playback_generation
     local pending = {}
@@ -518,10 +649,10 @@ local function play_these(tracks, require_selected, start_index)
             toast("Not available to stream")
             return
         end
-        if track.streamable ~= false and #pending < QUEUE_CAP then
+        if track.streamable ~= false and #pending < EAGER_QUEUE_CAP then
             pending[#pending + 1] = track
         end
-        if #pending >= QUEUE_CAP then break end
+        if #pending >= EAGER_QUEUE_CAP then break end
     end
     if #pending == 0 then
         toast("Nothing in this list can be streamed")
@@ -553,6 +684,14 @@ local function play_these(tracks, require_selected, start_index)
     step(1)
 end
 
+local function play_these(tracks, require_selected, start_index)
+    if ON_DEMAND then
+        queue_on_demand(tracks, start_index or 1, require_selected)
+    else
+        play_these_eager(tracks, require_selected, start_index)
+    end
+end
+
 local function track_rows(list, album_hint)
     local rows = {}
     for _, obj in ipairs(list) do
@@ -568,7 +707,7 @@ end
 local function show_tracks(title, rows)
     if #rows == 0 then toast("No tracks") return end
     local shown = { { label = "Play these", play_all = true } }
-    for _, row in ipairs(rows) do shown[#shown + 1] = row end
+    for i = 1, math.min(#rows, BROWSE_CAP) do shown[#shown + 1] = rows[i] end
     show_rows(title, shown, function(row)
         if row.play_all then
             play_these(rows)
@@ -598,7 +737,7 @@ local function open_album(album, offset, depth, parent)
             end
             local page = items_of(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
+            if #page == PAGE and #all < TRACK_FETCH_CAP then fetch(page_offset + PAGE, active_handle)
             else show_tracks(album.title, track_rows(all, album)) end
         end)
     end
@@ -631,7 +770,7 @@ local function open_playlist(playlist, offset, depth, parent)
             end
             local page = items_of(data)
             for _, obj in ipairs(page) do all[#all + 1] = obj end
-            if #page == PAGE and #all < BROWSE_CAP then fetch(page_offset + PAGE, active_handle)
+            if #page == PAGE and #all < TRACK_FETCH_CAP then fetch(page_offset + PAGE, active_handle)
             else show_tracks(playlist.name, track_rows(all)) end
         end)
     end

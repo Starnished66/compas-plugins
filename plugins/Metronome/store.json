@@ -1,5 +1,5 @@
 {
-  "description": "Metronome with tempo, time signature, subdivision figures and three click sounds. It uses the player's own playback, so starting it replaces what is playing.",
+  "description": "Metronome with tempo, time signature, subdivision figures and three click sounds. On current players it pauses your music and leaves the queue and Now Playing untouched; older players replace what is playing.",
   "category": "Audio",
   "author": "Compás",
   "publish": true,

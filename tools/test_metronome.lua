@@ -366,6 +366,59 @@ do
     check(not exists(path) and S3.crossfade == true, "stale files swept and crossfade restored on load")
 end
 
+-- Players with audio.loop: the bar loops outside the queue and Now Playing.
+local function with_loop(S)
+    S.loop_starts, S.loop_active, S.toggles = {}, false, 0
+    S.env.plugin.audio_loop_start = function(path)
+        S.loop_starts[#S.loop_starts + 1] = path
+        if S.playing and not S.paused then S.paused = true end
+        S.loop_active = true
+        return true
+    end
+    S.env.plugin.audio_loop_stop = function() S.loop_active = false end
+    S.env.plugin.audio_loop_active = function() return S.loop_active end
+    S.env.plugin.toggle_pause = function()
+        S.toggles = S.toggles + 1
+        S.paused = not S.paused
+        if not S.paused then S.loop_active = false end
+    end
+end
+
+do
+    local S = boot(nil, function(S)
+        with_loop(S)
+        S.current, S.playing, S.position, S.crossfade = SD .. "/Music/song.flac", true, 42.5, true
+    end)
+    S.items[1].on_select()
+    check(#S.loop_starts == 1 and #S.played == 0, "loop mode starts the clip without play_file")
+    check(#S.crossfade_sets == 0 and #S.loops == 0, "loop mode leaves crossfade and A-B loop alone")
+    check(S.paused and S.current == SD .. "/Music/song.flac", "loop mode only pauses the music")
+    local path = S.loop_starts[1]
+    local exp = expected_for({ bpm = 100, num = 4, den = 4, count = "eighth", sub = "none" })
+    local hdr = analyse(read_all(path), exp.rate)
+    check(hdr.datalen == exp.loop_frames * 4, "loop clip is exactly one loop long")
+    check(S.items[1].label == "Stop", "loop mode shows Stop while running")
+
+    S.items[2].on_change(140)
+    check(#S.loop_starts == 2 and S.loop_starts[2] ~= path, "tempo change replaces the clip")
+    check(not exists(path), "previous clip removed after the replacement starts")
+
+    S.items[1].on_select()
+    check(not S.loop_active and S.toggles == 1 and not S.paused, "stop ends the loop and resumes the music")
+    check(not exists(S.loop_starts[2]), "clip removed on stop")
+end
+
+do
+    local S = boot(nil, with_loop)
+    S.items[1].on_select()
+    check(S.toggles == 0, "nothing to resume when no music was playing")
+    S.loop_active = false
+    S.intervals[1]()
+    check(S.toasts[#S.toasts] == "Metronome stopped", "loop ended by the player is reported")
+    S.menu_cb()
+    check(S.items[1].label == "Start", "menu shows Start after the player ended the loop")
+end
+
 rm_files()
 os.execute("rmdir '" .. SD .. "' 2>/dev/null")
 print(string.format("%d checks, %d failures", checks, failures))

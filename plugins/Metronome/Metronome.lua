@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.metronome",
     name = "Metronome",
-    version = "1.3.0",
+    version = "1.4.1",
     api_min = 17,
 })
 
@@ -24,9 +24,12 @@ plugin.define({
 -- beyond the file length, and it converts seconds to frames by truncation, so
 -- the end is requested half a frame late: (loop_frames + 0.5) / rate.
 --
--- Starting the metronome replaces whatever is playing (it uses the player's
--- playback). The previous track and position can be resumed on stop; the
--- previous queue cannot be restored.
+-- Players with the "audio.loop" capability repeat the bar with
+-- plugin.audio_loop_start() instead: the bar is exactly one loop long, it
+-- never becomes the current track, and music is only paused, so the queue and
+-- Now Playing are untouched. Older players fall back to playing the file as a
+-- track: the previous track and position can be resumed on stop, but not the
+-- previous queue.
 
 local MIN_LOOP_SEC = 3
 local TAIL_DIV = 4              -- silent tail after the loop: rate / TAIL_DIV frames
@@ -69,6 +72,11 @@ local FILES = { DIR .. "/metronome_a.wav", DIR .. "/metronome_b.wav" }
 -- Settings
 
 local cfg = {}
+
+local function loop_supported()
+    return plugin.has_capability and plugin.has_capability("audio.loop") and
+        plugin.audio_loop_start ~= nil
+end
 
 -- Plays without opening Now Playing where the player supports it, so the
 -- metronome screen stays in front.
@@ -149,7 +157,7 @@ end
 
 -- Builds the click schedule and loop length for a configuration. Pure
 -- integer arithmetic; see the header comment for the formulas.
-local function build_plan(c)
+local function build_plan(c, exact)
     local pulses = c.num
     if c.den == 8 and c.count == "dotted" and c.num % 3 == 0 then pulses = c.num // 3 end
     local per_bar_x60 = 60 * pulses
@@ -182,7 +190,7 @@ local function build_plan(c)
     return {
         rate = rate, bars = bars, pulses = pulses, events = events,
         loop_frames = loop_frames,
-        total_frames = loop_frames + rate // TAIL_DIV,
+        total_frames = exact and loop_frames or loop_frames + rate // TAIL_DIV,
         loop_end = (loop_frames + 0.5) / rate,
     }
 end
@@ -313,6 +321,13 @@ local function finish(restore, stop_audio)
     local path = run.path
     run.running = false
     stop_timer()
+    if run.loop then
+        if plugin.audio_loop_active() then plugin.audio_loop_stop() end
+        if restore and run.paused_music and plugin.is_paused() then plugin.toggle_pause() end
+        cleanup_files()
+        run = { running = false }
+        return
+    end
     local current = plugin.get_current_track_path and plugin.get_current_track_path()
     if current == path and plugin.get_ab_loop and plugin.get_ab_loop() and plugin.clear_ab_loop then
         plugin.clear_ab_loop()
@@ -358,7 +373,7 @@ end
 
 -- Renders the bar for the current settings and plays it.
 local function launch()
-    local plan = build_plan(cfg)
+    local plan = build_plan(cfg, run.loop)
     local ok_dir, dir_err = true, nil
     if plugin.mkdir then ok_dir, dir_err = plugin.mkdir(DIR) end
     if not ok_dir then return false, "Could not create the click folder" end
@@ -373,6 +388,15 @@ local function launch()
     run.armed, run.pending, run.need_rearm, run.ticks = false, true, false, 0
     run.dirty = nil
     run.running = true
+    if run.loop then
+        if not plugin.audio_loop_start(path) then return false, "Could not play the click file" end
+        run.pending = false
+        if run.old_path then
+            os.remove(run.old_path)
+            run.old_path = nil
+        end
+        return true
+    end
     play_here(path)
     return true
 end
@@ -380,6 +404,21 @@ end
 local function on_tick()
     if not run.running then
         stop_timer()
+        return
+    end
+    if run.loop then
+        if not plugin.audio_loop_active() then
+            finish(false, false)
+            plugin.show_toast("Metronome stopped")
+            return
+        end
+        if run.dirty and now() - run.dirty >= DEBOUNCE then
+            local ok, err = launch()
+            if not ok then
+                finish(false, true)
+                plugin.show_toast(err or "Metronome stopped")
+            end
+        end
         return
     end
     local current = plugin.get_current_track_path()
@@ -441,6 +480,19 @@ local function capture_previous()
 end
 
 local function start_metronome()
+    if run.running then return true end
+    if loop_supported() then
+        run = { running = false, loop = true, paused_music = plugin.is_playing() }
+        local ok, err = launch()
+        if not ok then
+            run = { running = false }
+            cleanup_files()
+            plugin.show_toast(err or "Could not start the metronome")
+            return false
+        end
+        start_timer()
+        return true
+    end
     if not plugin.has_capability("playback.ab_loop") then
         plugin.show_toast("This player cannot loop audio natively")
         return false
@@ -497,7 +549,7 @@ if plugin.on then
             if target > 1 then plugin.seek(target) end
             return
         end
-        if not run.running then return end
+        if not run.running or run.loop then return end
         if current == run.path then
             if run.pending then try_arm() end
         elseif not run.pending then
@@ -505,16 +557,16 @@ if plugin.on then
         end
     end)
     plugin.on("paused", function()
-        if run.running and not run.pending then run.need_rearm = true end
+        if run.running and not run.loop and not run.pending then run.need_rearm = true end
     end)
     plugin.on("resumed", function()
-        if run.running and not run.pending and run.need_rearm then
+        if run.running and not run.loop and not run.pending and run.need_rearm then
             run.ticks = 0
             try_arm()
         end
     end)
     plugin.on("stopped", function()
-        if run.running and not run.pending then finish(false, false) end
+        if run.running and not run.loop and not run.pending then finish(false, false) end
     end)
 end
 
@@ -547,12 +599,25 @@ end
 local open_tempo_steps, open_rhythm, open_levels, open_playback
 
 local function show_about()
+    local playback
+    if loop_supported() then
+        playback = {
+            { label = "Starting the metronome pauses what is playing; your queue and Now Playing stay as they were. On stop it can resume the music.", wrap = true },
+            { label = "The click bar is looped natively by the player, so timing is sample accurate. Playing music ends the metronome.", wrap = true },
+        }
+    else
+        playback = {
+            { label = "Starting the metronome replaces what is playing. On stop it can resume the previous track and position; the previous queue is not restored.", wrap = true },
+            { label = "The click bar is a WAV file played by the player and looped natively, so timing is sample accurate. Pausing, seeking, changing track or turning on crossfade or playback speed ends the loop.", wrap = true },
+        }
+    end
     plugin.show_list("About Metronome", {
-        { label = "Starting the metronome replaces what is playing. On stop it can resume the previous track and position; the previous queue is not restored.", wrap = true },
-        { label = "The click bar is a WAV file played by the player and looped natively, so timing is sample accurate. Pausing, seeking, changing track or turning on crossfade or playback speed ends the loop.", wrap = true },
+        playback[1],
+        playback[2],
         { label = "Tempo counts " .. tempo_unit() .. ". In 6/8, 9/8 and 12/8 you can count dotted quarter notes instead of eighths.", wrap = true },
         { label = "Level 0 turns a sound off. With Accent beat 1 off, beat 1 uses the beat sound.", wrap = true },
-        { label = "Crossfade is switched off while the metronome runs and restored when it stops.", wrap = true },
+        { label = loop_supported() and "Crossfade and playback speed are not affected." or
+            "Crossfade is switched off while the metronome runs and restored when it stops.", wrap = true },
     }, function() end)
 end
 
@@ -702,7 +767,7 @@ end
 open_playback = function(update)
     local items = {
         {
-            type = "toggle", label = "Resume previous track on stop", value = cfg.restore == 1,
+            type = "toggle", label = loop_supported() and "Resume music on stop" or "Resume previous track on stop", value = cfg.restore == 1,
             on_change = function(value)
                 cfg.restore = value and 1 or 0
                 save_settings()
