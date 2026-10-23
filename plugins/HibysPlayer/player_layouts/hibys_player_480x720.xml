@@ -51,27 +51,27 @@
             <animation prop="opa" target="dismiss_btn" start="0" end="255" duration="80" />
         </timeline>
     </animations>
-    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_color="0x090d11" style_bg_opa="0" style_text_color="0xf2f3f4" style_border_width="0" style_radius="0" style_pad_all="0">
-        <lv_obj name="overlay_panel" x="0" y="0" width="#screen_w" height="#screen_h" scrollable="false" clickable="false" style_bg_color="0x090d11" style_bg_opa="255" style_border_width="0" style_radius="0" style_pad_all="0">
+    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0">
+        <lv_obj name="overlay_panel" x="0" y="0" width="#screen_w" height="#screen_h" scrollable="false" clickable="false" style_bg_opa="255" style_border_width="0" style_radius="0" style_pad_all="0">
             <lv_image name="background_img" x="0" y="0" width="#screen_w" height="#screen_h" style_image_recolor="0xffffff" style_image_recolor_opa="40" />
         </lv_obj>
-        <lv_obj name="cover_card" x="0" y="0" width="480" height="480" scrollable="false" style_radius="0" style_clip_corner="true" style_bg_color="0x090d11" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+        <lv_obj name="cover_card" x="0" y="0" width="480" height="480" scrollable="false" style_radius="0" style_clip_corner="true" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
             <lv_image name="cover_img" src="default_cover" align="center" />
         </lv_obj>
         <lv_obj name="dismiss_btn" x="8" y="40" width="44" height="44" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
             <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="24" height="24" inner_align="contain" />
         </lv_obj>
-        <lv_label name="title" text="" x="20" y="490" width="376" height="content" style_text_font="font_22" style_text_color="0xf2f3f4" style_text_align="left" style_pad_all="0" />
+        <lv_label name="title" text="" x="20" y="490" width="376" height="content" style_text_font="font_22" style_text_align="left" style_pad_all="0" />
         <lv_obj name="favorite_circle" x="412" y="484" width="44" height="44" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0">
             <lv_image name="favorite_icon" src="collect_out" width="32" height="32" align="center" inner_align="contain" />
         </lv_obj>
-        <lv_label name="artist" text="" x="20" y="532" width="200" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="left" style_pad_all="0" />
+        <lv_label name="artist" text="" x="20" y="532" width="200" height="content" style_text_font="font_16" style_text_align="left" style_pad_all="0" />
         <lv_obj name="quality_pill" x="235" y="532" width="225" height="content" scrollable="false" clickable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_label name="format_badge" text="" x="0" y="0" width="100%" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="right" style_pad_all="0" />
+            <lv_label name="format_badge" text="" x="0" y="0" width="100%" height="content" style_text_font="font_16" style_text_align="right" style_pad_all="0" />
         </lv_obj>
-        <lv_slider name="progress_slider" x="20" y="594" width="440" height="8" style_bg_color="0x46515b" style_bg_opa="255" style_radius="6" />
-        <lv_label name="pos_label" text="0:00" x="20" y="614" width="100" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="left" style_pad_all="0" />
-        <lv_label name="dur_label" text="--:--" x="360" y="614" width="100" height="content" style_text_font="font_16" style_text_color="0xaab1b8" style_text_align="right" style_pad_all="0" />
+        <lv_slider name="progress_slider" x="20" y="594" width="440" height="8" style_radius="6" />
+        <lv_label name="pos_label" text="0:00" x="20" y="614" width="100" height="content" style_text_font="font_16" style_text_align="left" style_pad_all="0" />
+        <lv_label name="dur_label" text="--:--" x="360" y="614" width="100" height="content" style_text_font="font_16" style_text_align="right" style_pad_all="0" />
         <lv_image name="order_btn" src="order" x="26" y="642" width="44" height="44" inner_align="contain" />
         <lv_image name="prev_btn" src="btn_prev" x="122" y="642" width="44" height="44" inner_align="contain" />
         <lv_obj name="play_circle" x="216" y="640" width="48" height="48" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">

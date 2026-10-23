@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.cover_art_fetcher",
     name = "Cover Art Fetcher",
-    version = "1.1.4",
+    version = "1.1.5",
     api_min = 16,
 })
 
@@ -1904,6 +1904,12 @@ load_state()
 receipt_load_retry_at = os.time() + RECOVERY_RETRY_SECONDS
 load_receipts()
 plugin.register_list_item("music_library", "Cover Art Fetcher", open_settings)
+-- Older firmware keeps Settings > Library until it supports player menu rows.
+if plugin.has_capability("ui.player_menu") then
+    plugin.register_list_item("player", "Cover Art Fetcher", function()
+        fetch_current(false)
+    end)
+end
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
     _G.COMPAS_PLUGIN_UNDER_TEST = {

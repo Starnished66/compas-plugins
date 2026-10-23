@@ -3,8 +3,8 @@
 plugin.define({
     id = "org.compas.orbit_player",
     name = "Orbit Player",
-    version = "1.0.2",
-    api_min = 15,
+    version = "1.0.3",
+    api_min = 17,
 })
 
 local LAYOUT = {

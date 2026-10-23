@@ -1,12 +1,40 @@
 {
   "description": "Metronome with tempo, time signature, subdivision figures and three click sounds. It uses the player's own playback, so starting it replaces what is playing.",
   "category": "Audio",
-  "author": "Comp\u00e1s",
+  "author": "Compás",
   "publish": true,
   "files": [
     {
       "src": "Metronome.png",
       "dest": ".plugins/Metronome.png"
+    },
+    {
+      "src": "Metronome/play.png",
+      "dest": ".plugins/Metronome/play.png"
+    },
+    {
+      "src": "Metronome/stop.png",
+      "dest": ".plugins/Metronome/stop.png"
+    },
+    {
+      "src": "Metronome/hand-tap.png",
+      "dest": ".plugins/Metronome/hand-tap.png"
+    },
+    {
+      "src": "Metronome/sliders-horizontal.png",
+      "dest": ".plugins/Metronome/sliders-horizontal.png"
+    },
+    {
+      "src": "Metronome/music-notes.png",
+      "dest": ".plugins/Metronome/music-notes.png"
+    },
+    {
+      "src": "Metronome/speaker-high.png",
+      "dest": ".plugins/Metronome/speaker-high.png"
+    },
+    {
+      "src": "Metronome/gear-six.png",
+      "dest": ".plugins/Metronome/gear-six.png"
     }
   ]
 }

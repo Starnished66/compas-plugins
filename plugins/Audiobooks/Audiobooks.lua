@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.1", api_min = 19 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.3", api_min = 17 })
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Series/Title/files, with optional disc folders,
@@ -2043,20 +2043,26 @@ local function open_chapters(book)
     end
     local function show_range(first, last, title)
         local rows = {}
+        local selected = nil
+        local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
         for i = first, last do
             local c = chapters[i]
             local playing = current and current.path == c.file.path and ((not embedded) or i == playing_index)
-            rows[#rows + 1] = list_row(
-                (playing and "> " or "") .. c.name .. (embedded and ("  " .. time_label(c.start)) or ""),
-                ICON_CHAPTERS
-            )
+            -- The playing chapter gets the list's native selection outline;
+            -- the start time is the row's muted secondary line when rows wrap.
+            if playing and not selected then selected = #rows + 1 end
+            local label = c.name
+            if embedded then
+                label = label .. (wrap and ("\n" .. time_label(c.start)) or (" (" .. time_label(c.start) .. ")"))
+            end
+            rows[#rows + 1] = list_row(label, ICON_CHAPTERS)
         end
         plugin.show_list(title, rows, function(i)
             local c = chapters[first + i - 1]
             if c and first + i - 1 <= last then
                 play_chapter(c)
             end
-        end)
+        end, selected and { selected = selected } or nil)
     end
     if #chapters <= MAX_ROWS then
         show_range(1, #chapters, "Chapters")

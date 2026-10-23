@@ -1,0 +1,20 @@
+Breeze icons
+
+Source: https://invent.kde.org/frameworks/breeze-icons (tag v6.31.0)
+License: LGPL-3.0-or-later (see BREEZE_COPYING-ICONS.txt)
+Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
+
+Rendered from the 22px symbolic SVGs and filled with the player's native
+submenu gradient (gold, cyan, mint, coral or purple), at each file's
+original size.
+
+Mapping (icons/<path>):
+  check.png          <- actions/22/checkmark-symbolic.svg (mint)
+  download.png       <- actions/22/download-symbolic.svg (cyan)
+  link.png           <- actions/22/edit-link-symbolic.svg (purple)
+  manage.png         <- actions/22/configure-symbolic.svg (cyan)
+  play.png           <- actions/22/media-playback-start-symbolic.svg (mint)
+  refresh.png        <- actions/22/view-refresh-symbolic.svg (cyan)
+  remove.png         <- actions/22/edit-delete-symbolic.svg (coral)
+  search.png         <- actions/22/edit-find-symbolic.svg (gold)
+  show.png           <- devices/22/audio-input-microphone-symbolic.svg (purple)

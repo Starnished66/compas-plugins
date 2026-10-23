@@ -1,8 +1,8 @@
 plugin.define({
   id = "example.lock_screen",
   name = "Lock Screen",
-  version = "1.7.1",
-  api_min = 19,
+  version = "1.7.3",
+  api_min = 17,
 })
 
 -- Lock Screen companion plugin.
@@ -219,27 +219,29 @@ local function open_photo_picker(dir_path)
   end)
 end
 
-local function open_framing_settings()
+-- Choices use native switches as the selection marker: exactly one is on,
+-- and every tap rebuilds the screen in place so the marking stays exact.
+local function open_framing_settings(update)
+  local function choose(fit, name)
+    plugin.storage.set(KEY_IMAGE_FIT, fit)
+    plugin.show_toast("Framing: " .. name)
+    open_lock_settings(true)
+    open_framing_settings(true)
+  end
   plugin.show_settings_list("Framing", {
     {
-      type = "row",
-      label = "Fill screen" .. (get_custom_image_fit() == "cover" and " (selected)" or ""),
-      on_select = function()
-        plugin.storage.set(KEY_IMAGE_FIT, "cover")
-        plugin.show_toast("Framing: Fill screen")
-        open_lock_settings(true)
-      end,
+      type = "toggle",
+      label = "Fill screen",
+      value = get_custom_image_fit() == "cover",
+      on_change = function() choose("cover", "Fill screen") end,
     },
     {
-      type = "row",
-      label = "Keep whole image" .. (get_custom_image_fit() == "contain" and " (selected)" or ""),
-      on_select = function()
-        plugin.storage.set(KEY_IMAGE_FIT, "contain")
-        plugin.show_toast("Framing: Keep whole image")
-        open_lock_settings(true)
-      end,
+      type = "toggle",
+      label = "Keep whole image",
+      value = get_custom_image_fit() == "contain",
+      on_change = function() choose("contain", "Keep whole image") end,
     },
-  })
+  }, { update = update == true })
 end
 
 open_background_settings = function(update)
@@ -247,12 +249,14 @@ open_background_settings = function(update)
   for _, background in ipairs(BACKGROUNDS) do
     local selected_background = background.key
     local background_label = background.label
-    local marker = get_background() == selected_background and " (selected)" or ""
     rows[#rows + 1] = {
-      type = "row",
-      label = background_label .. marker,
-      on_select = function()
+      type = "toggle",
+      label = background_label,
+      value = get_background() == selected_background,
+      on_change = function()
         if selected_background == "image" and not has_readable_photo(get_custom_image_path()) then
+          -- Nothing is chosen yet: put the switches back before the picker opens.
+          open_background_settings(true)
           open_photo_picker()
         else
           set_background(selected_background)
@@ -310,7 +314,7 @@ open_lock_settings = function(update)
       type = "row",
       wrap = true,
       label = "Framing\n" .. (get_custom_image_fit() == "cover" and "Fill screen" or "Keep whole image"),
-      on_select = open_framing_settings,
+      on_select = function() open_framing_settings() end,
     }
   end
 

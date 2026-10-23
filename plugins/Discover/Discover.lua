@@ -1,4 +1,4 @@
-local PLUGIN_VERSION = "1.0.1"
+local PLUGIN_VERSION = "1.0.2"
 local WISHLIST_FORMAT_VERSION = 1
 
 plugin.define({

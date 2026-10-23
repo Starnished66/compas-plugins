@@ -1,7 +1,7 @@
 plugin.define({
     id = "org.compas.autoeq_context",
     name = "AutoEQ Context",
-    version = "1.1.1",
+    version = "1.1.2",
     api_min = 16,
 })
 
@@ -422,7 +422,7 @@ local function open_folder_rules()
     local rows = {
         {
             type = "row",
-            label = "+ Add Folder Rule...",
+            label = "Add folder rule",
             on_select = function()
                 plugin.show_text_input("Folder Path", "/Music/", false, function(folder_path)
                     folder_path = normalize_folder(folder_path)
@@ -477,7 +477,7 @@ local function open_artist_rules()
     local rows = {
         {
             type = "row",
-            label = "+ Add Artist Rule...",
+            label = "Add artist rule",
             on_select = function()
                 plugin.show_text_input("Artist Name", "", false, function(artist_name)
                     local key = artist_name:gsub("^%s+", ""):gsub("%s+$", "")
@@ -535,7 +535,7 @@ local function open_genre_rules()
     local rows = {
         {
             type = "row",
-            label = "+ Add Genre Rule...",
+            label = "Add genre rule",
             on_select = function()
                 plugin.show_text_input("Genre Name", "", false, function(genre_name)
                     local key = genre_name:gsub("^%s+", ""):gsub("%s+$", "")

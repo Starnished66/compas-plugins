@@ -3,8 +3,8 @@
 plugin.define({
     id = "org.compas.gallery_player",
     name = "Gallery Player",
-    version = "1.1.2",
-    api_min = 15,
+    version = "1.1.3",
+    api_min = 17,
 })
 
 local LAYOUT = {

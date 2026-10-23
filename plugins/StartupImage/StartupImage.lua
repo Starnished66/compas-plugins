@@ -4,8 +4,8 @@
 plugin.define({
     id = "org.compas.startup_image",
     name = "Startup Image",
-    version = "1.0.1",
-    api_min = 19,
+    version = "1.0.2",
+    api_min = 17,
 })
 
 local plugin_dir = plugin.sd_root() .. "/.plugins/StartupImage"

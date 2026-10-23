@@ -1,4 +1,4 @@
-plugin.define({ id = "example.kidsmode", name = "Kids Mode", version = "3.1.1", api_min = 19 })
+plugin.define({ id = "example.kidsmode", name = "Kids Mode", version = "3.1.3", api_min = 17 })
 
 -- Kids Mode narrows navigation. It does not lock the device: playback
 -- controls and Now Playing remain available, and hidden controls are not
@@ -186,7 +186,7 @@ local function apply_layout()
     home_order[#home_order + 1] = "kids_parent"
     if plugin.has_capability("ui.home_layout") then
         plugin.set_home_layout({
-            { key = "kids_parent", bg_color = 0x3a3a3a, text_color = 0xcccccc, radius = 24 },
+            { key = "kids_parent" }, -- the theme's own tile, like every other
         }, { mode = #home_order > 6 and "list" or "tile", tile_gap = 24, order = home_order })
     else
         plugin.show_toast("This player cannot customize Home")

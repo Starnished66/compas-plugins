@@ -10,7 +10,7 @@ end
 local file = assert(io.open("plugins/Audiobooks/Audiobooks.lua", "r"))
 local source = file:read("*a")
 file:close()
-assert(source:match('plugin%.define%(%{.-api_min = 19'), "Audiobooks requires API 19")
+assert(source:match('plugin%.define%(%{.-api_min = 17'), "Audiobooks requires API 17")
 local speed_block = source_between(source, "open_speed_menu = function(refresh_settings)", "\n\nlocal function cap")
 local registration_start = assert(source:find("-- The Reading Room is registered", 1, true))
 local registration_block = source:sub(registration_start)

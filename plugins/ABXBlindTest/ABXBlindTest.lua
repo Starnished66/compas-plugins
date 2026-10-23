@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.abx_blind_test",
     name = "ABX Blind Test",
-    version = "1.1.1",
+    version = "1.1.2",
     api_min = 16,
 })
 
@@ -638,7 +638,7 @@ local function browse_files(filter_exts, on_pick)
         if dir ~= sd_top then
             local parent = dir:match("^(.*)/[^/]+$")
             if parent and is_strictly_under_sd(parent) then
-                rows[#rows + 1] = "[..] Up to parent"
+                rows[#rows + 1] = "Parent folder"
                 actions[#actions + 1] = function()
                     navigate_to(parent)
                 end
@@ -648,7 +648,7 @@ local function browse_files(filter_exts, on_pick)
         -- Subdirectories: arbitrarily deep (no depth cutoff)
         for i = 1, #folders do
             local f_name = folders[i]
-            rows[#rows + 1] = "[DIR] " .. f_name
+            rows[#rows + 1] = f_name .. "/"
             actions[#actions + 1] = function()
                 navigate_to(dir .. "/" .. f_name)
             end
@@ -750,7 +750,7 @@ local function build_file_view_items()
     local items = {
         {
             type = "row",
-            label = "< Back to Main Menu",
+            label = "Main menu",
             on_select = function() show_view("main") end,
         },
         {
@@ -888,7 +888,7 @@ local function build_eq_view_items()
     return {
         {
             type = "row",
-            label = "< Back to Main Menu",
+            label = "Main menu",
             on_select = function() show_view("main") end,
         },
         {
@@ -1038,40 +1038,26 @@ local function build_trial_view_items()
             on_select = function() plugin.show_toast(trial_str) end,
         }
 
-        local aud_a_label = (session.current_audition == "a") and "[*] Sample A" or "Sample A"
-        local aud_b_label = (session.current_audition == "b") and "[*] Sample B" or "Sample B"
-        local aud_x_label = (session.current_audition == "x") and "[*] Sample X (Hidden)" or "Sample X (Hidden)"
-
-        items[#items + 1] = {
-            type = "row",
-            label = aud_a_label,
-            on_select = function()
-                if select_audition("a", ep, tr) then
-                    plugin.show_toast("Auditioning Sample A")
-                    show_view("trial")
-                end
-            end,
-        }
-        items[#items + 1] = {
-            type = "row",
-            label = aud_b_label,
-            on_select = function()
-                if select_audition("b", ep, tr) then
-                    plugin.show_toast("Auditioning Sample B")
-                    show_view("trial")
-                end
-            end,
-        }
-        items[#items + 1] = {
-            type = "row",
-            label = aud_x_label,
-            on_select = function()
-                if select_audition("x", ep, tr) then
-                    plugin.show_toast("Auditioning Sample X")
-                    show_view("trial")
-                end
-            end,
-        }
+        -- Native toggles mark the sample currently being auditioned; the
+        -- view is rebuilt after every tap so exactly one stays switched on.
+        local function add_audition_toggle(letter, label, name)
+            items[#items + 1] = {
+                type = "toggle",
+                label = label,
+                value = session.current_audition == letter,
+                on_change = function()
+                    if select_audition(letter, ep, tr) then
+                        plugin.show_toast("Auditioning " .. name)
+                        show_view("trial")
+                    elseif session.current_view == "trial" then
+                        show_view("trial")
+                    end
+                end,
+            }
+        end
+        add_audition_toggle("a", "Sample A", "Sample A")
+        add_audition_toggle("b", "Sample B", "Sample B")
+        add_audition_toggle("x", "Sample X (Hidden)", "Sample X")
 
         items[#items + 1] = {
             type = "row",

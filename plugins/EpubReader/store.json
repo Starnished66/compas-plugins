@@ -6,6 +6,14 @@
     {
       "src": "icons/epub.png",
       "dest": ".plugin-assets/EpubReader/epub.png"
+    },
+    {
+      "src": "icons/BREEZE_SOURCES.txt",
+      "dest": ".plugin-assets/EpubReader/BREEZE_SOURCES.txt"
+    },
+    {
+      "src": "icons/BREEZE_COPYING-ICONS.txt",
+      "dest": ".plugin-assets/EpubReader/BREEZE_COPYING-ICONS.txt"
     }
   ]
 }

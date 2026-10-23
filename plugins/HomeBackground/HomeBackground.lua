@@ -5,8 +5,8 @@
 plugin.define({
     id = "org.example.home_background",
     name = "Home Background",
-    version = "1.2.1",
-    api_min = 19,
+    version = "1.2.2",
+    api_min = 17,
 })
 
 local sd_root = plugin.sd_root()

@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.jellyfin_emby",
     name = "Jellyfin & Emby",
-    version = "1.1",
+    version = "1.1.1",
     api_min = 16,
 })
 
@@ -1179,6 +1179,16 @@ local function prompt_search(library)
     end)
 end
 
+-- Search results show the item type as the row's muted secondary line
+-- ("title\nsecondary" on wrapped rows); older players get the bare title.
+local LIST_WRAP = plugin.has_capability("ui.list_wrap")
+local function search_result_row(name, kind)
+    if LIST_WRAP then
+        return { label = name .. "\n" .. kind, wrap = true }
+    end
+    return name
+end
+
 -- View rendering execution dispatcher
 execute_view = function(view)
     if not is_authenticated() then
@@ -1207,7 +1217,7 @@ execute_view = function(view)
             local actions = {}
 
             if #browse_history > 0 then
-                labels[#labels + 1] = "[< Back]"
+                labels[#labels + 1] = "Back"
                 actions[#actions + 1] = go_back
             end
 
@@ -1238,7 +1248,7 @@ execute_view = function(view)
         local lib = (type(view.library) == "table") and view.library or {}
         local lib_name = safe_string(lib.Name, "Library", 128)
         local labels = {
-            "[< Back]",
+            "Back",
             "Artists",
             "Albums",
             "Songs",
@@ -1277,11 +1287,11 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             if start_idx > 0 then
-                labels[#labels + 1] = "[< Previous Page]"
+                labels[#labels + 1] = "Previous page"
                 actions[#actions + 1] = function()
                     view.start_index = math.max(0, start_idx - page_size)
                     execute_view(view)
@@ -1299,7 +1309,7 @@ execute_view = function(view)
             end
 
             if (start_idx + #items < total) and (#labels < 500) then
-                labels[#labels + 1] = "[Next Page >]"
+                labels[#labels + 1] = "Next page"
                 actions[#actions + 1] = function()
                     view.start_index = start_idx + page_size
                     execute_view(view)
@@ -1338,11 +1348,11 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             if start_idx > 0 then
-                labels[#labels + 1] = "[< Previous Page]"
+                labels[#labels + 1] = "Previous page"
                 actions[#actions + 1] = function()
                     view.start_index = math.max(0, start_idx - page_size)
                     execute_view(view)
@@ -1362,7 +1372,7 @@ execute_view = function(view)
             end
 
             if (start_idx + #items < total) and (#labels < 500) then
-                labels[#labels + 1] = "[Next Page >]"
+                labels[#labels + 1] = "Next page"
                 actions[#actions + 1] = function()
                     view.start_index = start_idx + page_size
                     execute_view(view)
@@ -1400,11 +1410,11 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             if start_idx > 0 then
-                labels[#labels + 1] = "[< Previous Page]"
+                labels[#labels + 1] = "Previous page"
                 actions[#actions + 1] = function()
                     view.start_index = math.max(0, start_idx - page_size)
                     execute_view(view)
@@ -1424,7 +1434,7 @@ execute_view = function(view)
             end
 
             if (start_idx + #items < total) and (#labels < 500) then
-                labels[#labels + 1] = "[Next Page >]"
+                labels[#labels + 1] = "Next page"
                 actions[#actions + 1] = function()
                     view.start_index = start_idx + page_size
                     execute_view(view)
@@ -1460,20 +1470,20 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             if #tracks < total then
-                labels[#labels + 1] = string.format("[Play Page (%d of %d tracks)]", #tracks, total)
+                labels[#labels + 1] = string.format("Play page (%d of %d tracks)", #tracks, total)
             else
-                labels[#labels + 1] = string.format("[Play Album (%d tracks)]", #tracks)
+                labels[#labels + 1] = string.format("Play album (%d tracks)", #tracks)
             end
             actions[#actions + 1] = function()
                 play_items_queue(tracks, nil)
             end
 
             if start_idx > 0 then
-                labels[#labels + 1] = "[< Previous Page]"
+                labels[#labels + 1] = "Previous page"
                 actions[#actions + 1] = function()
                     view.start_index = math.max(0, start_idx - page_size)
                     execute_view(view)
@@ -1512,7 +1522,7 @@ execute_view = function(view)
             end
 
             if (start_idx + #tracks < total) and (#labels < 500) then
-                labels[#labels + 1] = "[Next Page >]"
+                labels[#labels + 1] = "Next page"
                 actions[#actions + 1] = function()
                     view.start_index = start_idx + page_size
                     execute_view(view)
@@ -1549,11 +1559,11 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             if start_idx > 0 then
-                labels[#labels + 1] = "[< Previous Page]"
+                labels[#labels + 1] = "Previous page"
                 actions[#actions + 1] = function()
                     view.start_index = math.max(0, start_idx - page_size)
                     execute_view(view)
@@ -1573,7 +1583,7 @@ execute_view = function(view)
             end
 
             if (start_idx + #items < total) and (#labels < 500) then
-                labels[#labels + 1] = "[Next Page >]"
+                labels[#labels + 1] = "Next page"
                 actions[#actions + 1] = function()
                     view.start_index = start_idx + page_size
                     execute_view(view)
@@ -1606,7 +1616,7 @@ execute_view = function(view)
             local labels = {}
             local actions = {}
 
-            labels[#labels + 1] = "[< Back]"
+            labels[#labels + 1] = "Back"
             actions[#actions + 1] = go_back
 
             for _, it in ipairs(items) do
@@ -1615,15 +1625,15 @@ execute_view = function(view)
                     local it_type = (type(it.Type) == "string") and it.Type or ""
                     local it_name = safe_string(it.Name, "Item", 128)
                     if it_type == "Audio" then
-                        labels[#labels + 1] = "[Song] " .. it_name
+                        labels[#labels + 1] = search_result_row(it_name, "Song")
                         actions[#actions + 1] = function() play_single_item(it) end
                     elseif it_type == "MusicAlbum" then
-                        labels[#labels + 1] = "[Album] " .. it_name
+                        labels[#labels + 1] = search_result_row(it_name, "Album")
                         actions[#actions + 1] = function()
                             navigate_to({ type = "album_tracks", album = it, library = lib, start_index = 0 })
                         end
                     elseif it_type == "MusicArtist" then
-                        labels[#labels + 1] = "[Artist] " .. it_name
+                        labels[#labels + 1] = search_result_row(it_name, "Artist")
                         actions[#actions + 1] = function()
                             navigate_to({ type = "artist_albums", library = lib, artist = it, start_index = 0 })
                         end

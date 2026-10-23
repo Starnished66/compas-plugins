@@ -1,8 +1,8 @@
 plugin.define({
     id = "example.album_shuffle",
     name = "Album Shuffle",
-    version = "1.1.0",
-    api_min = 19,
+    version = "1.1.1",
+    api_min = 17,
 })
 
 -- Plays a random album with tracks in album order, then another when the

@@ -6,6 +6,14 @@
     {
       "src": "icons/shuffle.png",
       "dest": ".plugin-assets/AlbumShuffle/shuffle.png"
+    },
+    {
+      "src": "icons/BREEZE_SOURCES.txt",
+      "dest": ".plugin-assets/AlbumShuffle/BREEZE_SOURCES.txt"
+    },
+    {
+      "src": "icons/BREEZE_COPYING-ICONS.txt",
+      "dest": ".plugin-assets/AlbumShuffle/BREEZE_COPYING-ICONS.txt"
     }
   ]
 }

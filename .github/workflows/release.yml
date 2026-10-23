@@ -27,9 +27,9 @@ jobs:
           python3 - <<'PY'
           import json
           index = json.load(open("dist/index.json"))
-          unsupported = [p["name"] for p in index["plugins"] if p["api_min"] > 19]
+          unsupported = [p["name"] for p in index["plugins"] if p["api_min"] > 17]
           if unsupported:
-              raise SystemExit("Plugins require an unsupported API version (>19): " + ", ".join(unsupported))
+              raise SystemExit("Plugins require an unsupported API version (>17): " + ", ".join(unsupported))
           PY
       - name: Publish
         env:

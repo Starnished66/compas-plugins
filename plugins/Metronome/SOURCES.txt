@@ -21,3 +21,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+UI icons: @phosphor-icons/core 2.1.1 assets/regular/{play,stop,hand-tap,sliders-horizontal,music-notes,speaker-high,gear-six}.svg (MIT, same license above), rendered at 44 px with color #63cbb9.

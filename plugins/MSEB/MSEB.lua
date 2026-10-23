@@ -1,4 +1,4 @@
-plugin.define({ id = "example.mseb", name = "MSEB", version = "1.6", api_min = 16 })
+plugin.define({ id = "example.mseb", name = "MSEB", version = "1.6.1", api_min = 16 })
 
 local modern_mseb_ui = plugin.has_capability("ui.settings_list_10_sliders")
     and plugin.has_capability("audio.mseb.stock")
@@ -1115,11 +1115,36 @@ open_options = function()
     end)
 end
 
+local LEGACY_LAYOUT_MESSAGE = "This saved layout is unsupported. Switching replaces Instrument Presence, Bass Bite, and Treble Bite with the stock controls."
+
 local function show_legacy_confirmation(after)
+    local function switch_to_stock()
+        if curve ~= "legacy" then
+            plugin.show_toast("Stock MSEB controls are already selected")
+            return
+        end
+        if not convert_to_new() then
+            plugin.show_toast("Could not switch controls. Try again.")
+            return
+        end
+        plugin.show_toast("Stock MSEB controls selected")
+        if after then after() end
+        open_settings({ update = true })
+    end
+
+    -- The native confirmation popup carries the explanation as its title and
+    -- supplies its own Cancel; Cancel and the backdrop leave settings as they
+    -- are. Older players fall back to the settings screen below.
+    if plugin.has_capability("ui.confirmation") and plugin.show_confirmation then
+        if plugin.show_confirmation(LEGACY_LAYOUT_MESSAGE, "Switch to stock MSEB", switch_to_stock) then
+            return
+        end
+    end
+
     local rows = {
         {
             type = "row",
-            label = "This saved layout is unsupported. Switching replaces Instrument Presence, Bass Bite, and Treble Bite with the stock controls.",
+            label = LEGACY_LAYOUT_MESSAGE,
             wrap = true,
             on_select = function()
                 plugin.show_toast("Switching replaces Instrument Presence, Bass Bite, and Treble Bite")
@@ -1128,19 +1153,7 @@ local function show_legacy_confirmation(after)
         {
             type = "row",
             label = "Switch to stock MSEB",
-            on_select = function()
-                if curve ~= "legacy" then
-                    plugin.show_toast("Stock MSEB controls are already selected")
-                    return
-                end
-                if not convert_to_new() then
-                    plugin.show_toast("Could not switch controls. Try again.")
-                    return
-                end
-                plugin.show_toast("Stock MSEB controls selected")
-                if after then after() end
-                open_settings({ update = true })
-            end,
+            on_select = switch_to_stock,
         },
         {
             type = "row",

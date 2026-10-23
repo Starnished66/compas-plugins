@@ -1,17 +1,20 @@
 plugin.define({
     id = "example.lyrics_fetcher",
     name = "Lyrics Fetcher",
-    version = "1.1.2",
-    api_min = 16,
+    version = "1.3.0",
+    api_min = 17,
 })
 
--- Fetches synced LRC lyrics from LRCLIB (no API key) for local tracks that
--- have no sidecar. Native lyrics_load_sidecar() swaps the audio filename's
--- extension for ".lrc" in the same folder; this plugin writes only that path.
--- Existing .lrc files are never replaced. Embedded tag lyrics are not
--- exposed to Lua, so they cannot be detected here.
+-- Fetches synced LRC lyrics from LRCLIB (no API key) for local tracks.
+-- Native lyrics_load_sidecar() swaps the audio filename's extension for
+-- ".lrc" in the same folder and reads only that path; this plugin writes
+-- only that sidecar. A sidecar that already has timestamps is left alone.
+-- An unsynchronized .lrc is renamed to .compas-backup (or -2..-9) before
+-- the synced file is written, matching Cover Art Fetcher's unread backup
+-- suffix. filename_sync.lrc is not a native lookup name. Embedded tag
+-- lyrics are not exposed to Lua, so they cannot be detected here.
 
-local USER_AGENT = "CompasPlayer-LyricsFetcher/1.0 (https://github.com/Starnished66/compas-player)"
+local USER_AGENT = "CompasPlayer-LyricsFetcher/1.3 (https://github.com/Starnished66/compas-player)"
 local STATE_PATH = plugin.sd_root() .. "/.plugins/.lyrics_fetcher_state"
 local MAX_LRC_BYTES = 512 * 1024
 local MAX_PATH_BYTES = 4095
@@ -19,6 +22,10 @@ local MAX_FILENAME_BYTES = 255
 local MAX_METADATA_BYTES = 128
 local MAX_URL_BYTES = 2047
 local TEMP_SUFFIX = ".compas-fetch"
+local BACKUP_SUFFIX = ".compas-backup"
+local MAX_BACKUP_SLOTS = 9
+-- Longest extra name this plugin appends: ".compas-backup-9".
+local MAX_SIDECAR_EXTRA = math.max(#TEMP_SUFFIX, #BACKUP_SUFFIX + 2)
 local BACKOFF_SEC = 2
 local MAX_RETRIES = 1
 
@@ -98,9 +105,55 @@ local function file_exists(path)
     return true
 end
 
+-- True when inner is a complete native [mm:ss] / [mm:ss.xx] timestamp:
+-- digits, colon, digits, and an optional fraction of digits only. Trailing
+-- junk such as [12:34broken] does not count (native requires the whole
+-- bracket contents to be consumed).
+local function is_timestamp_inner(inner)
+    if type(inner) ~= "string" or inner == "" then return false end
+    local minutes, rest = inner:match("^(%d+):(.*)$")
+    if not minutes or rest == nil then return false end
+    if rest:match("^%d+$") then return true end
+    local seconds, frac = rest:match("^(%d+)%.(%d+)$")
+    return seconds ~= nil and frac ~= nil
+end
+
+local function line_has_leading_timestamp(line)
+    if type(line) ~= "string" or line == "" then return false end
+    if line:sub(-1) == "\r" then line = line:sub(1, -2) end
+    local i = 1
+    local found = false
+    while line:sub(i, i) == "[" do
+        local close = line:find("]", i, true)
+        if not close then break end
+        local inner = line:sub(i + 1, close - 1)
+        local lower = inner:lower()
+        if inner:sub(1, 1):match("%d") and is_timestamp_inner(inner) then
+            found = true
+            i = close + 1
+        elseif lower:sub(1, 7) == "offset:" then
+            i = close + 1
+        elseif inner:match("^[A-Za-z][A-Za-z]?[A-Za-z]?[A-Za-z]?[A-Za-z]?[A-Za-z]?:") then
+            i = close + 1
+        else
+            break
+        end
+    end
+    return found
+end
+
+-- Native lyrics_parse_buffer() is sync-only: a line counts only when it
+-- has at least one complete leading timestamp tag. Metadata ([ti:], [ar:],
+-- 1-6 letters then ':') and [offset:] are skipped. A UTF-8 BOM at the
+-- start of the file is ignored. A timestamp inside ordinary text, or a
+-- malformed bracket, does not make the sidecar synchronized.
 local function has_sync_line(text)
     if type(text) ~= "string" or text == "" then return false end
-    return text:find("%[%d+:%d+") ~= nil
+    if text:sub(1, 3) == "\239\187\191" then text = text:sub(4) end
+    for line in (text .. "\n"):gmatch("(.-)\n") do
+        if line_has_leading_timestamp(line) then return true end
+    end
+    return false
 end
 
 local function notify(message, is_auto)
@@ -135,13 +188,63 @@ local function notify_job(job, message)
     plugin.show_toast(message)
 end
 
-local function atomic_write_lrc(dest, text)
-    if file_exists(dest) then return false, "exists" end
-    if type(text) ~= "string" or #text == 0 or #text > MAX_LRC_BYTES then
-        return false, "invalid"
+local function read_sidecar(path)
+    if not path then return nil, "missing" end
+    local f, _, code = io.open(path, "rb")
+    if not f then
+        -- ENOENT is absence; any other open error must block a replace.
+        if code == 2 then return nil, "missing" end
+        return nil, "unreadable"
     end
-    if not has_sync_line(text) then return false, "no-sync" end
-    local tmp = dest .. TEMP_SUFFIX
+    local text, read_err = f:read(MAX_LRC_BYTES + 1)
+    local closed = f:close()
+    if not closed then return nil, "unreadable" end
+    if text == nil then
+        if read_err then return nil, "unreadable" end
+        text = ""
+    end
+    if type(text) ~= "string" then return nil, "unreadable" end
+    if #text > MAX_LRC_BYTES then return nil, "too-large" end
+    return text, "ok"
+end
+
+local function sidecar_kind(text)
+    if type(text) ~= "string" then return "missing" end
+    if has_sync_line(text) then return "synced" end
+    return "unsynced"
+end
+
+local function snapshot_sidecar(path)
+    local text, status = read_sidecar(path)
+    if status == "missing" then return { kind = "missing" } end
+    if status ~= "ok" then return { kind = "blocked", reason = status } end
+    return { kind = sidecar_kind(text), text = text }
+end
+
+local function snapshot_allows_fetch(snap)
+    return snap ~= nil and (snap.kind == "missing" or snap.kind == "unsynced")
+end
+
+local function snapshot_still_valid(path, snap)
+    if not snap or not snapshot_allows_fetch(snap) then return false end
+    local now = snapshot_sidecar(path)
+    if snap.kind == "missing" then return now.kind == "missing" end
+    return now.kind == "unsynced" and now.text == snap.text
+end
+
+-- First free unread backup name; an existing backup is never reused.
+local function backup_path(path)
+    for slot = 1, MAX_BACKUP_SLOTS do
+        local candidate = path .. BACKUP_SUFFIX .. (slot == 1 and "" or ("-" .. slot))
+        if #candidate > MAX_PATH_BYTES then return nil end
+        local basename = candidate:match("([^/]+)$")
+        if not basename or #basename > MAX_FILENAME_BYTES then return nil end
+        if not file_exists(candidate) then return candidate end
+    end
+    return nil
+end
+
+local function write_temp_lrc(tmp, text)
     os.remove(tmp)
     local f = io.open(tmp, "wb")
     if not f then return false, "write" end
@@ -150,6 +253,49 @@ local function atomic_write_lrc(dest, text)
     if not ok or not closed then
         os.remove(tmp)
         return false, err or "write"
+    end
+    return true
+end
+
+-- Writes synced lyrics to the native sidecar path. Missing dest is created.
+-- An unsynchronized dest matching snap is renamed to .compas-backup first.
+-- Synchronized dest, a changed dest, or a path/content race is refused.
+-- If the final rename fails after backup, the unsynchronized file is restored.
+local function install_synced_lrc(dest, text, snap)
+    if type(text) ~= "string" or #text == 0 or #text > MAX_LRC_BYTES then
+        return false, "invalid"
+    end
+    if not has_sync_line(text) then return false, "no-sync" end
+    if not snapshot_still_valid(dest, snap) then
+        local now = snapshot_sidecar(dest)
+        if now.kind == "synced" then return false, "exists" end
+        return false, "stale"
+    end
+    local tmp = dest .. TEMP_SUFFIX
+    local wrote, write_err = write_temp_lrc(tmp, text)
+    if not wrote then return false, write_err end
+    if not snapshot_still_valid(dest, snap) then
+        os.remove(tmp)
+        local now = snapshot_sidecar(dest)
+        if now.kind == "synced" then return false, "exists" end
+        return false, "stale"
+    end
+    if snap.kind == "unsynced" then
+        local backup = backup_path(dest)
+        if not backup or file_exists(backup) then
+            os.remove(tmp)
+            return false, "backup"
+        end
+        if not os.rename(dest, backup) or file_exists(dest) or not file_exists(backup) then
+            os.remove(tmp)
+            return false, "backup"
+        end
+        if not os.rename(tmp, dest) or not file_exists(dest) then
+            os.rename(backup, dest)
+            os.remove(tmp)
+            return false, "rename"
+        end
+        return true
     end
     if file_exists(dest) then
         os.remove(tmp)
@@ -160,6 +306,16 @@ local function atomic_write_lrc(dest, text)
         return false, "rename"
     end
     return true
+end
+
+local function atomic_write_lrc(dest, text)
+    return install_synced_lrc(dest, text, snapshot_sidecar(dest))
+end
+
+local function refresh_current_lyrics_display(track_path)
+    if type(track_path) ~= "string" or track_path == "" then return false end
+    local ok, refreshed = pcall(plugin.refresh_lyrics, track_path)
+    return ok == true and refreshed == true
 end
 
 local function path_is_bounded_under_root(path)
@@ -179,8 +335,8 @@ end
 local function destination_is_bounded(dest)
     if not path_is_bounded_under_root(dest) then return false end
     local basename = dest:match("([^/]+)$")
-    return basename ~= nil and #basename + #TEMP_SUFFIX <= MAX_FILENAME_BYTES and
-        #dest + #TEMP_SUFFIX <= MAX_PATH_BYTES
+    return basename ~= nil and #basename + MAX_SIDECAR_EXTRA <= MAX_FILENAME_BYTES and
+        #dest + MAX_SIDECAR_EXTRA <= MAX_PATH_BYTES
 end
 
 local function current_local_track()
@@ -283,7 +439,17 @@ end
 
 start_http = function(track, is_auto, attempt, progress_job)
     local dest = track.dest
-    if file_exists(dest) then close_progress(progress_job); notify("Lyrics already present", is_auto); return false end
+    local snap = snapshot_sidecar(dest)
+    if snap.kind == "synced" then
+        close_progress(progress_job)
+        notify("Lyrics already present", is_auto)
+        return false
+    end
+    if snap.kind == "blocked" then
+        close_progress(progress_job)
+        notify("Could not read existing lyrics", is_auto)
+        return false
+    end
     local url = build_url(track)
     if not url then close_progress(progress_job); notify("Lyrics request is too long", is_auto); return false end
     generation = generation + 1
@@ -291,6 +457,7 @@ start_http = function(track, is_auto, attempt, progress_job)
     local job = progress_job or { path = track.path, dest = dest, is_auto = is_auto }
     job.gen, job.path, job.dest = gen, track.path, dest
     job.track, job.is_auto, job.attempt = track, is_auto, attempt
+    job.snapshot = snap
     if not progress_job then job.manual_requested = not is_auto end
     job.stage = attempt > 0 and "Retrying lyrics lookup…" or "Looking up lyrics…"
     in_flight = job
@@ -338,8 +505,15 @@ finish_fetch = function(track, is_auto, attempt, gen, status, body, err, headers
         return
     end
     retry_job = nil
-    if plugin.get_current_track_path() ~= track.path or file_exists(track.dest) then
+    if plugin.get_current_track_path() ~= track.path then
         close_progress(job); done(); return
+    end
+    if not snapshot_still_valid(track.dest, job.snapshot) then
+        local now = snapshot_sidecar(track.dest)
+        close_progress(job)
+        if now.kind == "synced" then notify_job(job, "Lyrics already present")
+        else notify_job(job, "Track lyrics changed; lyrics not saved") end
+        done(); return
     end
     if err then
         close_progress(job); notify_job(job, "Lyrics fetch failed: " .. err); done(); return
@@ -362,10 +536,23 @@ finish_fetch = function(track, is_auto, attempt, gen, status, body, err, headers
     end
     job.stage = "Saving lyrics…"
     show_progress(job, job.stage, nil, false)
-    local ok, write_err = atomic_write_lrc(track.dest, lrc)
+    if plugin.get_current_track_path() ~= track.path then
+        close_progress(job); done(); return
+    end
+    if not snapshot_still_valid(track.dest, job.snapshot) then
+        local now = snapshot_sidecar(track.dest)
+        close_progress(job)
+        if now.kind == "synced" then notify_job(job, "Lyrics already present")
+        else notify_job(job, "Track lyrics changed; lyrics not saved") end
+        done(); return
+    end
+    local ok, write_err = install_synced_lrc(track.dest, lrc, job.snapshot)
     close_progress(job)
-    if ok then notify_job(job, "Saved lyrics")
+    if ok then
+        notify_job(job, "Saved lyrics")
+        refresh_current_lyrics_display(track.path)
     elseif write_err == "exists" then notify_job(job, "Lyrics already present")
+    elseif write_err == "stale" then notify_job(job, "Track lyrics changed; lyrics not saved")
     else notify_job(job, "Could not save lyrics") end
     done()
 end
@@ -436,7 +623,8 @@ local function open_about()
     plugin.show_list("About Lyrics Fetcher", {
         "Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key.",
         "Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player.",
-        "Never overwrites an existing .lrc. Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar.",
+        "Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced.",
+        "Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar.",
         "Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped.",
     }, function() end)
 end
@@ -467,6 +655,12 @@ end
 
 load_state()
 plugin.register_list_item("music_library", "Lyrics Fetcher", open_settings)
+-- Older firmware keeps Settings > Library until it supports player menu rows.
+if plugin.has_capability("ui.player_menu") then
+    plugin.register_list_item("player", "Lyrics Fetcher", function()
+        fetch_current(false)
+    end)
+end
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
     _G.COMPAS_PLUGIN_UNDER_TEST = {
@@ -474,10 +668,20 @@ if rawget(_G, "COMPAS_PLUGIN_TEST") then
         is_absolute_local_path = is_absolute_local_path,
         extract_synced = extract_synced,
         has_sync_line = has_sync_line,
+        sidecar_kind = sidecar_kind,
+        read_sidecar = read_sidecar,
+        snapshot_sidecar = snapshot_sidecar,
+        snapshot_allows_fetch = snapshot_allows_fetch,
+        snapshot_still_valid = snapshot_still_valid,
+        backup_path = backup_path,
+        install_synced_lrc = install_synced_lrc,
         atomic_write_lrc = atomic_write_lrc,
+        refresh_current_lyrics_display = refresh_current_lyrics_display,
         build_url = build_url,
         fetch_current = fetch_current,
         get_queue_state = function() return in_flight, queued end,
         state = state,
+        BACKUP_SUFFIX = BACKUP_SUFFIX,
+        TEMP_SUFFIX = TEMP_SUFFIX,
     }
 end

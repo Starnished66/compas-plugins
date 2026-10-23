@@ -1,0 +1,26 @@
+Breeze icons
+
+Source: https://invent.kde.org/frameworks/breeze-icons (tag v6.31.0)
+License: LGPL-3.0-or-later (see BREEZE_COPYING-ICONS.txt)
+Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
+
+Rendered from the 22px symbolic SVGs and filled with the player's native
+submenu gradient (gold, cyan, mint, coral or purple), at each file's
+original size.
+
+Mapping (icons/<path>):
+  audiobooks.png     <- devices/22/audio-headphones-symbolic.svg (gold)
+  bookmark.png       <- actions/22/bookmark-new-symbolic.svg (gold)
+  bookmarks.png      <- actions/22/bookmarks-symbolic.svg (gold)
+  chapters.png       <- actions/22/view-list-text-symbolic.svg (cyan)
+  finished.png       <- actions/22/checkmark-symbolic.svg (mint)
+  forward.png        <- actions/22/media-seek-forward-symbolic.svg (cyan)
+  history.png        <- actions/22/view-history-symbolic.svg (purple)
+  in_progress.png    <- actions/22/document-open-recent-symbolic.svg (cyan)
+  library.png        <- places/22/folder-library-symbolic.svg (gold)
+  new.png            <- actions/22/document-new-symbolic.svg (purple)
+  play.png           <- actions/22/media-playback-start-symbolic.svg (mint)
+  refresh.png        <- actions/22/view-refresh-symbolic.svg (cyan)
+  rewind.png         <- actions/22/media-seek-backward-symbolic.svg (cyan)
+  settings.png       <- actions/22/configure-symbolic.svg (cyan)
+  sleep.png          <- actions/22/system-suspend-symbolic.svg (purple)

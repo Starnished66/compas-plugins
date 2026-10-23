@@ -3,8 +3,8 @@
 plugin.define({
     id = "org.compas.gallery_waveform_player",
     name = "Gallery Waveform Player",
-    version = "1.0.0",
-    api_min = 15,
+    version = "1.0.1",
+    api_min = 17,
 })
 
 if plugin.has_capability and plugin.has_capability("ui.player_layout_xml") then

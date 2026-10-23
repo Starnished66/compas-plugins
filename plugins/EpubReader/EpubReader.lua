@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.epub_reader",
     name = "EPUB Reader",
-    version = "1.2.1",
+    version = "1.2.2",
     api_min = 14,
 })
 

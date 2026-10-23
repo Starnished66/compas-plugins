@@ -25,7 +25,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Lyrics Fetcher and Cover Art Fetcher are published API 16 packages for Compás v1.1. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
+Cover Art Fetcher is a published API 16 package for Compás v1.1. Lyrics Fetcher requires Plugin API 17 so it can refresh the current lyrics display after a save. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Lyrics Fetcher skips a sidecar that already has timestamps and renames an unsynchronized `.lrc` to `.compas-backup` before writing synced lyrics. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
 
 ## ListenBrainz and Net Radio
 
@@ -61,15 +61,15 @@ Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Pl
 - **Vinyl Player** uses a record-inspired layout with an envelope waveform seek bar.
 - **Orbit Player** uses circular artwork and a circular seek bar.
 
-## v1.1 plugins (API 16)
+## v1.1 plugins (API 16 and 17)
 
-These packages are published for Compás v1.1 and require Plugin API 16.
+These packages are published for Compás v1.1 and require Plugin API 16 or 17.
 
 | Plugin | Where to open it | Behavior |
 | --- | --- | --- |
 | AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Catalog and profile download status in a dismissible progress card. |
 | Cover Art Fetcher | Settings > Library | Manual search and download stages, persistent download history, and confirmed revert to backups. |
-| Lyrics Fetcher | Settings > Library | Manual lookup, retry and save status in a dismissible progress card. |
+| Lyrics Fetcher | Settings > Library, and Now Playing > three-dot menu on players that support it | Requires Plugin API 17. Manual lookup, retry and save status in a dismissible progress card. Skips synchronized sidecars and backs up unsynchronized ones. The Now Playing action fetches the current track. |
 | Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
 | Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |
 | Volume Limiter | Settings > Sound | Quietly pulls software volume down to a configured ceiling. Volume events arrive at the firmware's notification cadence. |

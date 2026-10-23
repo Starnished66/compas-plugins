@@ -1,0 +1,12 @@
+Breeze icons
+
+Source: https://invent.kde.org/frameworks/breeze-icons (tag v6.31.0)
+License: LGPL-3.0-or-later (see BREEZE_COPYING-ICONS.txt)
+Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
+
+Rendered from the 22px symbolic SVGs and filled with the player's native
+submenu gradient (gold, cyan, mint, coral or purple), at each file's
+original size.
+
+Mapping (icons/<path>):
+  epub.png           <- actions/22/documentation-symbolic.svg (purple)

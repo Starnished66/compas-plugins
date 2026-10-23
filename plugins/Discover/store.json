@@ -23,6 +23,14 @@
     {
       "src": "assets/owned_wish.png",
       "dest": ".plugins/Discover/owned_wish.png"
+    },
+    {
+      "src": "assets/BREEZE_SOURCES.txt",
+      "dest": ".plugins/Discover/BREEZE_SOURCES.txt"
+    },
+    {
+      "src": "assets/BREEZE_COPYING-ICONS.txt",
+      "dest": ".plugins/Discover/BREEZE_COPYING-ICONS.txt"
     }
   ]
 }

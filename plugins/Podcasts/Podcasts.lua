@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.1", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.2", api_min = 17 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.

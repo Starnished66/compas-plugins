@@ -1,8 +1,8 @@
 plugin.define({
     id = "example.metronome",
     name = "Metronome",
-    version = "1.2.0",
-    api_min = 16,
+    version = "1.3.0",
+    api_min = 17,
 })
 
 -- Metronome with sample-accurate timing and no native code.
@@ -531,6 +531,21 @@ local function tempo_unit()
     return "eighth notes"
 end
 
+local function rhythm_summary()
+    local sub = {
+        none = "Single notes", eighths = "Eighths", triplets = "Triplets",
+        sixteenths = "Sixteenths", quintuplets = "Quintuplets",
+        sextuplets = "Sextuplets", swing = "Swing",
+    }
+    local summary = meter_label()
+    if cfg.den == 8 then
+        summary = summary .. " · " .. (cfg.count == "dotted" and "Dotted quarter" or "Eighth")
+    end
+    return summary .. " · " .. sub[cfg.sub]
+end
+
+local open_tempo_steps, open_rhythm, open_levels, open_playback
+
 local function show_about()
     plugin.show_list("About Metronome", {
         { label = "Starting the metronome replaces what is playing. On stop it can resume the previous track and position; the previous queue is not restored.", wrap = true },
@@ -557,6 +572,7 @@ local function choose_meter()
         if not compound_capable(num, den) then cfg.count = "eighth" end
         settings_changed(false)
         open_menu(true)
+        open_rhythm(true)
     end, { selected = selected })
 end
 
@@ -568,6 +584,7 @@ local function choose_counting()
         cfg.count = count
         settings_changed(false)
         open_menu(true)
+        open_rhythm(true)
     end, { selected = cfg.count == "dotted" and 2 or 1 })
 end
 
@@ -582,15 +599,16 @@ local function choose_subdivision()
         cfg.sub = SUBS[index].id
         settings_changed(false)
         open_menu(true)
+        open_rhythm(true)
     end, { selected = selected })
 end
 
-local function set_bpm(value, debounce)
+local function set_bpm(value, debounce, redraw)
     local bpm = clamp_int(value, BPM_MIN, BPM_MAX, cfg.bpm)
     if bpm == cfg.bpm then return end
     cfg.bpm = bpm
     settings_changed(debounce)
-    open_menu(true)
+    if redraw then redraw() end
 end
 
 local function tap_tempo()
@@ -625,37 +643,37 @@ local function level_slider(label, key)
             cfg[key] = value
             settings_changed(false)
             open_menu(true)
+            open_levels(true)
         end,
     }
 end
 
-open_menu = function(update)
+open_tempo_steps = function(update)
     local items = {}
-    items[#items + 1] = {
-        type = "row",
-        label = run.running and "Stop" or "Start",
-        on_select = function()
-            if run.running then stop_metronome() else start_metronome() end
-            open_menu(true)
-        end,
-    }
-    items[#items + 1] = {
-        type = "slider", label = "Tempo: " .. cfg.bpm .. " BPM", min = BPM_MIN, max = BPM_MAX, value = cfg.bpm,
-        on_change = function(value) set_bpm(value, false) end,
-    }
     for _, step in ipairs({ -10, -1, 1, 10 }) do
+        local target = clamp_int(cfg.bpm + step, BPM_MIN, BPM_MAX, cfg.bpm)
         items[#items + 1] = {
             type = "row",
-            label = (step > 0 and "+" or "") .. step .. " BPM",
-            on_select = function() set_bpm(cfg.bpm + step, true) end,
+            label = string.format("%s%d BPM → %d BPM", step > 0 and "+" or "", step, target),
+            on_select = function()
+                set_bpm(cfg.bpm + step, true, function()
+                    open_menu(true)
+                    open_tempo_steps(true)
+                end)
+            end,
         }
     end
-    items[#items + 1] = { type = "row", label = "Tap tempo", on_select = tap_tempo }
-    items[#items + 1] = { type = "row", label = "Time signature: " .. meter_label(), on_select = choose_meter }
+    plugin.show_settings_list("Tempo adjustments", items, update and { update = true } or nil)
+end
+
+open_rhythm = function(update)
+    local items = {
+        { type = "row", label = "Time signature: " .. meter_label(), on_select = choose_meter },
+    }
     if compound_capable(cfg.num, cfg.den) then
         items[#items + 1] = {
             type = "row",
-            label = "Count: " .. (cfg.count == "dotted" and "dotted quarter" or "eighth") .. " notes",
+            label = "Count tempo in: " .. (cfg.count == "dotted" and "dotted quarter" or "eighth") .. " notes",
             on_select = choose_counting,
         }
     end
@@ -665,20 +683,68 @@ open_menu = function(update)
         on_change = function(value)
             cfg.accent_on = value and 1 or 0
             settings_changed(false)
+            open_menu(true)
+            open_rhythm(true)
         end,
     }
-    items[#items + 1] = level_slider("Accent level", "lvl_accent")
-    items[#items + 1] = level_slider("Beat level", "lvl_beat")
-    items[#items + 1] = level_slider("Subdivision level", "lvl_sub")
-    items[#items + 1] = {
-        type = "toggle", label = "Resume previous track on stop", value = cfg.restore == 1,
-        on_change = function(value)
-            cfg.restore = value and 1 or 0
-            save_settings()
-        end,
+    plugin.show_settings_list("Rhythm", items, update and { update = true } or nil)
+end
+
+open_levels = function(update)
+    local items = {
+        level_slider("Accent level", "lvl_accent"),
+        level_slider("Beat level", "lvl_beat"),
+        level_slider("Subdivision level", "lvl_sub"),
     }
-    items[#items + 1] = { type = "row", label = "About", on_select = show_about }
-    plugin.show_settings_list("Metronome", items, update and { update = true } or nil)
+    plugin.show_settings_list("Sound levels", items, update and { update = true } or nil)
+end
+
+open_playback = function(update)
+    local items = {
+        {
+            type = "toggle", label = "Resume previous track on stop", value = cfg.restore == 1,
+            on_change = function(value)
+                cfg.restore = value and 1 or 0
+                save_settings()
+                open_playback(true)
+            end,
+        },
+        { type = "row", label = "About Metronome", on_select = show_about },
+    }
+    plugin.show_settings_list("Playback & about", items, update and { update = true } or nil)
+end
+
+open_menu = function(update)
+    local items = {
+        {
+            type = "row",
+            label = run.running and "Stop" or "Start",
+            icon = run.running and "Metronome/stop.png" or "Metronome/play.png",
+            on_select = function()
+                if run.running then stop_metronome() else start_metronome() end
+                open_menu(true)
+            end,
+        },
+        {
+            type = "slider", label = "Tempo", min = BPM_MIN, max = BPM_MAX, value = cfg.bpm,
+            icon = "Metronome/sliders-horizontal.png",
+            on_change = function(value) set_bpm(value, false, function() open_menu(true) end) end,
+        },
+        { type = "row", label = "Tap tempo", icon = "Metronome/hand-tap.png", on_select = tap_tempo },
+        { type = "row", label = "Tempo", icon = "Metronome/sliders-horizontal.png", on_select = function() open_tempo_steps(false) end },
+        { type = "row", label = "Rhythm", icon = "Metronome/music-notes.png", on_select = function() open_rhythm(false) end },
+        { type = "row", label = "Sound", icon = "Metronome/speaker-high.png", on_select = function() open_levels(false) end },
+        { type = "row", label = "Options", icon = "Metronome/gear-six.png", on_select = function() open_playback(false) end },
+    }
+    local markers = build_plan(cfg).pulses
+    plugin.show_settings_list("Metronome", items, {
+        update = update == true,
+        layout = "dashboard",
+        markers = markers,
+        accent_first = cfg.accent_on == 1,
+        active = run.running,
+        detail = rhythm_summary(),
+    })
 end
 
 ------------------------------------------------------------------------
@@ -709,9 +775,10 @@ adopt_or_sweep()
 
 if plugin.register_list_item then
     local icon = { icon = "Metronome.png" }
-    -- Settings always; More too where the player has that list.
-    plugin.register_list_item("playback", "Metronome", function() open_menu(false) end, icon)
-    if plugin.has_capability and plugin.has_capability("ui.more_menu") then
-        plugin.register_list_item("more", "Metronome", function() open_menu(false) end, icon)
-    end
+    local function open() open_menu(false) end
+    -- More only. Its four plugin rows are shared, so fall back to Playback &
+    -- Controls when More is full or missing rather than leave no way in.
+    local in_more = plugin.has_capability and plugin.has_capability("ui.more_menu") and
+        pcall(plugin.register_list_item, "more", "Metronome", open, icon)
+    if not in_more then plugin.register_list_item("playback", "Metronome", open, icon) end
 end

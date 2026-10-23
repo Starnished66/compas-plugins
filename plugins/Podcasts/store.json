@@ -62,6 +62,14 @@
     {
       "src": "player_layouts/reading_room/rr_speed.png",
       "dest": ".plugins/Podcasts/player_layouts/reading_room/rr_speed.png"
+    },
+    {
+      "src": "icons/BREEZE_SOURCES.txt",
+      "dest": ".plugin-assets/Podcasts/BREEZE_SOURCES.txt"
+    },
+    {
+      "src": "icons/BREEZE_COPYING-ICONS.txt",
+      "dest": ".plugin-assets/Podcasts/BREEZE_COPYING-ICONS.txt"
     }
   ],
   "publish": true

@@ -1,8 +1,8 @@
 plugin.define({
     id = "compas.track_inspector",
     name = "Track Inspector",
-    version = "1.5",
-    api_min = 19,
+    version = "1.5.2",
+    api_min = 17,
 })
 
 -- Track Inspector
@@ -1197,18 +1197,14 @@ show_bitperfect_screen = function(replace_handle)
         table.insert(rows, { label = "The snapshot shows a change or lacks enough information to verify an unchanged signal path.", wrap = true })
     end
 
-    if #assess.reasons > 0 then
-        table.insert(rows, { label = "Changes or unknown details" })
-        for _, r in ipairs(assess.reasons) do
-            table.insert(rows, { label = "* " .. r, wrap = true })
-        end
+    -- Lists have no section-header row, so each finding names its group in
+    -- the row's native muted secondary line ("text\nsecondary" on wrapped rows).
+    for _, r in ipairs(assess.reasons) do
+        table.insert(rows, { label = r .. "\nChange or unknown detail", wrap = true })
     end
 
-    if #assess.notes > 0 then
-        table.insert(rows, { label = "Other observations" })
-        for _, n in ipairs(assess.notes) do
-            table.insert(rows, { label = "- " .. n, wrap = true })
-        end
+    for _, n in ipairs(assess.notes) do
+        table.insert(rows, { label = n .. "\nOther observation", wrap = true })
     end
 
     local current_handle

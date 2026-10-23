@@ -1,4 +1,4 @@
-plugin.define({ id = "example.playback_extras", name = "Playback Extras", version = "1.3", api_min = 19 })
+plugin.define({ id = "example.playback_extras", name = "Playback Extras", version = "1.3.1", api_min = 17 })
 
 -- Reference implementation for plugin.register_list_item("music_audio", ...)
 -- and plugin.show_settings_list() (see PLUGINS.md): adds a "Loudness Boost"

@@ -1,4 +1,4 @@
-plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.0.1", api_min = 19 })
+plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.0.3", api_min = 17 })
 
 -- Last.fm scrobbler with guided setup, queue inspection, and bounded offline queue.
 
@@ -1507,7 +1507,12 @@ local function build_main_menu()
     end
   end)
 
-  add_row("Scrobbling: " .. (state.enabled and "On" or "Off"), function()
+  -- The main screen is a live-updating show_list (handle + replace), which
+  -- has no switch row; on wrapped lists the state is the row's native muted
+  -- secondary line, as in the player's own Settings rows.
+  local scrobbling_state = state.enabled and "On" or "Off"
+  local wrapped = plugin.has_capability and plugin.has_capability("ui.list_wrap")
+  add_row(wrapped and ("Scrobbling\n" .. scrobbling_state) or ("Scrobbling: " .. scrobbling_state), function()
     local desired = not state.enabled
     if set_scrobbling(desired) then
       plugin.show_toast(desired and "Scrobbling turned on." or "Scrobbling turned off.")
