@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.jellyfin_emby",
     name = "Jellyfin & Emby",
-    version = "1.1.2",
+    version = "1.1.3",
     api_min = 16,
 })
 
@@ -1675,7 +1675,6 @@ end
 local tile_icon = plugin.has_capability and plugin.has_capability("ui.breeze_stream_icons")
     and "stream_media/jellyfin_row.png" or "stream_media/radio.png"
 plugin.register_stream_media_tile("Jellyfin / Emby", open_stream_media_tile, tile_icon)
-plugin.register_list_item("settings", "Jellyfin & Emby", open_settings)
 
 -- Test export hook
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
