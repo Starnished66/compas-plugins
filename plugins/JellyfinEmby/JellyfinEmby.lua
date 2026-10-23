@@ -1,7 +1,7 @@
 plugin.define({
     id = "compas.jellyfin_emby",
     name = "Jellyfin & Emby",
-    version = "1.1.3",
+    version = "1.2.0",
     api_min = 16,
 })
 
@@ -258,6 +258,102 @@ local function clear_auth_state()
     browse_history = {}
 end
 
+-- Saved servers: a JSON list in storage "servers", each with its own token
+-- secret. The active server keeps the original single-server keys, so the
+-- browsing and playback code below is unchanged.
+local function load_servers()
+    local raw = plugin.storage.get("servers", "")
+    local list = raw ~= "" and plugin.json_decode(raw) or nil
+    return type(list) == "table" and list or {}
+end
+
+local function save_servers(list)
+    return plugin.storage.set("servers", plugin.json_encode(list))
+end
+
+local function server_token_key(server)
+    return "token_" .. tostring(server.id)
+end
+
+local function server_label(server)
+    local host = tostring(server.url):match("^%a+://([^/]+)") or tostring(server.url)
+    local kind = server.kind == "emby" and "Emby" or "Jellyfin"
+    return tostring(server.username) .. " @ " .. host .. " (" .. kind .. ")"
+end
+
+local function find_active_server(list)
+    local url = plugin.storage.get("server_url", "")
+    local kind = plugin.storage.get("server_kind", "jellyfin")
+    local username = plugin.storage.get("username", ""):lower()
+    for i, server in ipairs(list) do
+        if server.url == url and server.kind == kind and tostring(server.username):lower() == username then
+            return i, server
+        end
+    end
+end
+
+-- Adds or updates the active server; token is nil when not signed in.
+local function remember_active_server(token)
+    local list = load_servers()
+    local _, server = find_active_server(list)
+    if not server then
+        local next_id = tonumber(plugin.storage.get("next_server_id", "1")) or 1
+        plugin.storage.set("next_server_id", tostring(next_id + 1))
+        server = { id = next_id }
+        list[#list + 1] = server
+    end
+    server.url = plugin.storage.get("server_url", "")
+    server.kind = plugin.storage.get("server_kind", "jellyfin")
+    server.username = plugin.storage.get("username", "")
+    server.user_id = plugin.storage.get("user_id", "")
+    if token and plugin.secrets and plugin.secrets.set then
+        plugin.secrets.set(server_token_key(server), token)
+    end
+    save_servers(list)
+end
+
+local function forget_active_server_token()
+    local _, server = find_active_server(load_servers())
+    if server and plugin.secrets and plugin.secrets.delete then
+        plugin.secrets.delete(server_token_key(server))
+    end
+end
+
+local function activate_server(server)
+    clear_auth_state()
+    plugin.storage.set("server_url", server.url)
+    plugin.storage.set("server_kind", server.kind)
+    plugin.storage.set("username", server.username)
+    local token = plugin.secrets and plugin.secrets.get and plugin.secrets.get(server_token_key(server))
+    if token and token ~= "" and server.user_id and server.user_id ~= "" then
+        plugin.secrets.set("access_token", token)
+        plugin.storage.set("user_id", server.user_id)
+    end
+end
+
+local function remove_server(index)
+    local list = load_servers()
+    local active_index = find_active_server(list)
+    local server = table.remove(list, index)
+    if not server then return end
+    if plugin.secrets and plugin.secrets.delete then
+        plugin.secrets.delete(server_token_key(server))
+    end
+    save_servers(list)
+    if active_index == index then
+        clear_auth_state()
+        plugin.storage.delete("server_url")
+        plugin.storage.delete("username")
+    end
+end
+
+-- Earlier versions kept a single server; keep it as the first saved one.
+local function migrate_single_server()
+    if plugin.storage.get("servers", "") ~= "" or plugin.storage.get("server_url", "") == "" then return end
+    local token = plugin.secrets and plugin.secrets.get and plugin.secrets.get("access_token")
+    remember_active_server(token ~= "" and token or nil)
+end
+
 local function sanitize_error(err)
     if not err then return "Request failed" end
     local s = tostring(err)
@@ -433,6 +529,7 @@ local function request_api(method, endpoint, query_params, body, callback)
         end
 
         if status == 401 then
+            forget_active_server_token()
             clear_auth_state()
             plugin.show_toast("Session expired - please log in again")
             callback(nil, "Unauthorized (401)")
@@ -593,6 +690,7 @@ local function do_login(server_url, username, password, on_done)
             plugin.storage.set("username", user.Name)
         end
 
+        remember_active_server(token)
         plugin.show_toast("Logged in as " .. tostring(user.Name or username))
         if on_done then on_done(true, nil) end
     end)
@@ -1037,95 +1135,113 @@ end
 
 local open_settings
 
-local function prompt_login(on_finish)
-    local cur_server = plugin.storage.get("server_url", "")
-    local cur_user = plugin.storage.get("username", "")
+local function open_libraries()
+    browse_history = {}
+    current_browse_handle = nil
+    nav_generation = nav_generation + 1
+    current_view = { type = "libraries" }
+    execute_view(current_view)
+end
 
-    plugin.show_text_input("Server URL", cur_server, false, function(url)
+local function connect_server(server)
+    activate_server(server)
+    if is_authenticated() then
+        open_libraries()
+        return
+    end
+    plugin.show_text_input("Password", nil, true, function(pwd)
+        if pwd == nil then return end
+        do_login(server.url, server.username, pwd, function(ok)
+            if ok then open_libraries() end
+        end)
+    end)
+end
+
+local function open_saved_servers()
+    local list = load_servers()
+    if #list == 0 then
+        plugin.show_list("Saved Servers", { "No saved servers", "Add one in Settings." }, function() end)
+        return
+    end
+    local labels = {}
+    for i, server in ipairs(list) do labels[i] = server_label(server) end
+    plugin.show_list("Saved Servers", labels, function(index)
+        if list[index] then connect_server(list[index]) end
+    end)
+end
+
+local function prompt_add_server()
+    plugin.show_text_input("Server URL", "", false, function(url)
         if not url or url == "" then return end
         local norm_url, err = validate_and_normalize_server_url(url)
         if not norm_url then
             plugin.show_toast(err or "Invalid server URL")
             return
         end
-
-        plugin.show_text_input("Username", cur_user, false, function(user)
+        plugin.show_text_input("Username", "", false, function(user)
             if not user or user == "" then return end
-
             plugin.show_text_input("Password", nil, true, function(pwd)
-                do_login(norm_url, user, pwd or "", on_finish)
+                plugin.storage.set("server_kind", plugin.storage.get("new_server_kind", "jellyfin"))
+                do_login(norm_url, user, pwd or "", function(ok)
+                    if ok then open_libraries() end
+                end)
             end)
         end)
     end)
 end
 
+local function open_remove_servers(handle)
+    local list = load_servers()
+    local labels = {}
+    for i, server in ipairs(list) do labels[i] = server_label(server) end
+    if #labels == 0 then labels[1] = "No saved servers" end
+    local function on_select(index)
+        local server = list[index]
+        if not server then return end
+        plugin.show_confirmation("Remove " .. server_label(server) .. "?", "Remove", function()
+            remove_server(index)
+            plugin.show_toast("Server removed")
+            open_remove_servers(handle)
+        end)
+    end
+    if handle and plugin.has_capability("ui.list_update") and plugin.is_list_showing(handle) then
+        handle = plugin.show_list("Remove Server", labels, on_select, { replace = handle }) or handle
+    else
+        handle = plugin.show_list("Remove Server", labels, on_select)
+    end
+end
+
 open_settings = function()
-    local server_url = plugin.storage.get("server_url", "")
-    local server_kind = plugin.storage.get("server_kind", "jellyfin")
-    local username = plugin.storage.get("username", "")
-    local is_logged = is_authenticated()
-    local verify_tls = is_tls_verify_enabled()
+    local new_kind = plugin.storage.get("new_server_kind", "jellyfin")
     local page_size = tostring(get_clamped_page_size())
 
     local items = {
         {
             type = "row",
-            label = "Server URL: " .. (server_url ~= "" and server_url or "Not Set"),
-            on_select = function()
-                plugin.show_text_input("Server URL", server_url, false, function(new_url)
-                    if new_url and new_url ~= "" then
-                        local norm, err = validate_and_normalize_server_url(new_url)
-                        if not norm then
-                            plugin.show_toast(err or "Invalid server URL")
-                            return
-                        end
-                        clear_auth_state()
-                        local ok = plugin.storage.set("server_url", norm)
-                        if not ok then
-                            plugin.show_toast("Failed to save server URL")
-                            return
-                        end
-                        plugin.show_toast("Server URL updated")
-                    end
-                end)
-            end,
+            label = "Add Server",
+            on_select = prompt_add_server,
         },
         {
             type = "row",
-            label = "Server Type: " .. (server_kind == "emby" and "Emby" or "Jellyfin"),
+            label = "New server type: " .. (new_kind == "emby" and "Emby" or "Jellyfin"),
             on_select = function()
-                local new_kind = (server_kind == "emby") and "jellyfin" or "emby"
-                clear_auth_state()
-                local ok = plugin.storage.set("server_kind", new_kind)
+                local ok = plugin.storage.set("new_server_kind", new_kind == "emby" and "jellyfin" or "emby")
                 if not ok then
                     plugin.show_toast("Failed to save server type")
                     return
                 end
-                plugin.show_toast("Switched to " .. (new_kind == "emby" and "Emby" or "Jellyfin"))
                 open_settings()
             end,
         },
         {
             type = "row",
-            label = "Username: " .. (username ~= "" and username or "Not Set"),
-            on_select = function()
-                plugin.show_text_input("Username", username, false, function(new_user)
-                    if new_user and new_user ~= "" then
-                        clear_auth_state()
-                        local ok = plugin.storage.set("username", new_user)
-                        if not ok then
-                            plugin.show_toast("Failed to save username")
-                            return
-                        end
-                        plugin.show_toast("Username updated")
-                    end
-                end)
-            end,
+            label = "Remove Server",
+            on_select = function() open_remove_servers(nil) end,
         },
         {
             type = "toggle",
             label = "Verify HTTPS TLS",
-            value = verify_tls,
+            value = is_tls_verify_enabled(),
             on_change = function(val)
                 local ok = plugin.storage.set("verify_tls", val and "1" or "0")
                 if not ok then
@@ -1147,25 +1263,6 @@ open_settings = function()
             end,
         },
     }
-
-    if is_logged then
-        items[#items + 1] = {
-            type = "row",
-            label = "Log Out (" .. (username ~= "" and username or "Active") .. ")",
-            on_select = function()
-                do_logout()
-                open_settings()
-            end,
-        }
-    else
-        items[#items + 1] = {
-            type = "row",
-            label = "Log In",
-            on_select = function()
-                prompt_login()
-            end,
-        }
-    end
 
     plugin.show_settings_list("Jellyfin & Emby", items, { update = true })
 end
@@ -1202,16 +1299,7 @@ execute_view = function(view)
     if view.type == "libraries" then
         local endpoint = (user_id ~= "") and ("Users/" .. user_id .. "/Views") or "UserViews"
         request_api("GET", endpoint, nil, nil, function(data, err)
-            if err then
-                -- Settings & Account lives in this list, so a failed load
-                -- must still offer it (wrong server, sign out).
-                plugin.show_toast(err)
-                render_screen("Music Libraries", { "Retry", "Settings & Account" }, function(index)
-                    if index == 1 then execute_view(view)
-                    elseif index == 2 then open_settings() end
-                end)
-                return
-            end
+            if err then plugin.show_toast(err) return end
 
             local items = (type(data) == "table" and type(data.Items) == "table") and data.Items or {}
             local music_libs = {}
@@ -1245,7 +1333,7 @@ execute_view = function(view)
             labels[#labels + 1] = "Playback Format"
             actions[#actions + 1] = show_playback_format_screen
 
-            labels[#labels + 1] = "Settings & Account"
+            labels[#labels + 1] = "Settings"
             actions[#actions + 1] = open_settings
 
             render_screen("Music Libraries", labels, function(index)
@@ -1666,17 +1754,13 @@ execute_view = function(view)
 end
 
 local function open_stream_media_tile()
-    if not is_authenticated() then
-        open_settings()
-        return
-    end
-
-    browse_history = {}
-    current_browse_handle = nil
-    nav_generation = nav_generation + 1
-    current_view = { type = "libraries" }
-    execute_view(current_view)
+    plugin.show_settings_list("Jellyfin / Emby", {
+        { type = "row", label = "Saved Servers", on_select = open_saved_servers },
+        { type = "row", label = "Settings", on_select = open_settings },
+    })
 end
+
+migrate_single_server()
 
 -- Plugin entry registrations
 -- Players with ui.breeze_stream_icons ship a Jellyfin-tinted Breeze server
@@ -1708,6 +1792,10 @@ if rawget(_G, "COMPAS_PLUGIN_TEST") then
         play_items_queue = play_items_queue,
         show_playback_format_screen = show_playback_format_screen,
         open_settings = open_settings,
+        open_saved_servers = open_saved_servers,
+        load_servers = load_servers,
+        remove_server = remove_server,
+        activate_server = activate_server,
         open_stream_media_tile = open_stream_media_tile,
         request_api = request_api,
         navigate_to = navigate_to,
