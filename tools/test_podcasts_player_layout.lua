@@ -50,6 +50,7 @@ local function boot(capabilities)
     local state = {
         storage = { reading_room_auto_apply = "0" }, actions = {}, events = {}, layouts = {}, restores = 0,
         settings_calls = 0, speed_calls = {}, seeks = {}, current = episode,
+        now_playing = { "Episode", "Host", "Show" },
         position = 20, toasts = {}, minimum_api = nil,
     }
     plugin = {
@@ -81,7 +82,9 @@ local function boot(capabilities)
         end,
         show_toast = function(message) state.toasts[#state.toasts + 1] = message end,
         get_current_track_path = function() return state.current end,
-        get_now_playing = function() return "Episode", "Host", "Show" end,
+        get_now_playing = function()
+            return state.now_playing[1], state.now_playing[2], state.now_playing[3]
+        end,
         get_position = function() return state.position end,
         get_duration = function() return 100 end,
         seek = function(position) state.seeks[#state.seeks + 1] = position end,
@@ -114,6 +117,18 @@ for _, action in ipairs({ "reading_menu", "speed_menu", "rewind_15", "forward_15
     assert(type(state.actions[action]) == "function", action .. " should be registered")
 end
 
+state.actions.reading_menu()
+assert(#state.last_list.rows == 3, "selected episode should show episode, host, and show")
+assert(state.last_list.rows[1] == "Episode · Episode", "episode title metadata should be preserved")
+assert(state.last_list.rows[2] == "Host · Host" and state.last_list.rows[3] == "Show · Show",
+    "host and show metadata should be preserved")
+state.now_playing = { "", "   ", nil }
+state.actions.reading_menu()
+assert(state.last_list.rows[1] == "Episode · Unknown episode", "empty episode title should have a readable fallback")
+assert(state.last_list.rows[2] == "Host · Unknown host" and state.last_list.rows[3] == "Show · Unknown show",
+    "empty host and show tags should have readable fallbacks")
+state.now_playing = { "Episode", "Host", "Show" }
+
 state.events.track_started()
 assert(#state.layouts == 2, "Podcast playback should auto-apply despite a legacy opt-out")
 state.position = 5
@@ -143,6 +158,11 @@ assert(state.settings_calls == settings_before_speed + 2,
     "the Settings speed row should refresh its open settings page after selection")
 
 state.current = "/mock-sd/Music/song.mp3"
+state.actions.reading_menu()
+assert(#state.last_list.rows == 2, "non-podcast playback should show only the empty state")
+assert(state.last_list.rows[1] == "No podcast episode selected", "empty state should say no podcast episode is selected")
+assert(state.last_list.rows[2] == "Choose an episode from Podcasts to see its details",
+    "empty state should explain how to select an episode")
 local layouts_before_music = #state.layouts
 state.events.track_started()
 assert(#state.layouts == layouts_before_music, "music should not select the Podcasts layout")

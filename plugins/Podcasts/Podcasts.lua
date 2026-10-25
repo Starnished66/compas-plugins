@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.2", api_min = 17 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.7.3", api_min = 17 })
 
 -- Download-first podcast library stored under <SD>/Podcasts. Put OPML files
 -- beside subscriptions.opml to import them from the Podcasts home screen.
@@ -262,11 +262,24 @@ open_settings = function(update_existing)
 end
 
 local function show_podcast_reading_menu()
+    if not is_podcast_path(plugin.get_current_track_path()) then
+        plugin.show_list("Podcasts · Reading Room", {
+            "No podcast episode selected",
+            "Choose an episode from Podcasts to see its details",
+        }, function() end)
+        return
+    end
+
     local title, artist, album = plugin.get_now_playing()
+    local function display_value(value, fallback)
+        if type(value) ~= "string" then return fallback end
+        value = value:gsub("^%s+", ""):gsub("%s+$", "")
+        return value ~= "" and value or fallback
+    end
     local rows = {
-        "Episode · " .. tostring(title or "Nothing playing"),
-        "Host · " .. tostring(artist or "Unknown host"),
-        "Show · " .. tostring(album or "Unknown show"),
+        "Episode · " .. display_value(title, "Unknown episode"),
+        "Host · " .. display_value(artist, "Unknown host"),
+        "Show · " .. display_value(album, "Unknown show"),
     }
     plugin.show_list("Podcasts · Reading Room", rows, function() end)
 end

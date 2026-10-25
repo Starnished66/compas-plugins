@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.abx_blind_test",
     name = "ABX Blind Test",
-    version = "1.1.2",
+    version = "1.1.3",
     api_min = 16,
 })
 
@@ -669,7 +669,11 @@ local function browse_files(filter_exts, on_pick)
         end
 
         if #rows == 0 then
-            rows[1] = "No matching files in directory"
+            local formats = {}
+            for _, ext in ipairs(filter_exts) do
+                formats[#formats + 1] = ext:gsub("^%.", ""):upper()
+            end
+            rows[1] = "No matching files here (" .. table.concat(formats, ", ") .. ")"
             actions[1] = function() end
         end
 
