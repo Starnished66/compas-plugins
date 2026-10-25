@@ -1,4 +1,4 @@
--- Host-level contract tests for Qobuz and Tidal on-demand queues.
+-- Host-level contract tests for Qobuz and Tidal API 17 on-demand queues.
 -- These compile the production queue and event-handler blocks with mocked plugin APIs.
 local function read(path)
     local file = assert(io.open(path, "rb"))
@@ -26,13 +26,13 @@ end
 local function run_service(name, provider, resolver_name)
     local source = read("plugins/" .. name .. "/" .. name .. ".lua")
     check(source:match("api_min = 17"), name .. " requires API 17")
-    check(source:find('local ON_DEMAND = plugin.has_capability("playback.remote_resolve")', 1, true),
-          name .. " detects on-demand links")
-    check(source:find('if ON_DEMAND then plugin.on("remote_stream_needed"', 1, true),
-          name .. " registers its resolver only where the player has the event")
-    check(source:find("local EAGER_QUEUE_CAP = 12", 1, true) and source:find("local function play_these_eager(", 1, true),
-          name .. " keeps the short eager queue for older players")
-    check(not source:find("Update the player", 1, true), name .. " no longer refuses older players")
+    check(source:find('plugin.on("remote_stream_needed", on_remote_stream_needed)', 1, true),
+          name .. " always registers the API 17 on-demand resolver")
+    check(not source:find("ON_DEMAND", 1, true)
+          and not source:find("EAGER_QUEUE_CAP", 1, true)
+          and not source:find("play_these_eager", 1, true),
+          name .. " has no older-player eager-queue fallback")
+    check(not source:find("older players", 1, true), name .. " documents API 17 playback only")
 
     local queue_source = between(source, "local function queue_on_demand(", "local function play_these(")
     local event_source = between(source, "local function error_reason(", "local function queue_on_demand(")
@@ -60,7 +60,6 @@ local function run_service(name, provider, resolver_name)
         url_encode = function(value) return tostring(value) end,
         playback_generation = 0,
         toast = function() end,
-        ON_DEMAND = true,
         plugin = {
             has_capability = function(key) return key == "playback.remote_resolve" end,
             on = function(event, callback)
@@ -168,15 +167,9 @@ local function run_service(name, provider, resolver_name)
     env.queue_on_demand = queue_fn
     local play_fn = compile(play_source .. "\nreturn play_these", env, name .. " play_these")
     queued = nil
-    local eager_calls = 0
-    env.play_these_eager = function() eager_calls = eager_calls + 1 end
     if name == "Qobuz" then play_fn(tracks, 8) else play_fn(tracks, true, 8) end
-    check(queued and #queued.items == 500 and queued.items[1].track_id == "8" and eager_calls == 0,
-          name .. " routes playback through the lazy queue on current players")
-    env.ON_DEMAND = false
-    queued = nil
-    if name == "Qobuz" then play_fn(tracks, 8) else play_fn(tracks, true, 8) end
-    check(queued == nil and eager_calls == 1, name .. " uses the eager queue on older players")
+    check(queued and #queued.items == 500 and queued.items[1].track_id == "8",
+          name .. " always routes playback through the API 17 on-demand queue")
 end
 
 run_service("Qobuz", "qobuz", "file_url")

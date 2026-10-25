@@ -1,5 +1,5 @@
 {
-  "description": "Beta. Tidal for a paid account. Sign in with a code on your phone. Queues up to 500 tracks on current players, 12 on older ones.",
+  "description": "Beta. Tidal for a paid account. Sign in with a code on your phone. Queues up to 500 tracks with API 17 on-demand stream resolution.",
   "category": "Experimental",
   "author": "Compás"
 }

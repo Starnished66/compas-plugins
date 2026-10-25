@@ -22,9 +22,8 @@ too; if the manifest is an MP4 rather than a bare FLAC or ADTS AAC, playback
 stops with an explanation. Hi-res arrives as DASH segments, and this player
 cannot reassemble those, so that quality is not listed.
 
-Stream links expire within minutes. Players with playback.remote_resolve
-resolve fresh links on demand for up to 500 tracks; older players get 12
-tracks resolved up front. Stream format and server support determine
+Stream links expire within minutes. API 17 playback resolves fresh links on
+demand for up to 500 tracks. Stream format and server support determine
 quality and seeking behavior. Copy Tidal.lua to <SD card>/.plugins/ and
 restart.
 ]]
@@ -32,12 +31,9 @@ restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.6",
+    version = "1.3.7",
     api_min = 17,
 })
-
--- Older API 17 players lack on-demand links and keep the short eager queue.
-local ON_DEMAND = plugin.has_capability("playback.remote_resolve")
 
 if not plugin.has_capability("playback.remote") then
     plugin.show_toast("Tidal needs a player build with remote playback")
@@ -56,7 +52,6 @@ local PAGE = 25
 local BROWSE_CAP = 475 -- plus the "Play these" row, within show_list's 500 rows
 local SEARCH_CAP = 100
 local REMOTE_QUEUE_CAP = 500
-local EAGER_QUEUE_CAP = 12
 local TRACK_FETCH_CAP = REMOTE_QUEUE_CAP
 local remote_tracks = {}
 local JSON_LIMIT = 524288
@@ -571,7 +566,7 @@ local function on_remote_stream_needed(provider, track_id, request_id)
         })
     end)
 end
-if ON_DEMAND then plugin.on("remote_stream_needed", on_remote_stream_needed) end
+plugin.on("remote_stream_needed", on_remote_stream_needed)
 
 local function queue_on_demand(tracks, start_index, require_selected)
     playback_generation = playback_generation + 1
@@ -637,59 +632,8 @@ local function queue_on_demand(tracks, start_index, require_selected)
     plugin.queue_remote_list(queue, 1)
 end
 
--- Players without playback.remote_resolve need every link before the
--- queue starts, and links expire, so only a short queue is resolved.
-local function play_these_eager(tracks, require_selected, start_index)
-    playback_generation = playback_generation + 1
-    local generation = playback_generation
-    local pending = {}
-    for i = start_index or 1, #tracks do
-        local track = tracks[i]
-        if track.streamable == false and require_selected and #pending == 0 then
-            toast("Not available to stream")
-            return
-        end
-        if track.streamable ~= false and #pending < EAGER_QUEUE_CAP then
-            pending[#pending + 1] = track
-        end
-        if #pending >= EAGER_QUEUE_CAP then break end
-    end
-    if #pending == 0 then
-        toast("Nothing in this list can be streamed")
-        return
-    end
-    toast("Preparing playback")
-    local resolved = {}
-    local function step(index)
-        if generation ~= playback_generation then return end
-        if index > #pending then
-            if #resolved == 0 then
-                toast("None of these tracks returned a stream link")
-                return
-            end
-            plugin.queue_remote_list(resolved, 1)
-            return
-        end
-        stream_for(pending[index], function(remote, err)
-            if generation ~= playback_generation then return end
-            if remote then
-                resolved[#resolved + 1] = remote
-            elseif require_selected and index == 1 then
-                toast(err or "No stream link")
-                return
-            end
-            step(index + 1)
-        end)
-    end
-    step(1)
-end
-
 local function play_these(tracks, require_selected, start_index)
-    if ON_DEMAND then
-        queue_on_demand(tracks, start_index or 1, require_selected)
-    else
-        play_these_eager(tracks, require_selected, start_index)
-    end
+    queue_on_demand(tracks, start_index or 1, require_selected)
 end
 
 local function track_rows(list, album_hint)
