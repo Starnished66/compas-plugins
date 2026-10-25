@@ -32,6 +32,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGINS_DIR = os.path.join(ROOT, "plugins")
 
 SCHEMA = 1
+# Keep the published catalog within the highest API supported by the player.
+# Keep this in sync with the highest API supported by the target firmware.
+SUPPORTED_API_VERSION = 17
 # Kept well inside what the player accepts, so a release can never be
 # rejected on the device for size alone.
 MAX_FILE_BYTES = 1024 * 1024
@@ -299,6 +302,11 @@ def load_plugin(folder):
         raise BuildError(f"plugins/{folder}: version {define['version']!r} must be dotted numbers, e.g. 1.2")
     if not 1 <= define["api_min"] <= 0xFFFFFFFF:
         raise BuildError(f"plugins/{folder}: api_min must be at least 1")
+    if define["api_min"] > SUPPORTED_API_VERSION:
+        raise BuildError(
+            f"plugins/{folder}: api_min {define['api_min']} exceeds supported API "
+            f"version {SUPPORTED_API_VERSION}"
+        )
     if len(define["version"]) > 31:
         raise BuildError(f"plugins/{folder}: version {define['version']!r} is too long")
 

@@ -20,17 +20,10 @@ jobs:
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
+      - name: Test plugin API requirements
+        run: python3 tools/test_api_requirements.py
       - name: Build the release assets
         run: python3 tools/build_index.py --tag "$GITHUB_REF_NAME" --out dist
-      - name: Reject unsupported plugin API versions
-        run: |
-          python3 - <<'PY'
-          import json
-          index = json.load(open("dist/index.json"))
-          unsupported = [p["name"] for p in index["plugins"] if p["api_min"] > 17]
-          if unsupported:
-              raise SystemExit("Plugins require an unsupported API version (>17): " + ", ".join(unsupported))
-          PY
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
