@@ -52,6 +52,10 @@
       "dest": ".plugins/Podcasts/player_layouts/reading_room_480x720.xml"
     },
     {
+      "src": "player_layouts/reading_room.png",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room.png"
+    },
+    {
       "src": "player_layouts/reading_room/rr_rewind.png",
       "dest": ".plugins/Podcasts/player_layouts/reading_room/rr_rewind.png"
     },
