@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -597,13 +598,42 @@ def exported_api_names() -> set[str]:
     return names
 
 
-def capability_names() -> list[str]:
-    source = HOST / "src/plugins/bindings/plugin_info_bindings.c"
-    text = source.read_text(encoding="utf-8", errors="replace")
-    block = re.search(r"plugin_capabilities\[\]\s*=\s*\{(.*?)\};", text, re.S)
-    if not block:
-        raise RuntimeError("Could not find named Plugin API capability table")
-    return sorted(set(re.findall(r'"([a-z][a-z0-9_.]+)"', block.group(1))))
+_CAPABILITY_TABLE = re.compile(
+    r"(?:static\s+)?const\s+char\s*\*\s*(?:const\s*)?plugin_capabilities\s*\[\s*\]\s*=\s*\{(.*?)\};",
+    re.S,
+)
+
+
+def _discover_capability_table(source_root: Path = HOST) -> tuple[Path, str]:
+    """Return the sole named table's source path and its exact initializer body."""
+    plugins_dir = source_root / "src/plugins"
+    if not plugins_dir.is_dir():
+        raise RuntimeError(f"Plugin API source directory not found: {plugins_dir}")
+    matches = []
+    for source in sorted(plugins_dir.rglob("*.c")):
+        text = source.read_text(encoding="utf-8", errors="replace")
+        matches.extend((source, match.group(1)) for match in _CAPABILITY_TABLE.finditer(text))
+    if not matches:
+        raise RuntimeError(f"Could not find named plugin_capabilities table under {plugins_dir}")
+    if len(matches) != 1:
+        locations = ", ".join(str(path.relative_to(source_root)) for path, _ in matches)
+        raise RuntimeError(f"Expected one named plugin_capabilities table under {plugins_dir}; found {len(matches)} at: {locations}")
+    return matches[0]
+
+
+def _validated_capability_names(body: str, source: Path) -> list[str]:
+    values = re.findall(r'"([a-z][a-z0-9_.]+)"', body)
+    if not values:
+        raise RuntimeError(f"Named plugin_capabilities table is empty in {source}")
+    if len(values) != len(set(values)):
+        raise RuntimeError(f"Named plugin_capabilities table has duplicate entries in {source}")
+    return sorted(values)
+
+
+def capability_names(source_root: Path = HOST) -> list[str]:
+    """Read the single named capability table wherever it lives in this tree."""
+    source, body = _discover_capability_table(source_root)
+    return _validated_capability_names(body, source)
 
 
 def plugin_records() -> list[dict]:
@@ -766,6 +796,46 @@ def self_test() -> int:
     if not interpreter:
         raise RuntimeError("Lua interpreter not found for harness self-test")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    current_table_path, current_table_body = _discover_capability_table(HOST)
+    current_capabilities = _validated_capability_names(current_table_body, current_table_path)
+    table_declaration = "static const char * const plugin_capabilities[] = {\n" + current_table_body + "\n};\n"
+    with tempfile.TemporaryDirectory(prefix="stage3-capability-fixture-", dir=OUTPUT.parent) as temp_root:
+        temp_root = Path(temp_root)
+        layouts = (
+            ("old-module", Path("src/plugins/plugin_manager.c")),
+            ("extracted-module", Path("src/plugins/bindings/plugin_info_bindings.c")),
+        )
+        for fixture_name, relative_source in layouts:
+            fixture_root = temp_root / fixture_name
+            fixture_source = fixture_root / relative_source
+            fixture_source.parent.mkdir(parents=True, exist_ok=True)
+            fixture_source.write_text(table_declaration, encoding="utf-8")
+            if capability_names(fixture_root) != current_capabilities:
+                raise RuntimeError(f"Capability discovery changed at fixture layout {relative_source}")
+
+        absent_root = temp_root / "absent"
+        (absent_root / "src/plugins").mkdir(parents=True)
+        try:
+            capability_names(absent_root)
+        except RuntimeError as exc:
+            if "Could not find named plugin_capabilities table" not in str(exc):
+                raise
+        else:
+            raise RuntimeError("Capability discovery self-test accepted a missing table")
+
+        ambiguous_root = temp_root / "ambiguous"
+        ambiguous_a = ambiguous_root / "src/plugins/a.c"
+        ambiguous_b = ambiguous_root / "src/plugins/b.c"
+        ambiguous_a.parent.mkdir(parents=True)
+        ambiguous_a.write_text(table_declaration, encoding="utf-8")
+        ambiguous_b.write_text(table_declaration, encoding="utf-8")
+        try:
+            capability_names(ambiguous_root)
+        except RuntimeError as exc:
+            if "Expected one named plugin_capabilities table" not in str(exc):
+                raise
+        else:
+            raise RuntimeError("Capability discovery self-test accepted ambiguous tables")
     fixture = OUTPUT.parent / "stage3-plugin-harness-selftest.lua"
     fixture.write_text(
         "plugin.define({id='test.stage3.fixture', name='Stage3 fixture', version='1.0', api_min=17})\n"
@@ -821,7 +891,7 @@ def main() -> int:
     parser.add_argument("--run", action="store_true", help="Run the sandbox load/UI smoke. Requires owner GO PLUGINS first.")
     parser.add_argument("--write-plan", action="store_true", help="Write a static API17 inventory without executing plugins.")
     parser.add_argument("--self-test", action="store_true", help="Run a self-contained harness fixture only; never loads plugins.")
-    parser.add_argument("--lua", default="lua", help="Lua interpreter executable (5.1 or newer)")
+    parser.add_argument("--lua", default="lua", help="Lua interpreter executable matching the player build runtime")
     parser.add_argument("--timeout", type=int, default=20)
     args = parser.parse_args()
     if args.self_test:
