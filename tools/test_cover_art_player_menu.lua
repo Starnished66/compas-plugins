@@ -52,7 +52,7 @@ local function row(S, list)
 end
 
 local with_menu = load_plugin(true)
-check(with_menu.define and with_menu.define.version == "1.1.5", "version is 1.1.5")
+check(with_menu.define and with_menu.define.version == "1.1.6", "version is 1.1.6")
 check(#with_menu.rows == 2, "library and player rows are both registered")
 local library = row(with_menu, "music_library")
 local player = row(with_menu, "player")

@@ -25,7 +25,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Cover Art Fetcher is a published API 16 package for Compás v1.1. Lyrics Fetcher requires Plugin API 17 so it can refresh the current lyrics display after a save. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Lyrics Fetcher skips a sidecar that already has timestamps and renames an unsynchronized `.lrc` to `.compas-backup` before writing synced lyrics. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
+Cover Art Fetcher and Lyrics Fetcher require Plugin API 17. Cover Art Fetcher uses `ui.list_scroll_reset` for history pagination when the player provides it. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Lyrics Fetcher skips a sidecar that already has timestamps and renames an unsynchronized `.lrc` to `.compas-backup` before writing synced lyrics. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
 
 ## ListenBrainz and Net Radio
 
@@ -63,12 +63,12 @@ Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Pl
 
 ## v1.1 plugins (API 16 and 17)
 
-These packages are published for Compás v1.1 and require Plugin API 16 or 17.
+These plugins require Plugin API 16 or 17, as declared by each package.
 
 | Plugin | Where to open it | Behavior |
 | --- | --- | --- |
 | AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Catalog and profile download status in a dismissible progress card. |
-| Cover Art Fetcher | Settings > Library | Manual search and download stages, persistent download history, and confirmed revert to backups. |
+| Cover Art Fetcher | Settings > Library | API 17. Manual search and download stages, persistent download history, scroll reset when paging, and confirmed revert to backups. |
 | Lyrics Fetcher | Settings > Library, and Now Playing > three-dot menu on players that support it | Requires Plugin API 17. Manual lookup, retry and save status in a dismissible progress card. Skips synchronized sidecars and backs up unsynchronized ones. The Now Playing action fetches the current track. |
 | Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
 | Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |
@@ -78,11 +78,11 @@ These packages are published for Compás v1.1 and require Plugin API 16 or 17.
 | MSEB | Settings > Sound | Mood-based tone tuning on top of the parametric EQ, with backup and restore. |
 | Album Playback Rules | Settings > Playback & Controls | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
 | A-B Repeat | Settings > Playback & Controls | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
-| Metronome | Settings > Playback & Controls, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Plays a rendered WAV bar looped natively, so starting it replaces what is playing; it can resume the previous track on stop. Crossfade is turned off while it runs. |
+| Metronome | Settings > Playback & Controls, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Pauses music and plays a repeating click track; native looping keeps the current queue intact, and Stop can resume the previous track. Crossfade is turned off while it runs. |
 | ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
-| Jellyfin & Emby | Stream Media | Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
-| Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Includes Reading Room layouts and icons. Version 3.7.0 (unreleased). |
-| Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Includes Reading Room layouts and icons. Version 1.7.0 (unreleased). |
+| Jellyfin & Emby | Stream Media | API 17. Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
+| Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Includes Reading Room layouts and icons. |
+| Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Includes Reading Room layouts and icons. |
 
 Automatic EQ tools preserve later manual changes. If another tool changes EQ,
 automation suspends rather than continually overwriting it; use the plugin's

@@ -1,8 +1,8 @@
 plugin.define({
     id = "compas.jellyfin_emby",
     name = "Jellyfin & Emby",
-    version = "1.2.0",
-    api_min = 16,
+    version = "1.2.1",
+    api_min = 17,
 })
 
 if not plugin.has_capability("playback.remote") then
@@ -20,6 +20,7 @@ local nav_generation = 1
 local active_requests = {}
 
 local current_browse_handle = nil
+local current_browse_view_key = nil
 local browse_history = {}
 local current_view = nil
 
@@ -254,6 +255,7 @@ local function clear_auth_state()
     end
     plugin.storage.delete("user_id")
     current_browse_handle = nil
+    current_browse_view_key = nil
     current_view = nil
     browse_history = {}
 end
@@ -1146,23 +1148,45 @@ end
 -- Virtual Browsing Screen with ui.list_update replace semantics
 local execute_view
 
-local function render_screen(title, items, on_select)
+local function browse_view_key(view, page_size)
+    local function part(value)
+        local text = value == nil and "" or tostring(value)
+        return tostring(#text) .. ":" .. text
+    end
+    local library = type(view.library) == "table" and view.library or {}
+    local artist = type(view.artist) == "table" and view.artist or {}
+    local album = type(view.album) == "table" and view.album or {}
+    return table.concat({
+        part(view.type), part(library.Id), part(artist.Id), part(album.Id),
+        part(view.query), part(to_positive_integer(view.start_index)), part(page_size),
+    })
+end
+
+local function render_screen(title, items, on_select, view, page_size, view_key_override)
     local bounded_items = {}
     local n = math.min(#items, 500)
     for i = 1, n do
         bounded_items[i] = items[i]
     end
 
+    local view_key = view_key_override or browse_view_key(view or {}, page_size)
     local new_handle = nil
     if current_browse_handle and plugin.has_capability("ui.list_update") and plugin.is_list_showing(current_browse_handle) then
-        new_handle = plugin.show_list(title, bounded_items, on_select, { replace = current_browse_handle })
+        local options = { replace = current_browse_handle }
+        if current_browse_view_key ~= view_key and plugin.has_capability("ui.list_scroll_reset") then
+            options.reset_scroll = true
+        end
+        new_handle = plugin.show_list(title, bounded_items, on_select, options)
     end
 
     if not new_handle then
         new_handle = plugin.show_list(title, bounded_items, on_select)
     end
 
-    current_browse_handle = new_handle
+    if new_handle then
+        current_browse_handle = new_handle
+        current_browse_view_key = view_key
+    end
     return new_handle
 end
 
@@ -1174,6 +1198,7 @@ local function go_back()
         execute_view(prev_view)
     else
         current_browse_handle = nil
+        current_browse_view_key = nil
         current_view = nil
     end
 end
@@ -1195,6 +1220,7 @@ local open_settings
 local function open_libraries()
     browse_history = {}
     current_browse_handle = nil
+    current_browse_view_key = nil
     nav_generation = nav_generation + 1
     current_view = { type = "libraries" }
     execute_view(current_view)
@@ -1350,7 +1376,9 @@ execute_view = function(view)
         return
     end
 
+    nav_generation = nav_generation + 1
     local page_size = get_clamped_page_size()
+    local view_key = browse_view_key(view, page_size)
     local user_id = plugin.storage.get("user_id", "")
 
     if view.type == "libraries" then
@@ -1395,7 +1423,7 @@ execute_view = function(view)
 
             render_screen("Music Libraries", labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "library_menu" then
@@ -1417,7 +1445,7 @@ execute_view = function(view)
         }
         render_screen(lib_name, labels, function(index)
             if actions[index] then actions[index]() end
-        end)
+        end, view, page_size, view_key)
 
     elseif view.type == "artists" then
         local lib = (type(view.library) == "table") and view.library or {}
@@ -1473,7 +1501,7 @@ execute_view = function(view)
             local title = string.format("Artists (%d-%d / %d)", start_idx + 1, start_idx + #items, total)
             render_screen(title, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "artist_albums" then
@@ -1537,7 +1565,7 @@ execute_view = function(view)
             local title = string.format("%s Albums (%d-%d / %d)", art_name, start_idx + 1, start_idx + #items, total)
             render_screen(title, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "albums" then
@@ -1598,7 +1626,7 @@ execute_view = function(view)
             local title = string.format("Albums (%d-%d / %d)", start_idx + 1, start_idx + #items, total)
             render_screen(title, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "album_tracks" then
@@ -1686,7 +1714,7 @@ execute_view = function(view)
             local alb_title = safe_string(alb.Name, "Album Tracks", 128)
             render_screen(alb_title, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "songs" then
@@ -1747,7 +1775,7 @@ execute_view = function(view)
             local title = string.format("Songs (%d-%d / %d)", start_idx + 1, start_idx + #items, total)
             render_screen(title, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
 
     elseif view.type == "search" then
@@ -1805,7 +1833,7 @@ execute_view = function(view)
 
             render_screen("Search: " .. query, labels, function(index)
                 if actions[index] then actions[index]() end
-            end)
+            end, view, page_size, view_key)
         end)
     end
 end

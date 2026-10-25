@@ -1,8 +1,8 @@
 plugin.define({
     id = "example.cover_art_fetcher",
     name = "Cover Art Fetcher",
-    version = "1.1.5",
-    api_min = 16,
+    version = "1.1.6",
+    api_min = 17,
 })
 
 -- Fills a missing album-title.jpg sidecar from MusicBrainz + Cover Art Archive.
@@ -1538,6 +1538,10 @@ local function open_history(page, filter, title, replace_handle)
     if page > 1 then items[#items + 1] = "Newer"; newer_row = #items end
     if page < pages then items[#items + 1] = "Older"; older_row = #items end
     local list_handle
+    local options = replace_handle and { replace = replace_handle } or nil
+    if options and plugin.has_capability("ui.list_scroll_reset") then
+        options.reset_scroll = true
+    end
     list_handle = plugin.show_list((title or "Downloaded covers") .. " " .. page .. "/" .. pages, items, function(index)
         if index == newer_row then
             open_history(page - 1, filter, title, list_handle)
@@ -1546,7 +1550,7 @@ local function open_history(page, filter, title, replace_handle)
         elseif ids[index] then
             open_receipt(ids[index])
         end
-    end, replace_handle and { replace = replace_handle } or nil)
+    end, options)
 end
 
 open_receipt = function(id)
