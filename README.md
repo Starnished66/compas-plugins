@@ -4,6 +4,8 @@ This repository contains plugin packages, examples and essential store publishin
 
 Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. The **Plugin Store** (Settings > System > Plugin Manager) installs and updates plugins from the latest release. Player layouts have their own download page under **Settings > Display > Player Layout > Layout > Download**.
 
+The plugin API guide (`PLUGINS.md`, which the comments in some plugins refer to) and the player documentation live in [compas-page](https://github.com/Starnished66/compas-page/blob/main/docs/PLUGINS.md) (a private repository for now).
+
 ## Installing by hand
 
 Download the files of a plugin from the [latest release](https://github.com/Starnished66/compas-plugins/releases/latest), or from `plugins/<Name>/` in this repository, and copy them to the SD card:
