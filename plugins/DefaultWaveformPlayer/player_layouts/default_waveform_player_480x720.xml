@@ -14,9 +14,9 @@
         <lv_label name="title" text="" x="22" y="32" width="436" height="31" style_text_font="player_title" style_text_align="center" style_pad_all="0" />
         <lv_label name="artist" text="" x="22" y="68" width="436" height="24" style_text_font="player_meta" style_text_align="center" style_pad_all="0" />
         <lv_label name="album" text="" x="22" y="97" width="436" height="24" style_text_font="player_meta" style_text_align="center" style_pad_all="0" />
-        <lv_obj name="quality_pill" x="110" y="466" width="260" height="32" scrollable="false" style_radius="100" style_bg_opa="51" style_border_width="0" style_pad_all="0" clickable="false">
-            <lv_image src="quality_waveform" x="12" y="8" width="20" height="20" inner_align="contain" />
-            <lv_label name="format_badge" text="" x="36" y="2" width="212" height="100%" style_text_font="font_16" style_text_align="center" />
+        <lv_obj name="quality_pill" x="0" y="466" width="content" height="content" scrollable="false" style_radius="100" style_bg_opa="51" style_border_width="0" style_pad_all="0" clickable="false" align="top_mid" style_min_height="32" style_bg_color="0x000000" flex_flow="row" style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center" style_pad_hor="13" style_pad_ver="5" style_pad_column="9">
+            <lv_image src="quality_waveform" width="20" height="20" inner_align="contain" name="quality_icon" />
+            <lv_label name="format_badge" text="" width="content" height="content" style_text_font="font_16" style_text_align="center" long_mode="clip" style_pad_all="0" />
         </lv_obj>
         <lv_label name="seek_style" text="waveform_bars" hidden="true" />
         <lv_slider name="progress_slider" x="30" y="518" width="420" height="36" style_radius="8" />
