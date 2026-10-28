@@ -1,7 +1,7 @@
 {
   "description": "A panoramic Now Playing screen with animated lyrics, waveform seeking, and a soft artwork fade.",
   "category": "Customization",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "player_layouts/panorama_player.xml",
@@ -18,6 +18,10 @@
     {
       "src": "player_layouts/panorama_player.png",
       "dest": ".plugins/PanoramaPlayer/player_layouts/panorama_player.png"
+    },
+    {
+      "src": "player_layouts/panorama_player_240x320.xml",
+      "dest": ".plugins/PanoramaPlayer/player_layouts/panorama_player_240x320.xml"
     }
   ],
   "preview": "preview.jpg"
