@@ -1,7 +1,7 @@
 {
   "description": "A Gallery-style Now Playing screen with frosted artwork, filled-envelope waveform seeking, and tap-to-open lyrics.",
   "category": "Customization",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "player_layouts/gallery_waveform_player.xml",
@@ -18,6 +18,14 @@
     {
       "src": "player_layouts/gallery_waveform_player.png",
       "dest": ".plugins/GalleryWaveformPlayer/player_layouts/gallery_waveform_player.png"
+    },
+    {
+      "src": "player_layouts/gallery_waveform_player_240x320.xml",
+      "dest": ".plugins/GalleryWaveformPlayer/player_layouts/gallery_waveform_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/gallery_waveform_player/v1_back.png",
+      "dest": ".plugins/GalleryWaveformPlayer/player_layouts/gallery_waveform_player/v1_back.png"
     }
   ],
   "preview": "preview.jpg"

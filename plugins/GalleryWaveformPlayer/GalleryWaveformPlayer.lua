@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.gallery_waveform_player",
     name = "Gallery Waveform Player",
-    version = "1.0.1",
+    version = "1.0.2",
     api_min = 17,
 })
 

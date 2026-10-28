@@ -22,6 +22,10 @@
     {
       "src": "player_layouts/gallery_player_240x320.xml",
       "dest": ".plugins/GalleryPlayer/player_layouts/gallery_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/gallery_player/v1_back.png",
+      "dest": ".plugins/GalleryPlayer/player_layouts/gallery_player/v1_back.png"
     }
   ],
   "preview": "preview.jpg"

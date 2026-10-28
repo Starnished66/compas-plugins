@@ -1,7 +1,7 @@
 {
   "description": "A HiBy-style Now Playing screen with edge-to-edge artwork, a frosted glass footer, and tap-to-open lyrics.",
   "category": "Customization",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "player_layouts/hibys_player.xml",
@@ -18,6 +18,14 @@
     {
       "src": "player_layouts/hibys_player.png",
       "dest": ".plugins/HibysPlayer/player_layouts/hibys_player.png"
+    },
+    {
+      "src": "player_layouts/hibys_player_240x320.xml",
+      "dest": ".plugins/HibysPlayer/player_layouts/hibys_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/hibys_player/v1_back.png",
+      "dest": ".plugins/HibysPlayer/player_layouts/hibys_player/v1_back.png"
     }
   ],
   "preview": "preview.jpg"

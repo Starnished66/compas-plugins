@@ -5,7 +5,7 @@
         </lv_obj>
         <lv_arc name="progress_slider" x="42" y="6" width="156" height="156" rotation="270" bg_start_angle="0" bg_end_angle="360" start_angle="0" end_angle="0" value="0" min_value="0" max_value="100" mode="normal" clickable="false" style_arc_width="3" style_arc_rounded="true" style_border_width="0" style_pad_all="0" />
         <lv_obj name="dismiss_btn" x="0" y="0" width="32" height="32" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_image name="dismiss_icon" src="btn_back" x="4" y="4" width="24" height="24" inner_align="contain" />
+            <lv_image name="dismiss_icon" src="v1_back" x="4" y="4" width="24" height="24" inner_align="contain" />
         </lv_obj>
         <lv_label name="title" text="" x="12" y="169" width="216" height="22" style_text_font="font_20" style_text_align="center" style_pad_all="0" />
         <lv_label name="artist" text="" x="12" y="195" width="216" height="18" style_text_font="font_16" style_text_align="center" style_pad_all="0" />

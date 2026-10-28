@@ -1,7 +1,7 @@
 {
   "description": "Search and subscribe to podcasts, manage downloads with File Manager, and resume where you left off. Includes a Reading Room player layout with 15 second seek controls and playback speed.",
   "category": "Listening",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "icons/show.png",
@@ -74,6 +74,10 @@
     {
       "src": "icons/BREEZE_COPYING-ICONS.txt",
       "dest": ".plugin-assets/Podcasts/BREEZE_COPYING-ICONS.txt"
+    },
+    {
+      "src": "player_layouts/reading_room_240x320.xml",
+      "dest": ".plugins/Podcasts/player_layouts/reading_room_240x320.xml"
     }
   ],
   "publish": true

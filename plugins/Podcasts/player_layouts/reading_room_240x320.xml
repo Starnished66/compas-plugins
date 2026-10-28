@@ -1,0 +1,43 @@
+<!-- 240x320 Reading Room layout. Keep metadata and every transport action visible. -->
+<component>
+  <consts>
+    <bool name="compas_lyrics_enabled" value="false"/>
+    <str name="compas_artist_action" value="none"/>
+    <str name="compas_album_action" value="reading_menu"/>
+  </consts>
+  <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="255" style_border_width="0" style_pad_all="0">
+    <lv_obj name="cover_card" x="64" y="10" width="112" height="112"
+            scrollable="false" style_radius="18" style_clip_corner="true" style_bg_opa="255" style_border_width="0" style_pad_all="0">
+      <lv_image name="cover_img" src="default_cover" width="112" height="112" align="center" inner_align="stretch"/>
+    </lv_obj>
+    <lv_label name="title" text="" x="12" y="124" width="216" height="22" long_mode="dots" style_text_align="center" style_text_font="player_title" style_pad_all="0"/>
+    <lv_label name="artist" text="" x="12" y="148" width="216" height="18" long_mode="dots" style_text_align="center" style_text_font="player_meta" style_pad_all="0"/>
+    <lv_label name="album" text="" x="12" y="168" width="216" height="18" long_mode="dots" style_text_align="center" style_text_font="player_meta" style_pad_all="0"/>
+    <lv_slider name="progress_slider" x="12" y="190" width="216" height="8" style_radius="4"/>
+    <lv_label name="pos_label" text="0:00" x="12" y="202" width="72" height="18" style_text_font="font_16" style_pad_all="0"/>
+    <lv_label name="dur_label" text="--:--" x="156" y="202" width="72" height="18" style_text_font="font_16" style_text_align="right" style_pad_all="0"/>
+
+    <!-- Fifteen-second seek actions flank the centered play control. -->
+    <lv_button name="rewind_button" x="37" y="226" width="46" height="46" clickable="true"
+               style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
+      <lv_image name="glyph_rewind" src="rr_rewind" width="24" height="24" align="center" inner_align="contain"/>
+      <event_cb trigger="clicked" callback="compas_action" user_data="rewind_15"/>
+    </lv_button>
+    <lv_image name="play_btn" src="btn_play" x="100" y="229" width="40" height="40" inner_align="contain"/>
+    <lv_button name="forward_button" x="157" y="226" width="46" height="46" clickable="true"
+               style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
+      <lv_image name="glyph_forward" src="rr_forward" width="24" height="24" align="center" inner_align="contain"/>
+      <event_cb trigger="clicked" callback="compas_action" user_data="forward_15"/>
+    </lv_button>
+
+    <!-- Chapter navigation and speed remain available in the secondary row. -->
+    <lv_image name="prev_btn" src="btn_prev" x="42" y="275" width="24" height="24" inner_align="contain"/>
+    <lv_button name="speed_button" x="104" y="271" width="32" height="32" clickable="true"
+               style_radius="0" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_shadow_width="0">
+      <lv_image name="glyph_speed" src="rr_speed" width="24" height="24" align="center" inner_align="contain"/>
+      <event_cb trigger="clicked" callback="compas_action" user_data="speed_menu"/>
+    </lv_button>
+    <lv_image name="next_btn" src="btn_next" x="174" y="275" width="24" height="24" inner_align="contain"/>
+    <lv_label name="caption_speed" text="Speed" x="88" y="300" width="64" height="18" style_text_align="center" style_text_font="font_16" style_pad_all="0"/>
+  </view>
+</component>

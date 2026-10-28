@@ -1,7 +1,7 @@
 {
   "description": "The Default Now Playing screen as a downloadable layout, with frosted artwork, waveform-bar seeking, and tap-to-open lyrics.",
   "category": "Customization",
-  "author": "Compás",
+  "author": "Comp\u00e1s",
   "files": [
     {
       "src": "player_layouts/default_waveform_player.xml",
@@ -18,6 +18,14 @@
     {
       "src": "player_layouts/default_waveform_player.png",
       "dest": ".plugins/DefaultWaveformPlayer/player_layouts/default_waveform_player.png"
+    },
+    {
+      "src": "player_layouts/default_waveform_player_240x320.xml",
+      "dest": ".plugins/DefaultWaveformPlayer/player_layouts/default_waveform_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/default_waveform_player/v1_back.png",
+      "dest": ".plugins/DefaultWaveformPlayer/player_layouts/default_waveform_player/v1_back.png"
     }
   ],
   "preview": "preview.jpg"

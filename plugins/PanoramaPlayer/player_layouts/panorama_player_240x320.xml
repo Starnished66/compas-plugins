@@ -47,7 +47,7 @@
             <lv_obj name="lyrics_area" x="12" y="80" width="216" height="184" scrollable="false" style_bg_opa="0" style_opa="255" style_radius="16" style_border_width="0" style_pad_all="12" style_text_align="left" clickable="false" />
         </lv_obj>
         <lv_obj name="dismiss_btn" x="4" y="4" width="32" height="32" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_image name="dismiss_icon" src="btn_back" x="4" y="4" width="24" height="24" inner_align="contain" />
+            <lv_image name="dismiss_icon" src="v1_back" x="4" y="4" width="24" height="24" inner_align="contain" />
         </lv_obj>
         <lv_image name="more_btn" src="ic_more" x="204" y="8" width="24" height="24" inner_align="contain" />
         <lv_label name="title" text="" x="12" y="151" width="216" height="22" style_text_font="font_20" style_text_align="left" style_pad_all="0" />

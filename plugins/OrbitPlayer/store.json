@@ -22,6 +22,10 @@
     {
       "src": "player_layouts/orbit_player_240x320.xml",
       "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/orbit_player/v1_back.png",
+      "dest": ".plugins/OrbitPlayer/player_layouts/orbit_player/v1_back.png"
     }
   ],
   "preview": "preview.jpg"

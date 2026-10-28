@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.hibys_player",
     name = "Hiby's Player",
-    version = "1.0.1",
+    version = "1.0.2",
     api_min = 17,
 })
 

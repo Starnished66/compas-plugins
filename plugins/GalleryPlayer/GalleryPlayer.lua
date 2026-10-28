@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.gallery_player",
     name = "Gallery Player",
-    version = "1.1.4",
+    version = "1.1.5",
     api_min = 17,
 })
 
