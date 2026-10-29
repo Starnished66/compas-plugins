@@ -185,7 +185,7 @@ plugin.define({
 
 ### Checking what the player supports
 
-- `plugin.api_version()` returns the API version, currently `17`.
+- `plugin.api_version()` returns the API version, `18` on player builds that include API 18 (check it; older firmware reports less).
 - `plugin.has_capability(name)` returns whether one feature exists. Prefer it
   over `api_min` when you only need one feature. Tokens:
 
@@ -195,7 +195,7 @@ plugin.define({
   | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve` |
   | Files | `filesystem.sd`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
-  | Network | `network.http.sync`, `network.http.async`, `network.http.download`, `network.http.download_progress` |
+  | Network | `network.http.sync`, `network.http.async`, `network.http.download`, `network.http.download_progress`, `network.status` |
   | Data | `data.json`, `crypto.md5`, `data.zip`, `data.zip_image`, `data.image_thumbnail`, `data.wallpaper`, `data.html` |
   | Library | `library.album_cover`, `library.artist_albums`, `library.paged`, `library.refresh`, `library.track_metadata` |
 
@@ -221,6 +221,7 @@ plugin.define({
 | 15 | Full XML Player-layout support (`ui.player_layout_xml`), including plugin-bundle discovery, current named-widget features, companion PNG previews, and resolution-specific XML variants using `@WIDTHxHEIGHT` or `_WIDTHxHEIGHT` filenames |
 | 16 | Playback speed/stereo width/progress plus format/output snapshots, silent volume, transient EQ, output events, playback settings, native A–B loops/comparison, and finite HTTP seeking. Modeless progress bars and download byte snapshots are also available, as are File Manager operations and the native file picker. |
 | 17 | Consolidated additions after API 16: player-layout actions and owner-scoped background layout restoration; native hardware button lock and its event; top-level Music submenu plugin actions and native confirmation dialogs; current-track lyrics refresh; and the instrument dashboard layout. Plugins using these features require API 17, and the store rejects installation on older firmware. |
+| 18 | Player builds from the next release after 17: `plugin.network_status()` and the `network_changed` event (capability `network.status`). Prefer feature detection with `has_capability("network.status")` over raising `api_min`. |
 
 All of these are additions; older plugins keep working.
 
@@ -1471,6 +1472,15 @@ event.
 
 ## Network
 
+### `plugin.network_status()` (API 18)
+
+Returns `{ connected = bool, wifi_enabled = bool }` from the player's cached
+Wi-Fi state (updated about every 5 seconds with the screen on, about every 45 seconds with it off while a plugin listens for `network_changed`). Before the first query it reports `{ connected = false, wifi_enabled = false }`, then `{ false, true }` if Wi-Fi is on. It never queries the radio, so it
+is cheap to call. `connected` means associated with an access point; it does
+not prove the internet is reachable. Check `plugin.has_capability("network.status")`
+first when you also support older players. Subscribe to the `network_changed`
+event instead of polling.
+
 ### `plugin.http_request(options, callback)`
 
 The way to make HTTP requests. It returns a handle immediately, the request
@@ -1725,6 +1735,7 @@ called. Up to 16 subscribers per event; an unknown event name is an error.
 | `screen_woke` | none | The screen turns back on. |
 | `volume_changed` | `percent` | The volume changes, at most twice a second. |
 | `battery_changed` | same table as `get_battery()` | A battery value changes. |
+| `network_changed` | `{ connected, wifi_enabled }` (same table as `network_status()`) | The cached Wi-Fi state changes: connected or disconnected, Wi-Fi switched on or off. API 18. `connected` means associated with the access point (wpa COMPLETED), which can be just before DHCP finishes, so a send made right on the event may fail once. The first reading after boot is only a baseline; if the first query finds the player connected, you get a normal change event. |
 | `screenshot_saved` | `path` | A screenshot was saved. |
 | `screenshot_failed` | `reason` | A screenshot couldn't be saved. |
 | `button_lock_changed` | `locked` | Native hardware button lock toggled. |

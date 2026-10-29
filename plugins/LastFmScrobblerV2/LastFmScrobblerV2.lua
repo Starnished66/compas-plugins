@@ -1,4 +1,4 @@
-plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.0.3", api_min = 17 })
+plugin.define({ id = "compas.lastfm_scrobbler_v2", name = "LastFM Scrobbler V2", version = "1.1.0", api_min = 17 })
 
 -- Last.fm scrobbler with guided setup, queue inspection, and bounded offline queue.
 
@@ -548,15 +548,66 @@ local function enqueue_scrobble(item, username)
   return save_queue(key, items)
 end
 
+-- Network awareness (player API 18). On older players none of this exists and
+-- the plugin behaves as before: no offline detection, backoff only.
+local MAX_BACKOFF = 300
+local NETWORK_ERROR = "Last.fm not reachable."
+local OFFLINE_OFF = "Wi-Fi off \u{2014} will send when connected"
+local OFFLINE_NO_LINK = "Wi-Fi not connected \u{2014} will send when connected"
+
+local function network_state()
+  if type(plugin.network_status) ~= "function" then return nil end
+  if plugin.has_capability and not plugin.has_capability("network.status") then return nil end
+  local ok, st = pcall(plugin.network_status)
+  if ok and type(st) == "table" then return st end
+  return nil
+end
+
+-- Wi-Fi switched off: the one state that stays accurate with the screen off,
+-- so sends are hard-skipped.
+local function wifi_disabled()
+  local st = network_state()
+  return st ~= nil and st.wifi_enabled == false
+end
+
+-- Wi-Fi on but not associated. This can be stale while the screen is off, so
+-- it never blocks a send; it only stops failures from growing the backoff.
+local function link_down()
+  local st = network_state()
+  return st ~= nil and st.wifi_enabled ~= false and st.connected == false
+end
+
+local function offline_text()
+  if wifi_disabled() then return OFFLINE_OFF end
+  return OFFLINE_NO_LINK
+end
+
+local last_failure_network = false
+
 local function sync_failed(reason)
-  sync_failures = sync_failures + 1
-  local delay = math.min(15 * 2 ^ (sync_failures - 1), 1800)
-  next_sync_at = os.time() + delay
-  if reason then
-    persistent_error = reason
+  reason = reason or "Waiting list could not be updated."
+  last_failure_network = (reason == NETWORK_ERROR)
+  -- A stale "not connected" can hold plays back for at most MAX_BACKOFF.
+  local delay
+  if last_failure_network and link_down() then
+    -- No link: network_changed will trigger an immediate send on reconnect,
+    -- so just wait out the long fallback without growing the backoff.
+    delay = MAX_BACKOFF
   else
-    persistent_error = "Last.fm not reachable (next try in " .. math.ceil(delay / 60) .. "m)."
+    sync_failures = sync_failures + 1
+    delay = math.min(15 * 2 ^ (sync_failures - 1), MAX_BACKOFF)
   end
+  next_sync_at = os.time() + delay
+  -- The delay is shown live on the queue row, never baked into this text.
+  persistent_error = reason
+end
+
+local function format_last_sent(ts)
+  ts = tonumber(ts)
+  if not ts or ts <= 0 then return nil end
+  local fmt = (os.time() - ts) > 86400 and "%m-%d %H:%M" or "%H:%M"
+  local ok, text = pcall(os.date, fmt, ts)
+  return ok and text or nil
 end
 
 local function remove_queued(key, id)
@@ -598,6 +649,8 @@ sync_queue = function()
   end
   if queue_sync_token or os.time() < next_sync_at or credentials_rejected
       or not (state.enabled and state.session_key and state.username) then return end
+  -- Wi-Fi switched off: nothing to try.
+  if wifi_disabled() then return end
   local pending_import = plugin.storage.get("legacy_queue_account")
   if pending_import and pending_import:lower() == state.username:lower()
       and plugin.storage.get("legacy_queue_done") ~= "1" then return end
@@ -608,7 +661,7 @@ sync_queue = function()
   if dropped and not save_queue(key, items) then return end
   while items[1] and sent_ids[items[1].id] do
     if not remove_queued(key, items[1].id) then
-      sync_failed()
+      sync_failed("Waiting list could not be updated.")
       if refresh_main_list then refresh_main_list() end
       return
     end
@@ -631,13 +684,20 @@ sync_queue = function()
       end
       if generation ~= account_generation then return end
       if request_error or not body then
-        sync_failed("Last.fm not reachable (retrying automatically).")
+        if wifi_disabled() then
+          -- Wi-Fi was switched off mid-request: wait for network_changed.
+          if persistent_error == NETWORK_ERROR then persistent_error = nil end
+        else
+          sync_failed(NETWORK_ERROR)
+        end
         if refresh_main_list then refresh_main_list() end
         return
       end
       if status == 200 and body:match('status="ok"') then
         sync_failures, next_sync_at = 0, 0
+        last_failure_network = false
         persistent_error = nil
+        plugin.storage.set("last_sent_at", tostring(os.time()))
         sent_ids[item.id] = true
         if current_record and current_record.id == item.id and same_account(current_record_account, account_name) then
           local ignored = body:match('<ignoredMessage[^>]*code="(%d+)"')
@@ -673,17 +733,21 @@ sync_queue = function()
           current_delivery = "Last.fm rejected this play"
         end
         sent_ids[item.id] = true
-        if not remove_queued(key, item.id) then sync_failed() end
+        if not remove_queued(key, item.id) then sync_failed("Waiting list could not be updated.") end
         if refresh_main_list then refresh_main_list() end
         sync_queue()
         return
       else
-        sync_failed("Last.fm temporarily busy (retrying automatically).")
+        sync_failed("Last.fm temporarily busy.")
       end
       if refresh_main_list then refresh_main_list() end
     end)
   if handle then
-    if queue_sync_token == token then active_requests.queue = handle end
+    if queue_sync_token == token then
+      active_requests.queue = handle
+      -- Show "Sending…" on the main screen.
+      if refresh_main_list then refresh_main_list() end
+    end
   else
     if queue_sync_token == token then queue_sync_token = nil end
     sync_failed("Could not send scrobble request.")
@@ -712,6 +776,7 @@ local function retry_now()
   if count == nil then plugin.show_toast("Waiting plays could not be read."); return end
   if count == 0 then plugin.show_toast("No plays are waiting to send."); return end
   if queue_sync_token then plugin.show_toast("Already sending waiting plays."); return end
+  if wifi_disabled() then plugin.show_toast(offline_text()); return end
   sync_failures, next_sync_at, persistent_error = 0, 0, nil
   plugin.show_toast("Sending waiting plays…")
   sync_queue()
@@ -809,6 +874,8 @@ plugin.on("track_started", function(title, artist, album, duration_seconds)
   if refresh_main_list then refresh_main_list() end
 end)
 
+local last_backoff_refresh = 0
+
 plugin.set_interval(5, function()
   -- A real change while a child was open is rendered once after returning.
   -- This is not a periodic redraw of the dashboard or a ticking countdown.
@@ -822,6 +889,12 @@ plugin.set_interval(5, function()
     return
   end
   sync_queue()
+  -- The queue row shows "next try Nm": redraw at most once a minute while
+  -- backing off (the fingerprint check skips it if nothing changed).
+  if next_sync_at > os.time() and os.time() - last_backoff_refresh >= 60 then
+    last_backoff_refresh = os.time()
+    if refresh_main_list then refresh_main_list() end
+  end
   if not current_title or not current_artist or scrobbled_this_track then
     return
   end
@@ -835,6 +908,35 @@ plugin.set_interval(5, function()
   if listened_now() >= math.min(current_duration / 2, 240) then
     save_current_play()
   end
+end)
+
+-- Connectivity came back (or may have, after sleep): send promptly. The
+-- backoff is dropped only if the last failure was a network one; rate-limit,
+-- service and storage backoffs stay, and sync_queue() still honours them.
+local function network_back()
+  if wifi_disabled() then return end
+  if last_failure_network then
+    sync_failures, next_sync_at = 0, 0
+    if persistent_error == NETWORK_ERROR then persistent_error = nil end
+  end
+  if state.enabled then sync_queue() end
+  if refresh_main_list then refresh_main_list() end
+end
+
+if type(plugin.network_status) == "function" then
+  pcall(plugin.on, "network_changed", function(info)
+    if type(info) == "table" and info.connected then
+      network_back()
+    elseif refresh_main_list then
+      refresh_main_list()
+    end
+  end)
+end
+-- Fallbacks for players without network_changed, and for Wi-Fi that stayed
+-- up across sleep while the old backoff was still ticking.
+pcall(plugin.on, "system_resumed", network_back)
+pcall(plugin.on, "screen_woke", function()
+  if next_sync_at > 0 then network_back() end
 end)
 
 local function set_scrobbling(value)
@@ -1456,24 +1558,27 @@ local function build_main_menu()
     return items, actions
   end
 
-  -- 4. Connected daily (<= 5 rows)
-  local status_label
+  -- 4. Connected daily (5 rows; a 6th, "Sync now", only while plays wait)
+  local count = get_queued_count(state.username)
+  local offline_waiting = state.enabled and count and count > 0 and (wifi_disabled() or link_down())
+  local status_label, status_toast
   if credentials_rejected then
     status_label = "Status: API key/secret rejected"
+    status_toast = "API key or secret rejected by Last.fm."
+  elseif persistent_error and persistent_error ~= "" and persistent_error ~= NETWORK_ERROR then
+    status_label = "Status: " .. truncate(persistent_error, 45)
+    status_toast = persistent_error
+  elseif offline_waiting then
+    status_label = offline_text()
+    status_toast = offline_text()
   elseif persistent_error and persistent_error ~= "" then
     status_label = "Status: " .. truncate(persistent_error, 45)
-  elseif not state.enabled then
-    status_label = "Signed in as " .. truncate(state.username or "", 20)
+    status_toast = persistent_error
   else
     status_label = "Signed in as " .. truncate(state.username or "", 20)
+    status_toast = "Signed in as " .. (state.username or "unknown")
   end
-  add_row(status_label, function()
-    if persistent_error then
-      plugin.show_toast(persistent_error)
-    else
-      plugin.show_toast("Signed in as " .. (state.username or "unknown"))
-    end
-  end)
+  add_row(status_label, function() plugin.show_toast(status_toast) end)
 
   local track_label
   if not current_title or current_title == "" then
@@ -1520,10 +1625,30 @@ local function build_main_menu()
     end
   end)
 
-  local count = get_queued_count(state.username)
-  local queue_label = count == nil and "Waiting plays could not be read"
-    or (count == 1 and "1 play waiting to send" or (count .. " plays waiting to send"))
+  local queue_label
+  if count == nil then
+    queue_label = "Waiting plays could not be read"
+  else
+    queue_label = count .. (count == 1 and " play waiting" or " plays waiting")
+    local remaining = next_sync_at - os.time()
+    if count > 0 then
+      if queue_sync_token then
+        queue_label = queue_label .. " \u{b7} Sending\u{2026}"
+      elseif state.enabled and wifi_disabled() then
+        queue_label = queue_label .. " \u{b7} waiting for Wi-Fi"
+      elseif remaining > 0 and not credentials_rejected then
+        queue_label = queue_label .. " \u{b7} next try " .. math.max(1, math.ceil(remaining / 60)) .. "m"
+      end
+    end
+    local last_sent = format_last_sent(plugin.storage.get("last_sent_at", ""))
+    if last_sent then queue_label = queue_label .. " \u{b7} sent " .. last_sent end
+  end
   add_row(queue_label, open_queue_list)
+
+  if count and count > 0 and state.enabled and state.session_key and not session_expired
+      and not credentials_rejected then
+    add_row("Sync now", retry_now)
+  end
 
   add_row("Account & settings", function()
     open_settings_screen()
