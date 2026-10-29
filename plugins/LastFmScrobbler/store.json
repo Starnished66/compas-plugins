@@ -1,5 +1,6 @@
 {
   "description": "Scrobbles the songs you play to your Last.fm account. Requires a free Last.fm API account and your own API credentials. Enable only one Last.fm scrobbler plugin at a time to avoid duplicate scrobbles.",
   "category": "Listening",
-  "author": "Compás"
+  "author": "Compás",
+  "publish": false
 }
