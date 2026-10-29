@@ -1,0 +1,28 @@
+{
+  "description": "A cover-first player with an accent background, translucent metadata badges and a gradient waveform beneath its controls.",
+  "category": "Customization",
+  "author": "Comp\u00e1s",
+  "publish": false,
+  "files": [
+    {
+      "src": "player_layouts/prism_player.xml",
+      "dest": ".plugins/PrismPlayer/player_layouts/prism_player.xml"
+    },
+    {
+      "src": "player_layouts/prism_player_240x320.xml",
+      "dest": ".plugins/PrismPlayer/player_layouts/prism_player_240x320.xml"
+    },
+    {
+      "src": "player_layouts/prism_player_320x480.xml",
+      "dest": ".plugins/PrismPlayer/player_layouts/prism_player_320x480.xml"
+    },
+    {
+      "src": "player_layouts/prism_player_480x720.xml",
+      "dest": ".plugins/PrismPlayer/player_layouts/prism_player_480x720.xml"
+    },
+    {
+      "src": "player_layouts/prism_player/v1_back.png",
+      "dest": ".plugins/PrismPlayer/player_layouts/prism_player/v1_back.png"
+    }
+  ]
+}

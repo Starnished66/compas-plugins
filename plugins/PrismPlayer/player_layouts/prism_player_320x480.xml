@@ -1,0 +1,48 @@
+<component>
+    <consts>
+        <bool name="compas_lyrics_enabled" value="false" />
+    </consts>
+    <view scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" width="#screen_w" height="#screen_h" style_bg_opa="255" style_radius="0" extends="lv_obj">
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="accent_background" x="0" y="320" width="#screen_w" height="160" style_radius="0" style_bg_opa="255" style_bg_grad_color="0x000000" style_bg_grad_dir="ver" style_bg_main_stop="0" style_bg_grad_stop="255" />
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="cover_card" x="0" y="0" width="320" height="320" style_radius="0" style_clip_corner="true" style_bg_opa="0">
+            <lv_image name="cover_img" src="default_cover" align="center" />
+            <lv_image name="cover_fade" x="0" y="0" width="320" height="320" inner_align="stretch" />
+        </lv_obj>
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="dismiss_btn" x="21" y="13" width="32" height="32" style_radius="32" style_bg_color="0x000000" style_bg_opa="110">
+            <lv_image inner_align="contain" name="dismiss_icon" src="v1_back" width="16" height="16" align="center" />
+        </lv_obj>
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="favorite_circle" x="267" y="13" width="32" height="32" style_radius="32" style_bg_color="0x000000" style_bg_opa="110">
+            <lv_image inner_align="contain" name="favorite_icon" src="collect_out" width="16" height="16" align="center" />
+        </lv_obj>
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="metadata_stack" align="bottom_left" x="21" y="-216" width="278" height="content" style_bg_opa="0" flex_flow="column" style_pad_row="5" style_flex_cross_place="start">
+            <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="title_badge" width="content" height="content" style_max_width="278" style_radius="13" style_bg_color="0x000000" style_bg_opa="140" style_pad_hor="11" style_pad_ver="7" flex_flow="row" style_flex_cross_place="center">
+                <lv_label name="title" text="" width="content" height="content" style_max_width="256" style_text_font="player_title" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" long_mode="clip" />
+            </lv_obj>
+            <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="artist_badge" width="content" height="content" style_max_width="278" style_radius="13" style_bg_color="0x000000" style_bg_opa="140" style_pad_hor="9" style_pad_ver="5" flex_flow="row" style_flex_cross_place="center">
+                <lv_label name="artist" text="" width="content" height="content" style_max_width="260" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" long_mode="clip" />
+            </lv_obj>
+            <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="album_badge" width="content" height="content" style_max_width="278" style_radius="13" style_bg_color="0x000000" style_bg_opa="140" style_pad_hor="9" style_pad_ver="5" flex_flow="row" style_flex_cross_place="center">
+                <lv_label name="album" text="" width="content" height="content" style_max_width="260" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" long_mode="clip" />
+            </lv_obj>
+        </lv_obj>
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" x="10" y="330" width="300" height="100" style_radius="24" style_bg_color="0x000000" style_bg_opa="110" />
+        <lv_image inner_align="contain" name="order_btn" src="order" x="14" y="362" width="36" height="36" style_image_recolor="0xffffff" style_image_recolor_opa="255" />
+        <lv_image inner_align="contain" name="prev_btn" src="btn_prev" x="78" y="362" width="36" height="36" style_image_recolor="0xffffff" style_image_recolor_opa="255" />
+        <lv_image inner_align="contain" name="next_btn" src="btn_next" x="206" y="362" width="36" height="36" style_image_recolor="0xffffff" style_image_recolor_opa="255" />
+        <lv_image inner_align="contain" name="more_btn" src="ic_more" x="270" y="362" width="36" height="36" style_image_recolor="0xffffff" style_image_recolor_opa="255" />
+        <lv_image inner_align="contain" name="play_btn" src="btn_play" x="124" y="344" width="72" height="72" />
+        <lv_label name="seek_style" text="waveform_gradient" hidden="true" />
+        <lv_slider name="progress_slider" x="21" y="276" width="278" height="20" style_bg_opa="0" style_radius="5" />
+        <lv_label name="pos_label" text="0:00" x="21" y="298" width="67" height="content" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" />
+        <lv_label name="dur_label" text="--:--" x="232" y="298" width="67" height="content" style_text_font="font_16" style_text_color="0xffffff" style_text_align="right" style_pad_all="0" />
+        <lv_slider name="volume_slider" hidden="true" width="100" height="10" />
+        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" width="content" height="content" style_bg_opa="0" flex_flow="row" style_pad_column="5" style_flex_cross_place="center" align="bottom_mid" x="0" y="-8">
+            <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="quality_pill" width="content" height="content" style_max_width="278" style_radius="13" style_bg_color="0x000000" style_bg_opa="140" style_pad_hor="8" style_pad_ver="5" flex_flow="row" style_flex_cross_place="center">
+                <lv_label name="format_badge" text="" width="content" height="content" style_max_width="262" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" long_mode="clip" />
+            </lv_obj>
+            <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="queue_badge" width="content" height="content" style_max_width="278" style_radius="13" style_bg_color="0x000000" style_bg_opa="140" style_pad_hor="8" style_pad_ver="5" flex_flow="row" style_flex_cross_place="center">
+                <lv_label name="song_count" text="" width="content" height="content" style_max_width="262" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" long_mode="clip" />
+            </lv_obj>
+        </lv_obj>
+    </view>
+</component>
