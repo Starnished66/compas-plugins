@@ -1221,8 +1221,11 @@ and is capped at, 200; use `offset` to page. Check `library.paged`.
 - `plugin.library_get_albums([offset], [limit], [artist])`: album groups,
   optionally only those whose artist or album artist is `artist`.
 - `plugin.library_album_cover_async(song_id, size, callback)` (check
-  `library.album_cover`): the album cover of a song, at `size` 72 or 480 (any
-  other size is an error currently). Use a group's `first_song_id`. `callback(path)` is
+  `library.album_cover`): the album cover of a song, at `size` 480 or the thumbnail
+  size, which is 80 px (40 px on the TempoTec V1). `72`, the thumbnail size of
+  earlier releases, is still accepted and serves the current thumbnail, so
+  pass 72 if one script must run on every release and board; any other size is
+  an error currently. Use a group's `first_song_id`. `callback(path)` is
   called on a later player tick with the absolute path of a BMP, which
   `show_list` accepts as an `icon`. If the library has not generated that cover
   yet, `callback(nil, "not_generated")` is called instead. This call never
