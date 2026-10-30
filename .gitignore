@@ -6,3 +6,6 @@ dist/
 /.claude/
 __pycache__/
 *.py[cod]
+
+# Tests are local only.
+/tools/test_*

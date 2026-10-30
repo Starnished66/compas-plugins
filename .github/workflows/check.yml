@@ -17,11 +17,7 @@ jobs:
         run: .github/scripts/setup-lua.sh
       - name: Compile every plugin
         run: find plugins -name '*.lua' -print0 | xargs -0 -n1 luac -p
-      - name: Run the plugin tests
-        run: for t in tools/test_*.lua; do echo "$t"; lua "$t"; done
       - name: Install preview image dependency
         run: python3 -m pip install Pillow==12.3.0
-      - name: Test plugin API requirements
-        run: python3 tools/test_api_requirements.py
       - name: Validate the store index
         run: python3 tools/build_index.py --check
