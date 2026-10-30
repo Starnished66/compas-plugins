@@ -1,0 +1,71 @@
+<component>
+    <animations>
+        <timeline name="lyrics_open">
+            <animation prop="translate_y" target="title" start="0" end="-214" duration="260" />
+            <animation prop="translate_y" target="ic_title_img" start="0" end="-214" duration="260" />
+            <animation prop="translate_y" target="artist" start="0" end="-218" duration="260" />
+            <animation prop="translate_y" target="ic_artist_img" start="0" end="-218" duration="260" />
+            <animation prop="translate_y" target="progress_slider" start="0" end="148" duration="260" />
+            <animation prop="translate_y" target="pos_label" start="0" end="148" duration="260" />
+            <animation prop="translate_y" target="dur_label" start="0" end="148" duration="260" />
+            <animation prop="opa" target="cover_card" start="255" end="0" duration="180" />
+            <animation prop="opa" target="song_count" start="255" end="0" duration="180" />
+            <animation prop="opa" target="quality_pill" start="255" end="0" duration="180" />
+            <animation prop="opa" target="order_btn" start="255" end="0" duration="180" />
+            <animation prop="opa" target="favorite_circle" start="255" end="0" duration="180" />
+            <animation prop="opa" target="album" start="255" end="0" duration="180" />
+            <animation prop="opa" target="ic_album_img" start="255" end="0" duration="180" />
+            <animation prop="opa" target="dismiss_btn" start="255" end="0" duration="80" />
+        </timeline>
+        <timeline name="lyrics_close">
+            <animation prop="translate_y" target="title" start="-214" end="0" duration="260" />
+            <animation prop="translate_y" target="ic_title_img" start="-214" end="0" duration="260" />
+            <animation prop="translate_y" target="artist" start="-218" end="0" duration="260" />
+            <animation prop="translate_y" target="ic_artist_img" start="-218" end="0" duration="260" />
+            <animation prop="translate_y" target="progress_slider" start="148" end="0" duration="260" />
+            <animation prop="translate_y" target="pos_label" start="148" end="0" duration="260" />
+            <animation prop="translate_y" target="dur_label" start="148" end="0" duration="260" />
+            <animation prop="opa" target="cover_card" start="0" end="255" duration="180" />
+            <animation prop="opa" target="song_count" start="0" end="255" duration="180" />
+            <animation prop="opa" target="quality_pill" start="0" end="255" duration="180" />
+            <animation prop="opa" target="order_btn" start="0" end="255" duration="180" />
+            <animation prop="opa" target="favorite_circle" start="0" end="255" duration="180" />
+            <animation prop="opa" target="album" start="0" end="255" duration="180" />
+            <animation prop="opa" target="ic_album_img" start="0" end="255" duration="180" />
+            <animation prop="opa" target="dismiss_btn" start="0" end="255" duration="80" />
+        </timeline>
+    </animations>
+    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_color="0x000000" style_bg_opa="255" style_text_color="0xffffff" style_border_width="0" style_radius="0" style_pad_all="0">
+        <lv_obj name="cover_card" x="16" y="64" width="120" height="120" scrollable="false" style_radius="4" style_clip_corner="true" style_bg_color="0x000000" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="cover_img" src="default_cover" width="100%" height="100%" align="center" inner_align="cover" />
+        </lv_obj>
+        <lv_label name="song_count" text="" x="148" y="96" width="156" height="content" style_text_font="font_16" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" />
+        <lv_obj name="quality_pill" x="148" y="126" width="156" height="32" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_label name="format_badge" text="" x="0" y="0" width="100%" height="content" style_text_font="lv_font_default" style_text_color="0x9a9a9a" style_text_align="left" style_pad_all="0" />
+        </lv_obj>
+        <lv_image name="order_btn" src="order" x="148" y="152" width="30" height="30" inner_align="contain" />
+        <lv_obj name="favorite_circle" x="186" y="145" width="44" height="44" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="favorite_icon" src="collect_out" width="32" height="32" align="center" inner_align="contain" />
+        </lv_obj>
+        <lv_slider name="progress_slider" x="16" y="204" width="288" height="6" style_bg_color="0x3a2f2b" style_bg_opa="255" style_radius="3" />
+        <lv_label name="pos_label" text="0:00" x="16" y="216" width="80" height="content" style_text_font="font_16" style_text_color="0x7d7d7d" style_text_align="left" style_pad_all="0" />
+        <lv_label name="dur_label" text="--:--" x="224" y="216" width="80" height="content" style_text_font="font_16" style_text_color="0x7d7d7d" style_text_align="right" style_pad_all="0" />
+        <lv_image name="ic_title_img" src="ic_title" x="16" y="250" width="20" height="20" inner_align="contain" />
+        <lv_label name="title" text="" x="44" y="250" width="260" height="content" style_text_font="font_20" style_text_color="0xffffff" style_text_align="left" style_pad_all="0" />
+        <lv_image name="ic_artist_img" src="ic_artist" x="16" y="282" width="20" height="20" inner_align="contain" />
+        <lv_label name="artist" text="" x="44" y="282" width="260" height="content" style_text_font="font_20" style_text_color="0xe6e6e6" style_text_align="left" style_pad_all="0" />
+        <lv_image name="ic_album_img" src="ic_album" x="16" y="314" width="20" height="20" inner_align="contain" />
+        <lv_label name="album" text="" x="44" y="314" width="260" height="content" style_text_font="font_20" style_text_color="0xe6e6e6" style_text_align="left" style_pad_all="0" />
+        <lv_obj name="lyrics_area" x="24" y="100" width="272" height="250" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_text_color="0xb9b9b9" style_text_align="center" clickable="false" />
+        <lv_obj name="dismiss_btn" x="0" y="27" width="48" height="48" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="12" y="12" width="24" height="24" inner_align="contain" />
+        </lv_obj>
+        <lv_image name="prev_btn" src="btn_prev" x="70" y="395" width="30" height="30" inner_align="contain" />
+        <lv_obj name="play_circle" x="131" y="380" width="58" height="58" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="play_btn" src="btn_play" x="0" y="0" width="58" height="58" inner_align="contain" />
+        </lv_obj>
+        <lv_image name="next_btn" src="btn_next" x="220" y="395" width="30" height="30" inner_align="contain" />
+        <lv_image name="more_btn" src="ic_more" x="273" y="395" width="30" height="30" inner_align="contain" />
+        <lv_slider name="volume_slider" width="100" height="10" hidden="true" />
+    </view>
+</component>

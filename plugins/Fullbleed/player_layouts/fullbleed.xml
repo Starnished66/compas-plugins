@@ -1,0 +1,79 @@
+<component>
+    <animations>
+        <timeline name="lyrics_open">
+            <animation prop="translate_y" target="title" start="0" end="-369" duration="260" />
+            <animation prop="translate_y" target="artist" start="0" end="-377" duration="260" />
+            <animation prop="opa" target="lyrics_dim" start="0" end="170" duration="260" />
+            <animation prop="opa" target="album" start="255" end="0" duration="180" />
+            <animation prop="opa" target="quality_pill" start="255" end="0" duration="180" />
+            <animation prop="opa" target="favorite_circle" start="255" end="0" duration="180" />
+            <animation prop="opa" target="song_count" start="255" end="0" duration="180" />
+            <animation prop="opa" target="dismiss_btn" start="255" end="0" duration="80" />
+        </timeline>
+        <timeline name="lyrics_close">
+            <animation prop="translate_y" target="title" start="-369" end="0" duration="260" />
+            <animation prop="translate_y" target="artist" start="-377" end="0" duration="260" />
+            <animation prop="opa" target="lyrics_dim" start="170" end="0" duration="260" />
+            <animation prop="opa" target="album" start="0" end="255" duration="180" />
+            <animation prop="opa" target="quality_pill" start="0" end="255" duration="180" />
+            <animation prop="opa" target="favorite_circle" start="0" end="255" duration="180" />
+            <animation prop="opa" target="song_count" start="0" end="255" duration="180" />
+            <animation prop="opa" target="dismiss_btn" start="0" end="255" duration="80" />
+        </timeline>
+    </animations>
+    <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_color="0x090d11" style_bg_opa="0" style_text_color="0xf2f3f4" style_border_width="0" style_radius="0" style_pad_all="0">
+        <lv_obj name="cover_card" x="0" y="0" width="#screen_w" height="#screen_h" scrollable="false" style_radius="0" style_bg_color="0x090d11" style_bg_opa="255" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="cover_img" src="default_cover" width="100%" height="100%" align="center" inner_align="cover" />
+        </lv_obj>
+        <lv_obj name="scrim_t0" x="0" y="0" width="100%" height="19" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t1" x="0" y="0" width="100%" height="38" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t2" x="0" y="0" width="100%" height="56" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t3" x="0" y="0" width="100%" height="75" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t4" x="0" y="0" width="100%" height="94" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t5" x="0" y="0" width="100%" height="112" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t6" x="0" y="0" width="100%" height="131" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_t7" x="0" y="0" width="100%" height="150" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="22" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b0" x="0" y="370" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b1" x="0" y="390" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b2" x="0" y="410" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b3" x="0" y="430" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b4" x="0" y="450" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b5" x="0" y="470" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b6" x="0" y="490" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b7" x="0" y="510" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b8" x="0" y="530" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b9" x="0" y="550" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b10" x="0" y="570" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b11" x="0" y="590" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b12" x="0" y="610" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b13" x="0" y="630" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b14" x="0" y="650" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="scrim_b15" x="0" y="670" width="100%" height="1200" scrollable="false" clickable="false" style_radius="0" style_bg_color="0x000000" style_bg_opa="32" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="lyrics_dim" x="0" y="0" width="#screen_w" height="#screen_h" scrollable="false" clickable="false" style_opa="0" style_radius="0" style_bg_color="0x000000" style_bg_opa="255" style_border_width="0" style_pad_all="0" />
+        <lv_obj name="dismiss_btn" x="0" y="32" width="48" height="48" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="12" y="12" width="24" height="24" inner_align="contain" />
+        </lv_obj>
+        <lv_image name="more_btn" src="ic_more" x="414" y="704" width="36" height="36" inner_align="contain" />
+        <lv_label name="title" text="" x="20" y="430" width="440" height="content" style_text_font="player_title" style_text_color="0xf2f3f4" style_text_align="center" style_pad_all="0" />
+        <lv_label name="artist" text="" x="20" y="482" width="440" height="content" style_text_font="player_meta" style_text_color="0xdde2e6" style_text_align="center" style_pad_all="0" />
+        <lv_label name="album" text="" x="20" y="522" width="440" height="content" style_text_font="player_meta" style_text_color="0xb4bcc3" style_text_align="center" style_pad_all="0" />
+        <lv_label name="song_count" text="" x="30" y="577" width="58" height="content" style_text_font="font_16" style_text_color="0xdde2e6" style_text_align="left" style_pad_all="0" />
+        <lv_obj name="quality_pill" x="96" y="575" width="302" height="28" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_label name="format_badge" text="" x="0" y="2" width="100%" height="content" style_text_font="font_16" style_text_color="0xdde2e6" style_text_align="center" style_pad_all="0" />
+        </lv_obj>
+        <lv_obj name="favorite_circle" x="406" y="568" width="44" height="44" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="favorite_icon" src="collect_out" width="32" height="32" align="center" inner_align="contain" />
+        </lv_obj>
+        <lv_obj name="lyrics_area" x="30" y="160" width="420" height="458" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0" style_text_color="0xdde2e6" style_text_align="center" clickable="false" />
+        <lv_slider name="progress_slider" x="30" y="634" width="420" height="14" style_bg_color="0xffffff" style_bg_opa="70" style_radius="7" />
+        <lv_label name="pos_label" text="0:00" x="30" y="656" width="80" height="content" style_text_font="font_16" style_text_color="0xdde2e6" style_text_align="left" style_pad_all="0" />
+        <lv_label name="dur_label" text="--:--" x="370" y="656" width="80" height="content" style_text_font="font_16" style_text_color="0xdde2e6" style_text_align="right" style_pad_all="0" />
+        <lv_image name="order_btn" src="order" x="30" y="704" width="36" height="36" inner_align="contain" />
+        <lv_image name="prev_btn" src="btn_prev" x="126" y="704" width="36" height="36" inner_align="contain" />
+        <lv_obj name="play_circle" x="206" y="688" width="68" height="68" scrollable="false" style_radius="100" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+            <lv_image name="play_btn" src="btn_play" x="0" y="0" width="68" height="68" inner_align="contain" />
+        </lv_obj>
+        <lv_image name="next_btn" src="btn_next" x="318" y="704" width="36" height="36" inner_align="contain" />
+        <lv_slider name="volume_slider" width="100" height="10" hidden="true" />
+    </view>
+</component>

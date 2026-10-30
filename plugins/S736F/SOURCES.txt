@@ -1,0 +1,6 @@
+Layout design and XML: Reddit @nigthdriveavenger
+
+Submitted as NowPlayingScreens/S736F/player_layouts.
+Includes the supplied R1, R3 Pro II and R3 II variants; no V1 variant was supplied.
+Variant filenames and matching icon directories were normalized for the Plugin Store.
+Preview: native Compás R1 simulator capture.

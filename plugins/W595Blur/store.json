@@ -1,0 +1,57 @@
+{
+  "description": "W595Blur player layout for Compás R1/R3. No V1 variant is supplied.",
+  "category": "Customization",
+  "author": "Reddit @nigthdriveavenger",
+  "preview": "preview.png",
+  "publish": true,
+  "files": [
+    {
+      "src": "player_layouts/W595Blur.xml",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur.xml"
+    },
+    {
+      "src": "player_layouts/W595Blur_320x480.xml",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_320x480.xml"
+    },
+    {
+      "src": "player_layouts/W595Blur_480x720.xml",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_480x720.xml"
+    },
+    {
+      "src": "player_layouts/W595Blur/ic_album.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur/ic_album.png"
+    },
+    {
+      "src": "player_layouts/W595Blur/ic_artist.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur/ic_artist.png"
+    },
+    {
+      "src": "player_layouts/W595Blur/ic_title.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur/ic_title.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_320x480/ic_album.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_320x480/ic_album.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_320x480/ic_artist.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_320x480/ic_artist.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_320x480/ic_title.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_320x480/ic_title.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_480x720/ic_album.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_480x720/ic_album.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_480x720/ic_artist.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_480x720/ic_artist.png"
+    },
+    {
+      "src": "player_layouts/W595Blur_480x720/ic_title.png",
+      "dest": ".plugins/W595Blur/player_layouts/W595Blur_480x720/ic_title.png"
+    }
+  ]
+}

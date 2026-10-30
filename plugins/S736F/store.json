@@ -1,0 +1,21 @@
+{
+  "description": "S736F player layout for Compás R1/R3. No V1 variant is supplied.",
+  "category": "Customization",
+  "author": "Reddit @nigthdriveavenger",
+  "preview": "preview.png",
+  "publish": true,
+  "files": [
+    {
+      "src": "player_layouts/S736F.xml",
+      "dest": ".plugins/S736F/player_layouts/S736F.xml"
+    },
+    {
+      "src": "player_layouts/S736F_320x480.xml",
+      "dest": ".plugins/S736F/player_layouts/S736F_320x480.xml"
+    },
+    {
+      "src": "player_layouts/S736F_480x720.xml",
+      "dest": ".plugins/S736F/player_layouts/S736F_480x720.xml"
+    }
+  ]
+}
