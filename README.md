@@ -27,7 +27,7 @@ The catalog is cached for offline searches. Downloads and catalog refreshes need
 
 ## Lyrics, covers and album shuffle
 
-Cover Art Fetcher and Lyrics Fetcher require Plugin API 17. Cover Art Fetcher uses `ui.list_scroll_reset` for history pagination when the player provides it. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Lyrics Fetcher skips a sidecar that already has timestamps and renames an unsynchronized `.lrc` to `.compas-backup` before writing synced lyrics. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
+Cover Art Fetcher and Lyrics Fetcher require Plugin API 17. Missing-sidecar requests are saved on the SD card before a lookup starts. Offline requests resume when Wi-Fi reconnects, including after a restart; automatic fetching adds requests only when enabled. Players with `network.status` use Wi-Fi events, while older players retry pending requests with a delay. Each plugin exposes the pending count, retry and clear actions. Cover Art Fetcher uses `ui.list_scroll_reset` for history pagination when the player provides it. Manual lookups show dismissible progress cards; cover lookups and bounded image downloads show their current stage, and automatic fetching stays quiet. Lyrics Fetcher skips a sidecar that already has timestamps and renames an unsynchronized `.lrc` to `.compas-backup` before writing synced lyrics. Cover Art Fetcher records new downloads so unchanged covers can be reverted to backups. Album Shuffle plays whole albums in track order.
 
 ## ListenBrainz and Net Radio
 

@@ -1,5 +1,5 @@
 {
-  "description": "Fetch synced lyrics from LRCLIB for local tracks. Skips synchronized .lrc sidecars, backs up unsynchronized ones, and can fetch from Now Playing.",
+  "description": "Fetch synced lyrics from LRCLIB for local tracks. Keeps pending requests across restarts and resumes them when Wi-Fi reconnects. Skips synchronized sidecars and backs up unsynchronized ones.",
   "category": "Tools",
   "author": "Compás",
   "publish": true

@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.cover_art_fetcher",
     name = "Cover Art Fetcher",
-    version = "1.1.6",
+    version = "1.2.0",
     api_min = 17,
 })
 
@@ -13,8 +13,13 @@ plugin.define({
 -- that hide the current album's art; it never runs automatically.
 -- Each saved cover has a durable receipt so the user can revert it later.
 
-local USER_AGENT = "CompasPlayer-CoverArtFetcher/1.0 (https://github.com/Starnished66/compas-player)"
+local USER_AGENT = "CompasPlayer-CoverArtFetcher/1.2.0 (https://github.com/Starnished66/compas-player)"
 local STATE_PATH = plugin.sd_root() .. "/.plugins/.cover_art_fetcher_state"
+local PENDING_PATH = plugin.sd_root() .. "/.plugins/.cover_art_fetcher_pending"
+local PENDING_TMP = PENDING_PATH .. ".tmp"
+local PENDING_HEADER = "CAF-PENDING 1"
+local PENDING_MAX = 500
+local PENDING_MAX_BYTES = 2 * 1024 * 1024
 local MB_INTERVAL = 1
 local MAX_JSON = 262144
 local MAX_IMAGE_BYTES = 2 * 1024 * 1024
@@ -51,6 +56,14 @@ local generation = 0
 local fail_memory = {}
 local last_auto_key = nil
 local active_job = nil
+local pending_items, pending_loaded, pending_inflight = {}, false, nil
+local pending_generation, pending_next_at = 0, 0
+local pending_network_until, pending_network_failures = 0, 0
+local pending_load_retry_at = 0
+local pending_server_until = 0
+local pending_blocked_delete = {}
+local pending_last_attempt = 0
+local enqueue, auto_suppressed, pending_drain
 local MANUAL_REFRESH_SECONDS = 25
 local refresh = { pending = false, next_at = 0, attempts = 0 }
 
@@ -548,6 +561,269 @@ local function current_album()
     }
 end
 
+local function pending_escape(v)
+    return tostring(v or ""):gsub("%%", "%%25"):gsub("\t", "%%09"):gsub("\n", "%%0A"):gsub("\r", "%%0D")
+end
+local function pending_unescape(v)
+    return (v:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
+end
+local function pending_encode(items)
+    local out = { PENDING_HEADER .. "\t" .. tostring(pending_server_until) }
+    for _, q in ipairs(items) do
+        out[#out + 1] = table.concat({ pending_escape(q.path), pending_escape(q.artist), pending_escape(q.album),
+            pending_escape(q.album_artist), pending_escape(q.dest), tostring(q.requested),
+            tostring(q.retry_at), tostring(q.attempts), q.explicit and "1" or "0" }, "\t")
+    end
+    return table.concat(out, "\n") .. "\n"
+end
+local function save_pending(items)
+    local data = pending_encode(items)
+    if #items > PENDING_MAX or #data > PENDING_MAX_BYTES then return false end
+    local f = io.open(PENDING_TMP, "wb")
+    if not f then return false end
+    local ok = pcall(function() assert(f:write(data)); assert(f:close()) end)
+    if not ok then
+        pcall(function() f:close() end)
+        os.remove(PENDING_TMP)
+        return false
+    end
+    if not os.rename(PENDING_TMP, PENDING_PATH) then
+        os.remove(PENDING_TMP)
+        return false
+    end
+    return true
+end
+local function pending_item_valid(q)
+    if type(q) ~= "table" or type(q.path) ~= "string" or not path_is_under_root(q.path, plugin.sd_root()) then return false end
+    for _, k in ipairs({ "artist", "album", "album_artist" }) do
+        if type(q[k]) ~= "string" or #q[k] > 1024 or q[k]:find("[%c]") then return false end
+    end
+    if trim(q.artist) == "" or trim(q.album) == "" or type(q.explicit) ~= "boolean" then return false end
+    local dir = album_dir(q.path)
+    local dest = dir and cover_path(dir, q.album)
+    if not dest or q.dest ~= dest then return false end
+    for _, k in ipairs({ "requested", "retry_at", "attempts" }) do
+        if type(q[k]) ~= "number" or q[k] < 0 or q[k] % 1 ~= 0 then return false end
+    end
+    return true
+end
+local function load_pending()
+    pending_items, pending_loaded = {}, false
+    local f, open_err, open_code = io.open(PENDING_PATH, "rb")
+    if not f then
+        if open_code == 2 or (type(open_err) == "string" and open_err:find("No such file", 1, true)) then
+            pending_loaded = true; return true
+        end
+        return false
+    end
+    local data, read_err = f:read(PENDING_MAX_BYTES + 1)
+    local closed = f:close()
+    if read_err or not closed then return false end
+    if type(data) ~= "string" or #data > PENDING_MAX_BYTES then return false end
+    local first_end = data:find("\n", 1, true)
+    if not first_end then return false end
+    local header = data:sub(1, first_end - 1)
+    local deadline = header:match("^" .. PENDING_HEADER:gsub("(%W)", "%%%1") .. "\t(%d+)$")
+    if not deadline or #deadline > 12 then return false end
+    pending_server_until = tonumber(deadline)
+    local loaded, seen, pos, records = {}, {}, first_end + 1, 0
+    while pos <= #data do
+        local eol = data:find("\n", pos, true)
+        if not eol then return false end
+        local line = data:sub(pos, eol - 1)
+        pos = eol + 1
+        if line ~= "" then
+            records = records + 1
+            if records > PENDING_MAX then return false end
+            local fields, field_pos = {}, 1
+            for _ = 1, 8 do
+                local at = line:find("\t", field_pos, true)
+                if not at then return false end
+                fields[#fields + 1] = line:sub(field_pos, at - 1); field_pos = at + 1
+            end
+            fields[#fields + 1] = line:sub(field_pos)
+            if #fields ~= 9 or (fields[9] ~= "0" and fields[9] ~= "1") then return false end
+            local function stored_uint(text)
+                if not text:match("^%d+$") or #text > 12 then return nil end
+                return tonumber(text)
+            end
+            local q = { path = pending_unescape(fields[1]), artist = pending_unescape(fields[2]),
+                album = pending_unescape(fields[3]), album_artist = pending_unescape(fields[4]),
+                dest = pending_unescape(fields[5]), requested = stored_uint(fields[6]),
+                retry_at = stored_uint(fields[7]), attempts = stored_uint(fields[8]), explicit = fields[9] == "1" }
+            if not pending_item_valid(q) or seen[q.dest] then return false end
+            seen[q.dest] = true; loaded[#loaded + 1] = q
+        end
+    end
+    pending_items, pending_loaded = loaded, true
+    return true
+end
+local function pending_add(job, is_auto)
+    if not pending_loaded and not load_pending() then
+        if not is_auto then plugin.show_toast("Could not read saved cover requests") end
+        return false
+    end
+    for i, q in ipairs(pending_items) do
+        if q.dest == job.dest then
+            local old = {}; for k, v in pairs(q) do old[k] = v end
+            q.path, q.artist, q.album, q.album_artist = job.path, job.artist, job.album, job.album_artist or ""
+            q.requested = os.time()
+            if not is_auto then
+                q.manual_requested, q.explicit = true, true
+                q.retry_at, q.attempts = 0, 0
+                pending_network_until, pending_network_failures = 0, 0
+            end
+            if not pending_item_valid(q) then
+                for k in pairs(q) do q[k] = nil end; for k, v in pairs(old) do q[k] = v end
+                if not is_auto then plugin.show_toast("Album tags or path are not supported") end
+                return false
+            end
+            table.remove(pending_items, i); table.insert(pending_items, 1, q)
+            if not save_pending(pending_items) then
+                table.remove(pending_items, 1); table.insert(pending_items, i, q)
+                for k in pairs(q) do q[k] = nil end; for k, v in pairs(old) do q[k] = v end
+                if not is_auto then plugin.show_toast("Could not update saved cover request") end
+                return false
+            end
+            if not is_auto then
+                pending_blocked_delete[q.dest] = nil
+                plugin.show_toast("Cover request is already saved")
+                if active_job and active_job.pending_item == q then
+                    active_job.manual_requested = true
+                    open_job_progress(active_job, active_job.stage or "Cover fetch in progress", nil)
+                else
+                    for _, queued in ipairs(queue) do
+                        if queued.pending_item == q then
+                            queued.manual_requested = true
+                            open_job_progress(queued, queued.stage or "Cover fetch queued", nil)
+                        end
+                    end
+                end
+            end
+            return true
+        end
+    end
+    if #pending_items >= PENDING_MAX then
+        if not is_auto then plugin.show_toast("Saved cover request queue is full") end
+        return false
+    end
+    local q = { path = job.path, artist = job.artist, album = job.album,
+        album_artist = job.album_artist or "", dest = job.dest, requested = os.time(), retry_at = 0, attempts = 0,
+        manual_requested = not is_auto, explicit = not is_auto }
+    if not pending_item_valid(q) then
+        if not is_auto then plugin.show_toast("Album tags or path are not supported") end
+        return false
+    end
+    if not is_auto then pending_network_until, pending_network_failures = 0, 0 end
+    table.insert(pending_items, 1, q)
+    if not save_pending(pending_items) then table.remove(pending_items, 1)
+        if not is_auto then plugin.show_toast("Could not save request; it was not queued") end
+        return false
+    end
+    if not is_auto then plugin.show_toast("Cover request saved for download") end
+    return true
+end
+local function pending_delete(q)
+    local ix
+    for i, item in ipairs(pending_items) do if item == q then ix = i; break end end
+    if not ix then return true end
+    table.remove(pending_items, ix)
+    if not save_pending(pending_items) then
+        table.insert(pending_items, ix, q)
+        pending_blocked_delete[q.dest] = q
+        pending_next_at = os.time() + 60
+        return false
+    end
+    pending_blocked_delete[q.dest] = nil
+    return true
+end
+local function retry_after_seconds(value)
+    local seconds = tonumber(value)
+    if seconds and seconds == seconds and seconds > 0 and seconds < math.huge then return math.min(seconds, 24 * 60 * 60) end
+    if type(value) ~= "string" then return nil end
+    local day, mon, year, hour, minute, second = value:match("%a+, (%d%d) (%a+) (%d%d%d%d) (%d%d):(%d%d):(%d%d) GMT")
+    local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
+    if not day or not months[mon] then return nil end
+    local ok, stamp = pcall(os.time, {year=tonumber(year),month=months[mon],day=tonumber(day),
+        hour=tonumber(hour),min=tonumber(minute),sec=tonumber(second),isdst=false})
+    if not ok or type(stamp) ~= "number" then return nil end
+    local offset = os.difftime(os.time(os.date("!*t", stamp)), stamp)
+    return math.min(24 * 60 * 60, math.max(0, stamp - offset - os.time()))
+end
+
+local function pending_defer(q, seconds, server_limited, network_failure)
+    q.attempts = math.min((q.attempts or 0) + 1, 30)
+    q.manual_requested = false
+    local requested_delay = retry_after_seconds(seconds)
+    local delay = math.ceil(math.max(60, requested_delay or 0, math.min(3600, 60 * 2 ^ math.min(q.attempts - 1, 6))))
+    q.retry_at = os.time() + delay
+    if server_limited then
+        pending_server_until = math.max(pending_server_until, q.retry_at)
+    end
+    -- A failed album waits independently; other ready albums can continue.
+    pending_next_at = os.time() + MB_INTERVAL
+    if network_failure then
+        pending_network_failures = math.min(7, pending_network_failures + 1)
+        pending_network_until = os.time() + math.min(3600, 60 * 2 ^ (pending_network_failures - 1))
+    end
+    if not save_pending(pending_items) then
+        -- Preserve the in-memory cooldown even if the SD write failed.
+        pending_next_at = os.time() + 60
+    end
+end
+local function pending_network()
+    if not plugin.has_capability("network.status") or type(plugin.network_status) ~= "function" then return nil end
+    local ok, info = pcall(plugin.network_status)
+    return ok and type(info) == "table" and info or nil
+end
+local function pending_retry_all(quiet)
+    if not pending_loaded and not load_pending() then
+        if not quiet then plugin.show_toast("Could not read saved cover requests") end
+        return false
+    end
+    -- Manual retry may clear transport backoff, but never a server Retry-After floor.
+    local now, old = os.time(), {}
+    for i, q in ipairs(pending_items) do
+        old[i] = q.retry_at
+        if q.retry_at > now and q.retry_at <= pending_server_until then
+            -- Keep the persisted server deadline.
+        else
+            q.retry_at = 0
+        end
+    end
+    pending_next_at = math.max(now, mb_next_ok, pending_server_until)
+    if not save_pending(pending_items) then
+        for i, q in ipairs(pending_items) do q.retry_at = old[i] end
+        if not quiet then plugin.show_toast("Could not save retry request") end
+        return
+    end
+    pending_network_until, pending_network_failures = 0, 0
+    pending_drain()
+end
+local function pending_clear()
+    local empty = {}
+    if not save_pending(empty) then return false end
+    pending_generation = pending_generation + 1
+    if active_job and active_job.pending_item then
+        close_job_progress(active_job)
+        pending_dest[active_job.dest] = nil
+        active_job = nil; busy = false; generation = generation + 1
+    end
+    pending_inflight = nil
+    local kept = {}
+    for _, job in ipairs(queue) do
+        if not job.pending_item then kept[#kept + 1] = job
+        else close_job_progress(job) end
+    end
+    queue = kept
+    pending_items = empty
+    pending_loaded = true
+    pending_network_until, pending_network_failures = 0, 0
+    pending_blocked_delete = {}
+    pending_next_at = math.max(os.time(), mb_next_ok, pending_server_until)
+    return true
+end
+
 local function sd_root_dir()
     return (tostring(plugin.sd_root() or ""):gsub("/+$", ""))
 end
@@ -871,7 +1147,7 @@ end
 local REVERT_STATES = { reverting = true, reverted = true, lost = true }
 local SAVED_LIFECYCLE = { saved = true, gone = true }
 
-local function auto_suppressed(dest)
+auto_suppressed = function(dest)
     local latest_revert, latest_saved = 0, 0
     for _, r in pairs(receipts) do
         if r.dest == dest then
@@ -1045,11 +1321,44 @@ end
 
 local pump_queue, run_job
 
-local function finish_job(job, ok, message)
+local function finish_job(job, ok, message, retry_after)
+    if job then job.retry_after = retry_after end
     pending_dest[job.dest] = nil
     busy = false
     if active_job == job then active_job = nil end
     close_job_progress(job)
+    if job.pending_item and job.pending_generation == pending_generation then
+        local q = job.pending_item
+        pending_inflight = nil
+        if ok or message == "exists" then
+            if ok then request_refresh() end
+            pending_delete(q)
+            pending_network_until, pending_network_failures = 0, 0
+            pending_next_at = os.time() + MB_INTERVAL
+        elseif message == "offline" or message == "transient" or message == "rate-limited" then
+            pending_defer(q, job.retry_after, message == "rate-limited" or job.retry_after ~= nil, message ~= "rate-limited")
+        elseif message == "no-art" or message == "no-match" or message == "incomplete"
+            or message == "metadata-mismatch" or message == "track-name-collision"
+            or message == "title-collision" or message == "unsafe-name" or message == "untrimmed-album"
+            or message == "not-indexed" then
+            if message == "no-art" or message == "no-match" or message == "incomplete" then remember_fail(job.key) end
+            pending_delete(q)
+        else
+            pending_defer(q, 300)
+        end
+        if not job.is_auto then
+            if ok then notify_job(job, "Saved " .. job.dest:match("([^/]+)$"))
+            elseif pending_inflight == nil then
+                local still_queued = false
+                for _, queued_item in ipairs(pending_items) do if queued_item.dest == job.dest then still_queued = true end end
+                if still_queued then notify_job(job, "Cover request queued for retry")
+                elseif message == "no-art" then notify_job(job, "No cover art for this release")
+                elseif message == "no-match" then notify_job(job, "Could not match this album conservatively") end
+            end
+        end
+        pump_queue()
+        return
+    end
     if ok then
         request_refresh()
         notify_job(job, "Saved " .. job.dest:match("([^/]+)$"))
@@ -1196,7 +1505,7 @@ local function fetch_image(job, thumb_url, gen)
         }, function(status, body, req_err, headers)
             if pending_dest[job.dest] ~= gen then return end
             if req_err then
-                finish_job(job, false, req_err == "response_too_large" and "no-art" or "offline")
+                finish_job(job, false, req_err == "response_too_large" and "no-art" or "offline", header(headers, "Retry-After"))
                 return
             end
             if is_redirect(status) then
@@ -1217,7 +1526,11 @@ local function fetch_image(job, thumb_url, gen)
                 save_image(job, body, gen)
                 return
             end
-            finish_job(job, false, "no-art")
+            local transient = status == 429 or status == 408 or status == 425 or status == 401 or status == 403 or (status and status >= 500)
+            local retry_after = header(headers, "Retry-After")
+            local server_wait = status == 429 or (status and status >= 500 and retry_after ~= nil)
+            local kind = server_wait and "rate-limited" or (transient and "transient" or "no-art")
+            finish_job(job, false, kind, retry_after)
         end)
         if not handle then
             finish_job(job, false, "offline")
@@ -1231,10 +1544,14 @@ local function fetch_caa(job, group_id, gen)
     set_stage(job, "Checking Cover Art Archive…")
     -- The release-group listing shows the group's chosen front cover.
     local url = "https://coverartarchive.org/release-group/" .. group_id .. "/"
-    local handle, err = http_json(url, 5, function(status, body, req_err)
+    local handle, err = http_json(url, 5, function(status, body, req_err, headers)
         if pending_dest[job.dest] ~= gen then return end
         if req_err or status ~= 200 or type(body) ~= "string" then
-            finish_job(job, false, (req_err and "offline") or "no-art")
+            local transient = req_err or status == 429 or status == 408 or status == 425 or status == 401 or status == 403 or (status and status >= 500)
+            local retry_after = header(headers, "Retry-After")
+            local server_wait = status == 429 or (status and status >= 500 and retry_after ~= nil)
+            local kind = server_wait and "rate-limited" or (transient and "transient" or "no-art")
+            finish_job(job, false, kind, retry_after)
             return
         end
         local listing = decode_json(body)
@@ -1252,11 +1569,7 @@ end
 
 run_job = function(job)
     if file_exists(job.dest) then
-        busy = false
-        if active_job == job then active_job = nil end
-        close_job_progress(job)
-        notify_job(job, job.dest:match("([^/]+)$") .. " already present")
-        pump_queue()
+        finish_job(job, false, "exists")
         return
     end
     generation = generation + 1
@@ -1272,15 +1585,23 @@ run_job = function(job)
         .. "&fmt=json&limit=" .. MB_RESULT_LIMIT .. "&offset=0"
 
     set_stage(job, "Looking up MusicBrainz…")
-    local handle, err = http_json(url, 3, function(status, body, req_err)
+    local handle, err = http_json(url, 3, function(status, body, req_err, headers)
         if pending_dest[job.dest] ~= gen then return end
         if not req_err and (status == 503 or status == 429) then
             -- Rate limited: transient, so not remembered as a failure.
-            finish_job(job, false, "MusicBrainz is busy; try again later")
+            finish_job(job, false, "rate-limited", header(headers, "Retry-After"))
             return
         end
         if req_err or status ~= 200 or type(body) ~= "string" then
-            finish_job(job, false, "offline")
+            local retry_after = header(headers, "Retry-After")
+            local failure
+            if req_err then failure = "offline"
+            elseif status == 429 or status == 503 then failure = "rate-limited"
+            elseif status and status >= 500 then failure = retry_after and "rate-limited" or "transient"
+            elseif status == 401 or status == 403 or status == 408 or status == 425 then failure = "transient"
+            elseif status and status >= 400 then failure = "no-match"
+            else failure = "offline" end
+            finish_job(job, false, failure, retry_after)
             return
         end
         local payload = decode_json(body)
@@ -1302,20 +1623,34 @@ pump_queue = function()
     if os.time() < mb_next_ok then return end
     local job = table.remove(queue, 1)
     if pending_dest[job.dest] then
+        if job.pending_item then
+            pending_inflight = nil
+            pending_defer(job.pending_item, 60)
+        end
         pump_queue()
         return
     end
     if file_exists(job.dest) then
         close_job_progress(job)
-        notify_job(job, job.dest:match("([^/]+)$") .. " already present")
+        if job.pending_item then
+            pending_inflight = nil
+            pending_delete(job.pending_item)
+        else
+            notify_job(job, job.dest:match("([^/]+)$") .. " already present")
+        end
         pump_queue()
         return
     end
     local effective_artist = job.album_artist ~= "" and job.album_artist or job.artist
     local refusal = tracking_refusal(job.dest, job.album, effective_artist)
-    if refusal or (job.is_auto and not job.manual_requested and auto_suppressed(job.dest)) then
+    local suppressed = job.is_auto and not job.manual_requested
+        and not (job.pending_item and job.pending_item.explicit) and auto_suppressed(job.dest)
+    if refusal or suppressed then
         close_job_progress(job)
-        if refusal then notify_job(job, refusal) end
+        if job.pending_item then
+            pending_inflight = nil
+            if refusal then pending_defer(job.pending_item, 300) else pending_delete(job.pending_item) end
+        elseif refusal then notify_job(job, refusal) end
         pump_queue()
         return
     end
@@ -1324,13 +1659,18 @@ pump_queue = function()
     run_job(job)
 end
 
-local function enqueue(job)
+enqueue = function(job)
     if not job or not job.dest then return end
     if file_exists(job.dest) then
-        notify_job(job, job.dest:match("([^/]+)$") .. " already present")
+        if job.pending_item then
+            pending_inflight = nil
+            pending_delete(job.pending_item)
+        else
+            notify_job(job, job.dest:match("([^/]+)$") .. " already present")
+        end
         return
     end
-    if failed_recently(job.key) and job.is_auto then return end
+    if failed_recently(job.key) and job.is_auto and not job.pending_item then return end
     if pending_dest[job.dest] then
         if not job.is_auto and active_job and active_job.dest == job.dest then
             local was_manual = active_job.manual_requested
@@ -1378,6 +1718,45 @@ local function enqueue(job)
     pump_queue()
 end
 
+pending_drain = function()
+    if not pending_loaded or pending_inflight or busy or #pending_items == 0 or os.time() < pending_next_at
+        or os.time() < pending_server_until or os.time() < pending_network_until then return end
+    if not receipts_ready or not tracking_available() then return end
+    if os.time() - pending_last_attempt < 1 then return end
+    pending_last_attempt = os.time()
+    local net = pending_network()
+    if net and (net.wifi_enabled == false or net.connected == false) then return end
+    local q
+    for _, item in ipairs(pending_items) do
+        if pending_blocked_delete[item.dest] or (item.retry_at or 0) <= os.time() then q = item; break end
+    end
+    if not q then return end
+    if pending_blocked_delete[q.dest] then pending_delete(q); return end
+    if file_exists(q.dest) or (not q.explicit and auto_suppressed(q.dest)) then pending_delete(q); return end
+    local name = q.dest:match("([^/]+)%.jpg$")
+    local dir = album_dir(q.dest)
+    for _, ext in ipairs(ALBUM_EXTS) do
+        if file_exists(dir .. "/" .. name .. "." .. ext) then pending_delete(q); return end
+    end
+    local indexed, inspect_err = inspect_library(q.path, q.artist, q.album)
+    if not indexed then
+        if inspect_err == "metadata-mismatch" or inspect_err == "track-name-collision"
+            or inspect_err == "title-collision" or inspect_err == "unsafe-name"
+            or inspect_err == "untrimmed-album" then pending_delete(q)
+        else pending_defer(q, 300) end
+        return
+    end
+    local row_dir = album_dir(q.path)
+    local dest = cover_path(row_dir, indexed.raw_album)
+    if dest ~= q.dest or indexed.artist ~= q.artist or indexed.album ~= q.album
+        or indexed.album_artist ~= q.album_artist then pending_delete(q); return end
+    local job = { path = q.path, artist = q.artist, album = q.album, album_artist = q.album_artist,
+        dir = row_dir, dest = q.dest, key = album_key(q.artist, q.album, row_dir),
+        is_auto = not q.manual_requested, manual_requested = q.manual_requested == true,
+        pending_item = q, pending_generation = pending_generation }
+    pending_inflight = q
+    enqueue(job)
+end
 local function fetch_current(is_auto)
     if not plugin.has_capability("network.http.async")
         or not plugin.has_capability("data.json") then
@@ -1410,8 +1789,19 @@ local function fetch_current(is_auto)
         return
     end
     -- A reverted cover is not fetched again automatically.
-    if job.is_auto and auto_suppressed(job.dest) then return end
-    enqueue(job)
+    if job.is_auto and (auto_suppressed(job.dest) or failed_recently(job.key)) then return end
+    if not pending_add(job, job.is_auto) then return end
+    pending_drain()
+    if not is_auto then
+        for _, item in ipairs(pending_items) do
+            if item.dest == job.dest and pending_inflight ~= item then
+                local net = pending_network()
+                local offline = net and (net.wifi_enabled == false or net.connected == false)
+                if offline or os.time() < pending_server_until or os.time() < pending_network_until
+                    or item.retry_at > os.time() then item.manual_requested = false end
+            end
+        end
+    end
 end
 
 -- ---- Reverting a downloaded cover ----
@@ -1430,6 +1820,9 @@ end
 -- Renames one recorded cover to a non-image backup after re-checking that the
 -- file is still exactly the one recorded. Returns true or nil, message.
 local function revert_receipt(id)
+    if not pending_loaded and not load_pending() then
+        return nil, "Could not check saved cover requests; nothing was changed"
+    end
     local r = receipts[id]
     if not r or r.state ~= "saved" or recovery[id] then return nil, "This cover cannot be reverted" end
     if active_job and active_job.dest == r.dest then
@@ -1444,7 +1837,15 @@ local function revert_receipt(id)
     if not backup or not path_is_under_root(backup, sd_root_dir()) then
         return nil, "No free backup name; nothing was changed"
     end
+    -- A later explicit fetch may replace a revert, but a request queued
+    -- before this revert must not undo the user's new choice.
+    for _, queued_item in ipairs(pending_items) do
+        if queued_item.dest == r.dest and not pending_delete(queued_item) then
+            return nil, "Could not clear queued request; nothing was changed"
+        end
+    end
     drop_queued(r.dest)
+    if pending_inflight and pending_inflight.dest == r.dest then pending_inflight = nil end
 
     local intent = copy_receipt(r)
     intent.state, intent.backup = "reverting", backup
@@ -1846,13 +2247,25 @@ plugin.set_interval(1, function()
         update_job_progress(visible_job, visible_job.stage, nil)
     end
     try_refresh()
+    if not pending_loaded and os.time() >= pending_load_retry_at then
+        pending_load_retry_at = os.time() + 60
+        load_pending()
+    end
     if not receipts_ready and tracking_available() and os.time() >= receipt_load_retry_at then
         receipt_load_retry_at = os.time() + RECOVERY_RETRY_SECONDS
         load_receipts()
     end
     recovery_step()
-    if not busy then pump_queue() end
+    if not busy then
+        pump_queue()
+        pending_drain()
+    end
 end)
+if plugin.has_capability("network.status") then
+    plugin.on("network_changed", function(info)
+        if type(info) == "table" and info.connected then pending_retry_all(true) end
+    end)
+end
 
 local function open_about()
     plugin.show_list("About Cover Art Fetcher", {
@@ -1861,6 +2274,7 @@ local function open_about()
         "The Lua API cannot see embedded pictures inside audio files, so those albums may still get a folder sidecar.",
         "A generic cover or folder image beside the track, or one folder up, can show for every album there. Repair shared folder artwork lists those files and renames them to .compas-backup only after you confirm.",
         "Every cover this plugin saves is recorded with its exact path, size and fingerprint. Downloaded covers lets you revert one: after you confirm, it is renamed to .compas-backup if it is still exactly the file that was saved. Files you added or changed are never touched.",
+        "Missing-cover requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending cover requests lets you retry or clear them.",
         "Automatic mode is off until you enable it. MusicBrainz is limited to one lookup per second.",
     }, function() end)
 end
@@ -1871,6 +2285,30 @@ local function open_settings()
             type = "row",
             label = "Fetch cover for current album",
             on_select = function() fetch_current(false) end,
+        },
+        {
+            type = "row",
+            label = "Pending cover requests (" .. (pending_loaded and tostring(#pending_items) or "unavailable") .. ")",
+            on_select = function()
+                plugin.show_list("Pending cover requests", {
+                    tostring(#pending_items) .. " saved request(s)",
+                    pending_inflight and "A request is downloading" or "Waiting for connection or retry time",
+                    "Retry pending downloads",
+                    "Clear pending requests…",
+                }, function(index)
+                    if index == 3 then
+                        pending_retry_all()
+                        pending_next_at = math.max(pending_next_at, mb_next_ok)
+                    elseif index == 4 then
+                        plugin.show_list("Clear pending requests?", { "Keep requests", "Clear requests" }, function(which)
+                            if which == 2 then
+                                if pending_clear() then plugin.show_toast("Pending requests cleared")
+                                else plugin.show_toast("Could not save queue change") end
+                            end
+                        end)
+                    end
+                end)
+            end,
         },
         {
             type = "toggle",
@@ -1907,6 +2345,7 @@ end
 load_state()
 receipt_load_retry_at = os.time() + RECOVERY_RETRY_SECONDS
 load_receipts()
+if not load_pending() then plugin.show_toast("Saved cover requests could not be read; check Cover Art Fetcher settings") end
 plugin.register_list_item("music_library", "Cover Art Fetcher", open_settings)
 -- Older firmware keeps Settings > Library until it supports player menu rows.
 if plugin.has_capability("ui.player_menu") then
@@ -1927,6 +2366,19 @@ if rawget(_G, "COMPAS_PLUGIN_TEST") then
         current_album = current_album,
         is_absolute_local_path = is_absolute_local_path,
         fetch_current = fetch_current,
+        pending_items = function() return pending_items end,
+        pending_state = function() return { loaded = pending_loaded, count = #pending_items,
+            inflight = pending_inflight ~= nil,
+            server_until = pending_server_until } end,
+        pending_add = pending_add,
+        pending_load = load_pending,
+        pending_drain = pending_drain,
+        pending_retry_all = pending_retry_all,
+        pending_clear = pending_clear,
+        pending_defer = pending_defer,
+        retry_after_seconds = retry_after_seconds,
+        pending_delete = pending_delete,
+        pending_path = PENDING_PATH,
         enqueue = enqueue,
         pending_dest = pending_dest,
         queue = queue,

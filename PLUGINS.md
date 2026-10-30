@@ -1787,23 +1787,28 @@ The plugin packages are in the [compas-plugins repository](https://github.com/St
 
 ### Lyrics Fetcher
 
-Settings > Library > **Lyrics Fetcher**.
+Settings > Library > **Lyrics Fetcher**. Requires Plugin API 17.
 
-- **Fetch lyrics for current track** looks up [LRCLIB](https://lrclib.net/docs) with the playing title, artist, album and duration (no API key) and, if `syncedLyrics` is present, writes a sidecar next to the file. Requires plugin API 15.
-- The sidecar name matches native `lyrics_load_sidecar()`: the audio filename's extension is replaced with `.lrc` (a file with no extension gets `.lrc` appended). An existing `.lrc` is never replaced. The API JSON is never saved as lyrics.
-- **Automatic fetch** is off until you turn it on. It runs on `track_started` only for absolute local files (`/…`). `http://` / `https://` streams, `remote://` tracks, and relative paths are skipped.
-- No match, instrumental, unsynced-only, or a network error does not create a `.lrc`. Embedded tag lyrics are not visible to plugins, so a track that already has USLT/Vorbis lyrics may still get a sidecar.
+- **Fetch lyrics for current track** queues a lookup on [LRCLIB](https://lrclib.net/docs) using title, artist, album and duration. **Automatic fetch**, off by default, adds missing lyrics when a local track starts.
+- Pending requests are saved on the SD card before network work starts. They survive track changes and player restarts, and resume when Wi-Fi reconnects. Existing pending requests continue even if automatic fetching is subsequently turned off.
+- Each plugin queue holds up to 500 unique requests; duplicates do not consume another slot. A full queue refuses new requests without removing older ones.
+- Pending downloads can be retried or cleared from the plugin's settings. Clearing the queue prevents an outstanding response from installing lyrics. Dismissing a progress card only hides the card.
+- A synchronized `.lrc` sidecar is left alone. Unsynchronized lyrics are backed up to `.compas-backup` before a synchronized sidecar replaces them. The audio filename's extension is replaced with `.lrc`; the API JSON is never saved as lyrics.
+- Network failures and temporary server errors stay queued with a retry delay. A definitive no-match or instrumental result ends that request. Downloads are saved as they complete, so completed work survives interruptions.
+- Streams, remote tracks and unsafe paths are skipped. Embedded tag lyrics are not exposed to plugins and cannot be used to decide whether a sidecar is missing.
 
 ### Cover Art Fetcher
 
-Settings > Library > **Cover Art Fetcher**.
+Settings > Library > **Cover Art Fetcher**. Requires Plugin API 17.
 
-- **Fetch cover for current album** searches MusicBrainz for that artist + album, then downloads a **500px (or 250px) front JPEG** from the Cover Art Archive into `cover.jpg` in the album folder. Requires plugin API 15.
-- An existing `cover.jpg` is never overwritten. Lookups require both artist and album tags and refuse an ambiguous or unrelated release (for example two different artists' albums that share a title). Album artist is taken from the library row whose path is the current file, not the first song that merely shares the title.
-- **Automatic fetch** is off until you turn it on. Failures are quiet in automatic mode and are not retried for several hours, so a missing cover or an offline network does not toast every track.
-- MusicBrainz is called at most once per second with a contactable User-Agent. Image URLs are probed with `HEAD` (no automatic redirect follow); `Location` is followed for up to five hops, including relative URLs, then `plugin.download_file_async` fetches the resolved URL. Images larger than 2 MiB are rejected.
-- Only a `front` image with a 500px or 250px thumbnail is used. Back or unsized originals are not saved. The Lua API has no field for embedded pictures inside files. Folders that already show art from tags may still get a `cover.jpg`. After a successful save the plugin calls `plugin.refresh_library()`.
-- Only absolute local files are used; `remote://` tracks and streams are skipped.
+- **Fetch cover for current album** queues a MusicBrainz lookup and a **500px (or 250px) front JPEG** from the Cover Art Archive. **Automatic fetch**, off by default, adds missing covers when a local track starts.
+- Pending album requests are saved on the SD card, deduplicated and resumed when Wi-Fi reconnects, including after player restarts. Pending downloads can be retried or cleared from settings. Turning automatic fetching off prevents new automatic requests; it does not discard existing requests.
+- The queue holds up to 500 unique album destinations; duplicates do not consume another slot.
+- Saves use `<album title>.jpg` beside the track. Existing artwork is preserved, and matching remains conservative: album identity and neighboring filename collisions are checked before saving. Embedded pictures are not exposed to plugins, so an album with embedded artwork may still receive a sidecar.
+- Each completed download has a persistent receipt. **Downloaded covers** lists them, and confirmed reverts move unchanged downloaded files to backups. Automatic queued downloads do not undo intentional reverts; a new manual fetch can request that cover again.
+- Network failures and temporary server errors remain queued with a retry delay. Definitive no-art or no-match results end that request. Completed covers and their history are saved as each download finishes.
+- MusicBrainz lookups remain limited to one per second. Image responses are bounded to 2 MiB, and only a front thumbnail is accepted. Completed saves request a coalesced library refresh.
+- **Repair shared folder artwork** remains a separate, confirmed action: it lists generic artwork that affects several albums and renames selected files to `.compas-backup`.
 
 ### Album Shuffle
 

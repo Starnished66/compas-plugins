@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.lyrics_fetcher",
     name = "Lyrics Fetcher",
-    version = "1.3.0",
+    version = "1.4.0",
     api_min = 17,
 })
 
@@ -14,7 +14,7 @@ plugin.define({
 -- suffix. filename_sync.lrc is not a native lookup name. Embedded tag
 -- lyrics are not exposed to Lua, so they cannot be detected here.
 
-local USER_AGENT = "CompasPlayer-LyricsFetcher/1.3 (https://github.com/Starnished66/compas-player)"
+local USER_AGENT = "CompasPlayer-LyricsFetcher/1.4 (https://github.com/Starnished66/compas-player)"
 local STATE_PATH = plugin.sd_root() .. "/.plugins/.lyrics_fetcher_state"
 local MAX_LRC_BYTES = 512 * 1024
 local MAX_PATH_BYTES = 4095
@@ -26,15 +26,15 @@ local BACKUP_SUFFIX = ".compas-backup"
 local MAX_BACKUP_SLOTS = 9
 -- Longest extra name this plugin appends: ".compas-backup-9".
 local MAX_SIDECAR_EXTRA = math.max(#TEMP_SUFFIX, #BACKUP_SUFFIX + 2)
-local BACKOFF_SEC = 2
-local MAX_RETRIES = 1
+local QUEUE_PATH = plugin.sd_root() .. "/.plugins/.lyrics_fetcher_pending"
+local QUEUE_MAX_ENTRIES = 500
+local QUEUE_MAX_BYTES = 2 * 1024 * 1024
+local RETRY_BASE_SEC = 60
+local RETRY_JITTER_SEC = 5
 
 local state = { auto = false }
 local in_flight = nil -- the sole native HTTP request/retry owner
-local queued = nil -- latest requested current-track job
 local generation = 0
-local retry_at = 0
-local retry_job = nil
 local last_auto_toast_at = 0
 
 local function trim(s)
@@ -358,7 +358,7 @@ local function current_local_track()
         title = title,
         artist = artist,
         album = album,
-        duration = duration,
+        duration = duration > 3600 and 0 or math.max(0, duration),
         dest = dest,
     }
 end
@@ -390,234 +390,390 @@ end
 local finish_fetch
 local drain_queue
 local start_http
+local pending = {}
+local request_order = 0
+local next_drain_at = 0
+local queue_paused_until = 0
+local rate_limited_until = 0
+local network_backoff_until = 0
+local network_failures = 0
+local queue_corrupt = false
+
+local function safe_number(n, min, max)
+    n = tonumber(n)
+    if not n or n ~= n or n == math.huge or n == -math.huge or n < min or n > max then return nil end
+    return n
+end
+
+local function field_escape(s)
+    return (tostring(s or ""):gsub("([^%w%-%.%_%~])", function(c) return string.format("%%%02X", string.byte(c)) end))
+end
+local function field_unescape(s)
+    if type(s) ~= "string" or s:gsub("%%[%x][%x]", ""):find("%", 1, true) then return nil end
+    local bad = false
+    local out = s:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)
+    if out:find("[%z\1-\8\11\12\14-\31\127]") then bad = true end
+    if bad then return nil end
+    return out
+end
+local function serialize_queue(items)
+    if #items > QUEUE_MAX_ENTRIES then return nil end
+    local lines = { "LFQ1\t" .. string.format("%.0f", math.ceil(rate_limited_until)) }
+    for _, e in ipairs(items) do
+        lines[#lines + 1] = table.concat({ tostring(e.order), tostring(e.requested), tostring(e.retry_at or 0),
+            field_escape(e.path), field_escape(e.title), field_escape(e.artist), field_escape(e.album), tostring(e.duration or 0), e.settled and "1" or "0", tostring(e.attempts or 0) }, "\t")
+    end
+    local data = table.concat(lines, "\n") .. (#lines > 0 and "\n" or "")
+    if #data > QUEUE_MAX_BYTES then return nil end
+    return data
+end
+local function persist_queue(items)
+    local data = serialize_queue(items)
+    if not data then return false end
+    local tmp = QUEUE_PATH .. ".tmp"
+    local f = io.open(tmp, "wb")
+    if not f then return false end
+    local ok = f:write(data)
+    local closed = f:close()
+    if not ok or not closed then os.remove(tmp); return false end
+    if not os.rename(tmp, QUEUE_PATH) then os.remove(tmp); return false end
+    return true
+end
+local function valid_queue_entry(fields)
+    local order = safe_number(fields[1], 1, 9e15)
+    local requested = safe_number(fields[2], 1, 9e15)
+    local retry_at = safe_number(fields[3], 0, 9e15)
+    local path, title, artist, album = field_unescape(fields[4]), field_unescape(fields[5]), field_unescape(fields[6]), field_unescape(fields[7])
+    local duration = safe_number(fields[8], 0, 3600)
+    local attempts = safe_number(fields[10], 0, 30)
+    if not attempts or attempts % 1 ~= 0 then return nil end
+    local settled = fields[9] == "1"
+    if fields[9] ~= "1" and fields[9] ~= "0" then return nil end
+    if not order or not requested or not retry_at or not path or not title or not artist or not album or not duration then return nil end
+    if #path > MAX_PATH_BYTES or #title > MAX_METADATA_BYTES or #artist > MAX_METADATA_BYTES or #album > MAX_METADATA_BYTES then return nil end
+    if not is_absolute_local_path(path) or not path_is_bounded_under_root(path) or trim(title) == "" or trim(artist) == "" then return nil end
+    local dest = sidecar_path(path)
+    if not destination_is_bounded(dest) then return nil end
+    return { order=order, requested=requested, retry_at=retry_at, path=path, title=trim(title), artist=trim(artist), album=trim(album), duration=duration, dest=dest, settled=settled, attempts=attempts }
+end
+local function load_queue()
+    local f, _, code = io.open(QUEUE_PATH, "rb")
+    if not f then
+        if code == 2 then pending = {}; queue_corrupt = false; return true end
+        queue_corrupt = true
+        return false
+    end
+    local data, read_err = f:read(QUEUE_MAX_BYTES + 1)
+    local closed = f:close()
+    if read_err or not closed then queue_corrupt = true; return false end
+    if type(data) ~= "string" or #data > QUEUE_MAX_BYTES then queue_corrupt = true; return false end
+    local loaded, seen = {}, {}
+    local header_line, rest = data:match("^([^\n]*)\n(.*)$")
+    local persisted_rate = header_line and header_line:match("^LFQ1\t([%d%.]+)$")
+    persisted_rate = safe_number(persisted_rate, 0, 9e15)
+    if not persisted_rate then queue_corrupt = true; return false end
+    rate_limited_until = math.max(rate_limited_until, persisted_rate)
+    for line in (rest .. "\n"):gmatch("(.-)\n") do
+        if line ~= "" then
+            local fields = {}
+            for part in (line .. "\t"):gmatch("(.-)\t") do
+                if #fields == 10 then queue_corrupt = true; return false end
+                fields[#fields + 1] = part
+            end
+            if #fields ~= 10 then queue_corrupt = true; return false end
+            local e = valid_queue_entry(fields)
+            if not e or seen[e.dest] or #loaded >= QUEUE_MAX_ENTRIES then queue_corrupt = true; return false end
+            seen[e.dest] = true; loaded[#loaded + 1] = e
+            request_order = math.max(request_order, e.order)
+        end
+    end
+    pending = loaded
+    queue_corrupt = false
+    return true
+end
+local function replace_queue(items)
+    if not persist_queue(items) then return false end
+    pending = items
+    return true
+end
+local function remove_entry(entry)
+    local next_items = {}
+    for _, e in ipairs(pending) do if e ~= entry then next_items[#next_items + 1] = e end end
+    local ok = replace_queue(next_items)
+    if not ok then entry.settled = true; queue_paused_until = os.time() + RETRY_BASE_SEC end
+    return ok
+end
+local function enqueue_track(track, manual)
+    track.dest = track.dest or sidecar_path(track.path)
+    if not destination_is_bounded(track.dest) then if manual then plugin.show_toast("Track path is not supported") end; return false end
+    if queue_corrupt then if manual then plugin.show_toast("Pending lyrics queue could not be read") end; return false end
+    local snap = snapshot_sidecar(track.dest)
+    if snap.kind == "synced" then if manual then plugin.show_toast("Lyrics already present") end; return false end
+    if snap.kind == "blocked" then if manual then plugin.show_toast("Could not read existing lyrics") end; return false end
+    for _, entry in ipairs(pending) do
+        if entry.dest == track.dest then
+            if manual then
+                local old_order, old_retry, old_attempts, old_manual, old_settled = entry.order, entry.retry_at, entry.attempts, entry.manual, entry.settled
+                request_order = request_order + 1
+                entry.order, entry.retry_at, entry.attempts, entry.manual, entry.settled = request_order, 0, 0, true, false
+                if not persist_queue(pending) then
+                    entry.order, entry.retry_at, entry.attempts, entry.manual, entry.settled = old_order, old_retry, old_attempts, old_manual, old_settled
+                    plugin.show_toast("Could not update pending lyrics request")
+                    return false
+                end
+                network_backoff_until, network_failures, next_drain_at = 0, 0, 0
+                if in_flight and in_flight.entry == entry then
+                    in_flight.manual_requested = true
+                    show_progress(in_flight, in_flight.stage or "Looking up lyrics…", nil, true)
+                end
+            end
+            return true
+        end
+    end
+    if #pending >= QUEUE_MAX_ENTRIES then if manual then plugin.show_toast("Pending lyrics queue is full") end; return false end
+    request_order = request_order + 1
+    local duration = math.max(0, tonumber(track.duration) or 0)
+    if duration > 3600 then duration = 0 end
+    local e = valid_queue_entry({tostring(request_order), tostring(os.time()), "0",
+        field_escape(track.path), field_escape(track.title), field_escape(track.artist),
+        field_escape(track.album or ""), tostring(duration), "0", "0"})
+    if not e then
+        if manual then plugin.show_toast("Track tags or path are not supported") end
+        return false
+    end
+    e.manual = manual
+    local items = {}; for _, old in ipairs(pending) do items[#items + 1] = old end; items[#items + 1] = e
+    if not replace_queue(items) then if manual then plugin.show_toast("Could not save pending lyrics request") end; return false end
+    return true
+end
+local function queue_count() return #pending end
+local function is_online()
+    if plugin.has_capability("network.status") and type(plugin.network_status) == "function" then
+        local ok, st = pcall(plugin.network_status)
+        if ok and type(st) == "table" then return st.wifi_enabled ~= false and st.connected ~= false end
+    end
+    return true
+end
+local function retry_after_seconds(value)
+    local seconds = tonumber(value)
+    if seconds and seconds == seconds and seconds > 0 and seconds < math.huge then return math.min(seconds, 24 * 60 * 60) end
+    if type(value) ~= "string" then return nil end
+    local day, mon, year, hour, minute, second = value:match("%a+, (%d%d) (%a+) (%d%d%d%d) (%d%d):(%d%d):(%d%d) GMT")
+    local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
+    if not day or not months[mon] then return nil end
+    local ok, utc = pcall(os.time, {year=tonumber(year),month=months[mon],day=tonumber(day),hour=tonumber(hour),min=tonumber(minute),sec=tonumber(second),isdst=false})
+    if not ok or type(utc) ~= "number" then return nil end
+    local offset = os.difftime(os.time(os.date("!*t", utc)), utc)
+    return math.min(24 * 60 * 60, math.max(0, utc - offset - os.time()))
+end
+local function retry_delay(entry, headers)
+    local delay = math.min(3600, RETRY_BASE_SEC * 2 ^ math.min((entry.attempts or 1) - 1, 6))
+    local ra = retry_after_seconds(header(headers, "Retry-After"))
+    if ra and ra > 0 then delay = math.max(delay, ra) end
+    return delay + math.random() * RETRY_JITTER_SEC
+end
+local function defer_entry(entry, headers, status)
+    entry.attempts = math.min(30, (entry.attempts or 0) + 1)
+    entry.retry_at = os.time() + retry_delay(entry, headers)
+    entry.manual = false
+    if status == 429 or retry_after_seconds(header(headers, "Retry-After")) then
+        rate_limited_until = math.max(rate_limited_until, entry.retry_at)
+        for _, other in ipairs(pending) do other.retry_at = math.max(other.retry_at, rate_limited_until) end
+    end
+    if not persist_queue(pending) then queue_paused_until = os.time() + RETRY_BASE_SEC end
+    next_drain_at = os.time() + 1
+end
+local function job_track(entry)
+    return { path=entry.path, title=entry.title, artist=entry.artist, album=entry.album, duration=entry.duration, dest=entry.dest }
+end
 
 local function clear_in_flight(job)
     if in_flight == job then in_flight = nil end
 end
 
 drain_queue = function()
-    if in_flight or not queued then return end
-    local job = queued
-    queued = nil
-    if plugin.get_current_track_path() ~= job.track.path then
-        close_progress(job)
-        return
+    if queue_corrupt then return end
+    if in_flight or os.time() < next_drain_at or os.time() < queue_paused_until or os.time() < rate_limited_until or os.time() < network_backoff_until then return end
+    if not is_online() then return end
+    for _, entry in ipairs(pending) do
+        if entry.settled then
+            local keep = {}; for _, other in ipairs(pending) do if not other.settled then keep[#keep + 1] = other end end
+            if not replace_queue(keep) then queue_paused_until = os.time() + RETRY_BASE_SEC; return end
+            break
+        end
     end
-    start_http(job.track, job.is_auto, job.attempt or 0, job)
+    table.sort(pending, function(a,b) return a.order > b.order end)
+    for _, entry in ipairs(pending) do
+        if entry.retry_at <= os.time() then
+            local track = job_track(entry)
+            local snap = snapshot_sidecar(track.dest)
+            if snap.kind == "synced" then
+                remove_entry(entry)
+                return
+            elseif snap.kind == "blocked" then
+                entry.retry_at = os.time() + RETRY_BASE_SEC
+                if not persist_queue(pending) then queue_paused_until = entry.retry_at end
+                return
+            else
+                start_http(track, entry)
+                return
+            end
+        end
+    end
 end
 
-local function queue_or_start(track, is_auto, progress_job)
-    if in_flight then
-        if in_flight.path == track.path and in_flight.dest == track.dest then
-            if not is_auto then
-                in_flight.manual_requested = true
-                show_progress(in_flight, in_flight.stage or "Looking up lyrics…", nil, true)
-            end
-            return
-        end
-        if queued and queued.path == track.path and queued.dest == track.dest then
-            if not is_auto then
-                queued.is_auto = false
-                queued.manual_requested = true
-                show_progress(queued, queued.stage or "Queued for lyrics lookup…", nil, true)
-            end
-            return
-        end
-        if queued then close_progress(queued) end
-        if in_flight.path ~= track.path then
-            close_progress(in_flight)
-            in_flight.manual_requested = false
-        end
-        queued = progress_job or { path = track.path, dest = track.dest, manual_requested = not is_auto }
-        queued.track, queued.is_auto, queued.attempt = track, is_auto, 0
-        queued.stage = "Queued for lyrics lookup…"
-        if not is_auto then show_progress(queued, queued.stage, nil, false) end
-        return
+local function queue_failure(job, headers, status, network_failure)
+    local entry = job.entry
+    if entry.manual then notify_job(job, "Lyrics request queued for retry") end
+    close_progress(job)
+    clear_in_flight(job)
+    defer_entry(entry, headers, status)
+    if network_failure then
+        network_failures = math.min(7, network_failures + 1)
+        network_backoff_until = os.time() + math.min(3600, RETRY_BASE_SEC * 2 ^ (network_failures - 1))
     end
-    start_http(track, is_auto, 0, progress_job)
 end
 
-start_http = function(track, is_auto, attempt, progress_job)
-    local dest = track.dest
-    local snap = snapshot_sidecar(dest)
+start_http = function(track, entry)
+
+    local snap = snapshot_sidecar(track.dest)
     if snap.kind == "synced" then
-        close_progress(progress_job)
-        notify("Lyrics already present", is_auto)
+        remove_entry(entry)
         return false
     end
     if snap.kind == "blocked" then
-        close_progress(progress_job)
-        notify("Could not read existing lyrics", is_auto)
+        defer_entry(entry)
         return false
     end
     local url = build_url(track)
-    if not url then close_progress(progress_job); notify("Lyrics request is too long", is_auto); return false end
+    if not url then defer_entry(entry); return false end
     generation = generation + 1
     local gen = generation
-    local job = progress_job or { path = track.path, dest = dest, is_auto = is_auto }
-    job.gen, job.path, job.dest = gen, track.path, dest
-    job.track, job.is_auto, job.attempt = track, is_auto, attempt
-    job.snapshot = snap
-    if not progress_job then job.manual_requested = not is_auto end
-    job.stage = attempt > 0 and "Retrying lyrics lookup…" or "Looking up lyrics…"
+    local is_auto = not entry.manual
+    local job = { path=track.path, dest=track.dest, is_auto=is_auto, entry=entry, manual_requested=entry.manual == true }
+    job.gen, job.track, job.snapshot = gen, track, snap
+    job.stage = "Looking up lyrics…"
     in_flight = job
     show_progress(job, job.stage, nil, false)
-    local ok, handle, start_err = pcall(plugin.http_request, {
-        url = url, method = "GET", headers = { ["User-Agent"] = USER_AGENT }, verify_tls = true,
-        max_response_bytes = MAX_LRC_BYTES, connect_timeout_ms = 10000, read_timeout_ms = 15000,
-        total_timeout_ms = 30000, redirect_limit = 3,
-    }, function(status, body, err, headers)
-        finish_fetch(track, is_auto, attempt, gen, status, body, err, headers)
-    end)
+    local ok, handle = pcall(plugin.http_request, {
+        url=url, method="GET", headers={ ["User-Agent"]=USER_AGENT }, verify_tls=true,
+        max_response_bytes=MAX_LRC_BYTES, connect_timeout_ms=10000, read_timeout_ms=15000, total_timeout_ms=30000, redirect_limit=3,
+    }, function(status, body, err, headers) finish_fetch(track, is_auto, gen, status, body, err, headers) end)
     if not ok or not handle then
-        clear_in_flight(job)
-        close_progress(job)
-        notify_job(job, "Could not start lyrics request: " .. tostring(ok and start_err or handle))
-        drain_queue()
+        queue_failure(job, nil, nil, true)
         return false
     end
     return true
 end
 
-finish_fetch = function(track, is_auto, attempt, gen, status, body, err, headers)
+finish_fetch = function(track, is_auto, gen, status, body, err, headers)
     local job = in_flight
     if not job or job.gen ~= gen then return end
-    local function done()
+    local entry = job.entry
+    local function terminal()
         clear_in_flight(job)
-        drain_queue()
+        remove_entry(entry); next_drain_at = os.time() + 1
     end
-    if plugin.get_current_track_path() ~= track.path then
-        retry_job = nil
-        close_progress(job)
-        done()
-        return
-    end
-    local retryable = attempt < MAX_RETRIES and
-        (err == "timeout" or err == "connect_timeout" or err == "connect_failed" or status == 429 or status == 503)
-    if retryable then
-        local wait = BACKOFF_SEC
-        local ra = tonumber(header(headers, "Retry-After"))
-        if ra and ra > 0 then wait = math.min(30, math.max(1, math.floor(ra))) end
-        job.stage = "Retrying lyrics lookup…"
-        show_progress(job, job.stage, nil, false)
-        retry_job = { track = track, is_auto = is_auto, attempt = attempt + 1, progress_job = job }
-        retry_at = os.time() + wait
-        return
-    end
-    retry_job = nil
-    if plugin.get_current_track_path() ~= track.path then
-        close_progress(job); done(); return
-    end
+    local transient = err ~= nil or status == 429 or status == 408 or status == 425 or status == 401 or status == 403
+        or (status and status >= 500 and status <= 599)
+    if err == "response_too_large" then close_progress(job); notify_job(job, "Lyrics response was too large"); terminal(); return end
+    if transient then queue_failure(job, headers, status, true); return end
+    network_failures, network_backoff_until = 0, 0
+    local snap = snapshot_sidecar(track.dest)
+    if snap.kind == "blocked" then queue_failure(job); return end
     if not snapshot_still_valid(track.dest, job.snapshot) then
-        local now = snapshot_sidecar(track.dest)
-        close_progress(job)
-        if now.kind == "synced" then notify_job(job, "Lyrics already present")
-        else notify_job(job, "Track lyrics changed; lyrics not saved") end
-        done(); return
+        if snap.kind == "synced" then close_progress(job); terminal()
+        else queue_failure(job) end
+        return
     end
-    if err then
-        close_progress(job); notify_job(job, "Lyrics fetch failed: " .. err); done(); return
-    end
-    if status == 404 then
-        close_progress(job); notify_job(job, "No synced lyrics found"); done(); return
-    end
+    if status == 404 then close_progress(job); notify_job(job, "No synced lyrics found"); terminal(); return end
     if status ~= 200 or type(body) ~= "string" or #body > MAX_LRC_BYTES then
-        close_progress(job); notify_job(job, "Lyrics fetch failed (HTTP " .. tostring(status) .. ")"); done(); return
+        close_progress(job); notify_job(job, "Lyrics fetch failed (HTTP " .. tostring(status) .. ")"); terminal(); return
     end
-    local decoded, record = pcall(plugin.json_decode, body, { max_input_bytes = MAX_LRC_BYTES, max_nesting = 8, max_entries = 64 })
-    if not decoded or not record then
-        close_progress(job); notify_job(job, "Lyrics response was not JSON"); done(); return
-    end
+    local decoded, record = pcall(plugin.json_decode, body, { max_input_bytes=MAX_LRC_BYTES, max_nesting=8, max_entries=64 })
+    if not decoded or not record then close_progress(job); notify_job(job, "Lyrics response was not JSON"); terminal(); return end
     local lrc, why = extract_synced(record)
-    if not lrc then
-        close_progress(job)
-        notify_job(job, why == "instrumental" and "Track is instrumental" or "No synced lyrics in result")
-        done(); return
-    end
-    job.stage = "Saving lyrics…"
-    show_progress(job, job.stage, nil, false)
-    if plugin.get_current_track_path() ~= track.path then
-        close_progress(job); done(); return
-    end
-    if not snapshot_still_valid(track.dest, job.snapshot) then
-        local now = snapshot_sidecar(track.dest)
-        close_progress(job)
-        if now.kind == "synced" then notify_job(job, "Lyrics already present")
-        else notify_job(job, "Track lyrics changed; lyrics not saved") end
-        done(); return
-    end
+    if not lrc then close_progress(job); notify_job(job, why == "instrumental" and "Track is instrumental" or "No synced lyrics in result"); terminal(); return end
+    if not snapshot_still_valid(track.dest, job.snapshot) then close_progress(job); queue_failure(job); return end
     local ok, write_err = install_synced_lrc(track.dest, lrc, job.snapshot)
     close_progress(job)
     if ok then
         notify_job(job, "Saved lyrics")
-        refresh_current_lyrics_display(track.path)
-    elseif write_err == "exists" then notify_job(job, "Lyrics already present")
-    elseif write_err == "stale" then notify_job(job, "Track lyrics changed; lyrics not saved")
-    else notify_job(job, "Could not save lyrics") end
-    done()
+        if plugin.get_current_track_path() == track.path then refresh_current_lyrics_display(track.path) end
+        terminal()
+    elseif write_err == "exists" then terminal()
+    else queue_failure(job) end
 end
 
 local function fetch_current(is_auto)
     if not plugin.has_capability("network.http.async") or not plugin.has_capability("data.json") then
-        if not is_auto then plugin.show_toast("This player cannot fetch lyrics") end
-        return
+        if not is_auto then plugin.show_toast("This player cannot fetch lyrics") end; return
     end
     local track = current_local_track()
-    if not track then
-        notify("Play a local track with title and artist tags", is_auto)
-        return
+    if not track then notify("Play a local track with title and artist tags", is_auto); return end
+    if not enqueue_track(track, not is_auto) then return end
+    if not is_auto then
+        for _, e in ipairs(pending) do if e.dest == track.dest then e.manual = true end end
+        if not is_online() then plugin.show_toast("Lyrics request added to pending queue") end
     end
-    if retry_job and retry_job.track.path == track.path then
-        if not is_auto then
-            retry_job.is_auto = false
-            if retry_job.progress_job then
-                retry_job.progress_job.manual_requested = true
-                show_progress(retry_job.progress_job, retry_job.progress_job.stage or "Retrying lyrics lookup…", nil, true)
+    drain_queue()
+    if not is_auto then
+        for _, entry in ipairs(pending) do
+            if entry.dest == track.dest and (not in_flight or in_flight.entry ~= entry) then
+                if not is_online() or os.time() < rate_limited_until or os.time() < network_backoff_until
+                    or os.time() < queue_paused_until or entry.retry_at > os.time() then entry.manual = false end
             end
         end
-        return
-    elseif retry_job then
-        close_progress(retry_job.progress_job)
-        retry_job = nil
-        clear_in_flight(in_flight)
-        drain_queue()
     end
-    queue_or_start(track, is_auto and true or false)
+end
+
+-- Keep entry identities: an in-flight response owns the same entry that
+-- it must retire after completion, even if Retry is tapped meanwhile.
+local function retry_pending()
+    if queue_corrupt and not load_queue() then
+        plugin.show_toast("Pending lyrics queue could not be read")
+        return false
+    end
+    local previous = {}
+    for i, entry in ipairs(pending) do
+        previous[i] = entry.retry_at
+        entry.retry_at = 0
+    end
+    if not persist_queue(pending) then
+        for i, entry in ipairs(pending) do entry.retry_at = previous[i] end
+        plugin.show_toast("Could not update pending queue")
+        return false
+    end
+    next_drain_at, network_backoff_until, network_failures = 0, 0, 0
+    drain_queue()
+    return true
+end
+
+local function clear_pending()
+    if not persist_queue({}) then return false end
+    generation = generation + 1
+    if in_flight then close_progress(in_flight); in_flight = nil end
+    pending = {}; next_drain_at = 0; queue_paused_until = 0; queue_corrupt = false
+    network_backoff_until, network_failures = 0, 0
+    return true
 end
 
 plugin.on("track_started", function(_, _, _, _, provider)
-    local path = plugin.get_current_track_path()
-    if in_flight and in_flight.path ~= path then
-        close_progress(in_flight)
-        in_flight.manual_requested = false
-    end
-    if retry_job and retry_job.track.path ~= path then
-        close_progress(retry_job.progress_job)
-        clear_in_flight(in_flight)
-        retry_job = nil
-    end
-    if queued and queued.track.path ~= path then
-        close_progress(queued)
-        queued = nil
-    end
-    if not state.auto or (provider and provider ~= "") then return end
-    fetch_current(true)
+    if state.auto and not (provider and provider ~= "") then fetch_current(true) end
 end)
 
-plugin.set_interval(1, function()
-    if retry_job and os.time() >= retry_at then
-        local retry = retry_job
-        retry_job = nil
-        if plugin.get_current_track_path() ~= retry.track.path then
-            close_progress(retry.progress_job)
-            clear_in_flight(in_flight)
-            drain_queue()
-        else
-            clear_in_flight(in_flight)
-            start_http(retry.track, retry.is_auto, retry.attempt, retry.progress_job)
+plugin.set_interval(1, function() drain_queue() end)
+if plugin.has_capability("network.status") and type(plugin.network_status) == "function" then
+    pcall(plugin.on, "network_changed", function(info)
+        if type(info) == "table" and info.connected then
+            network_backoff_until, network_failures = 0, 0
         end
-    end
-end)
+        next_drain_at = 0
+        drain_queue()
+    end)
+end
+if not load_queue() then plugin.show_toast("Pending lyrics queue could not be read; check Lyrics Fetcher settings") end
+drain_queue()
 
 local function open_about()
     plugin.show_list("About Lyrics Fetcher", {
@@ -625,6 +781,7 @@ local function open_about()
         "Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player.",
         "Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced.",
         "Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar.",
+        "Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them.",
         "Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped.",
     }, function() end)
 end
@@ -635,6 +792,25 @@ local function open_settings()
             type = "row",
             label = "Fetch lyrics for current track",
             on_select = function() fetch_current(false) end,
+        },
+        {
+            type = "row",
+            label = "Pending lyrics requests: " .. (queue_corrupt and "unavailable" or tostring(queue_count())),
+            on_select = function()
+                plugin.show_list("Pending lyrics", {
+                    "Retry pending downloads", "Clear pending queue",
+                }, function(index)
+                    if index == 1 then
+                        retry_pending()
+                    elseif index == 2 then
+                        plugin.show_list("Clear pending queue?", {"Keep queue", "Clear queue"}, function(choice)
+                            if choice == 2 and not clear_pending() then
+                                plugin.show_toast("Could not clear pending queue")
+                            end
+                        end)
+                    end
+                end)
+            end,
         },
         {
             type = "toggle",
@@ -678,8 +854,15 @@ if rawget(_G, "COMPAS_PLUGIN_TEST") then
         atomic_write_lrc = atomic_write_lrc,
         refresh_current_lyrics_display = refresh_current_lyrics_display,
         build_url = build_url,
+        enqueue_track = enqueue_track,
+        drain_queue = drain_queue,
+        get_pending = function() return pending end,
+        persist_queue = persist_queue,
+        load_queue = load_queue,
+        clear_pending = clear_pending,
+        retry_pending = retry_pending,
         fetch_current = fetch_current,
-        get_queue_state = function() return in_flight, queued end,
+        get_queue_state = function() return in_flight, nil end,
         state = state,
         BACKUP_SUFFIX = BACKUP_SUFFIX,
         TEMP_SUFFIX = TEMP_SUFFIX,
