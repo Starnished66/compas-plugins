@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.metronome",
     name = "Metronome",
-    version = "1.4.1",
+    version = "1.4.2",
     api_min = 17,
 })
 
@@ -795,8 +795,8 @@ open_menu = function(update)
             icon = "Metronome/sliders-horizontal.png",
             on_change = function(value) set_bpm(value, false, function() open_menu(true) end) end,
         },
-        { type = "row", label = "Tap tempo", icon = "Metronome/hand-tap.png", on_select = tap_tempo },
         { type = "row", label = "Tempo", icon = "Metronome/sliders-horizontal.png", on_select = function() open_tempo_steps(false) end },
+        { type = "row", label = "Tap tempo", icon = "Metronome/hand-tap.png", on_select = tap_tempo },
         { type = "row", label = "Rhythm", icon = "Metronome/music-notes.png", on_select = function() open_rhythm(false) end },
         { type = "row", label = "Sound", icon = "Metronome/speaker-high.png", on_select = function() open_levels(false) end },
         { type = "row", label = "Options", icon = "Metronome/gear-six.png", on_select = function() open_playback(false) end },
