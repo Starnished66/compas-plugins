@@ -34,7 +34,7 @@ PLUGINS_DIR = os.path.join(ROOT, "plugins")
 SCHEMA = 1
 # Keep the published catalog within the highest API supported by the player.
 # Keep this in sync with the highest API supported by the target firmware.
-SUPPORTED_API_VERSION = 17
+SUPPORTED_API_VERSION = 19
 # Kept well inside what the player accepts, so a release can never be
 # rejected on the device for size alone.
 MAX_FILE_BYTES = 1024 * 1024

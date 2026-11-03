@@ -1,15 +1,15 @@
 plugin.define({
     id = "example.epub_reader",
     name = "EPUB Reader",
-    version = "1.2.2",
-    api_min = 14,
+    version = "2.0.0",
+    api_min = 19,
 })
 
 -- EPUB reader for unencrypted books stored under <SD card>/Books.
 -- Scans Books and immediate subfolders, parses container.xml and the OPF,
--- displays the spine in a list screen with NCX/nav chapter titles,
--- converts chapters to text blocks, and opens paged text reading with
--- persistent resume and continue reading.
+-- converts chapters to text blocks, and opens paged text reading straight
+-- at the saved position, continuing across chapters. A long press on a book
+-- offers its table of contents, the font size and the background colour.
 
 -- Last slash, forward only. Lua's pattern matcher backtracks on [^/]+$.
 local function basename(path)
@@ -34,6 +34,15 @@ local function percent_decode(s)
     return (s:gsub("%%(%x%x)", function(hex)
         return string.char(tonumber(hex, 16))
     end))
+end
+
+local function clip_text(s, max_bytes)
+    if not s or #s <= max_bytes then
+        return s or ""
+    end
+    -- Cut on a character boundary.
+    local clipped = s:sub(1, max_bytes + 1):gsub("[\192-\255][\128-\191]*$", "")
+    return clipped
 end
 
 -- show_list copies a row into a 160-byte buffer. Clip before the spine
@@ -426,15 +435,6 @@ local function set_title(titles, key, text)
     end
 end
 
-local function has_titles(titles)
-    for _, v in pairs(titles) do
-        if v ~= "" then
-            return true
-        end
-    end
-    return false
-end
-
 -- Resolves a document's links to spine chapters without rebuilding its
 -- directory per link. The directory is split once. A path is identified by
 -- how many leading directory components it keeps plus its own remaining
@@ -651,8 +651,30 @@ local function parse_opf(opf, book_path)
     }
 end
 
+-- The table of contents, flattened in reading order, is capped like the spine.
+local MAX_TOC_ENTRIES = 500
+
+-- Adds an entry that points into a spine chapter; links elsewhere are dropped.
+-- frag is the link's #id, "" when it has none.
+local function add_toc(book, resolve, src, text)
+    local href = resolve(src)
+    if not href or not text or text == "" then
+        return
+    end
+    text = clip_text(text, MAX_LABEL_BYTES)
+    set_title(book.titles, href, text)
+    if #book.toc < MAX_TOC_ENTRIES then
+        local hash = src:sub(1, MAX_HREF_BYTES + 1):find("#", 1, true)
+        book.toc[#book.toc + 1] = {
+            title = text,
+            href = href,
+            frag = hash and src:sub(hash + 1, hash + 128) or "",
+        }
+    end
+end
+
 -- NCX and nav hrefs are relative to their own document, not the OPF.
-local function parse_ncx_titles(ncx, resolve, titles)
+local function parse_ncx_toc(ncx, resolve, book)
     local unclosed = {}
     local pending
     local p = 1
@@ -671,16 +693,30 @@ local function parse_ncx_titles(ncx, resolve, titles)
         elseif lname == "content" and pending then
             local src = parse_attributes(ncx:sub(lt, gt))["src"]
             if src then
-                set_title(titles, resolve(src), pending)
+                add_toc(book, resolve, src, pending)
                 pending = nil
             end
         end
     end
 end
 
-local function parse_nav_titles(nav, resolve, titles)
-    local unclosed = {}
+local function parse_nav_toc(nav, resolve, book)
+    -- Landmarks and page lists link into the book too: read only the toc nav.
     local p = 1
+    while true do
+        local lt, gt, _, lname = next_start_tag(nav, p)
+        if not lt then
+            break
+        end
+        p = gt + 1
+        if lname == "nav" and (parse_attributes(nav:sub(lt, gt))["epub:type"] or ""):find("toc", 1, true) then
+            local close = find_close(nav, gt + 1, "nav")
+            nav = nav:sub(gt + 1, close and close - 1 or #nav)
+            break
+        end
+    end
+    local unclosed = {}
+    p = 1
     while true do
         local lt, gt, _, lname = next_start_tag(nav, p)
         if not lt then
@@ -692,7 +728,7 @@ local function parse_nav_titles(nav, resolve, titles)
             local text
             text, p = element_text(nav, gt, "a", unclosed)
             if href then
-                set_title(titles, resolve(href), text)
+                add_toc(book, resolve, href, text)
             end
         end
     end
@@ -738,40 +774,34 @@ local function parse_book(book_path)
         return nil
     end
 
-    local titles = {}
-    for _, idref in ipairs(book.spine_ids) do
+    -- titles holds the first table of contents title of each spine chapter,
+    -- toc every entry in order, spine_of the first spine index of a chapter.
+    local titles, spine_of = {}, {}
+    for i, idref in ipairs(book.spine_ids) do
         local href = resolved_href(book.manifest[idref], book.opf_dir)
         if href then
             titles[href] = ""
+            spine_of[href] = spine_of[href] or i
+        end
+    end
+    book.titles = titles
+    book.toc = {}
+    book.spine_of = spine_of
+
+    local function read_toc(item, parse)
+        local path = resolved_href(item, book.opf_dir)
+        local data = path and plugin.zip_read(book_path, path)
+        local dir = data and document_dir(path)
+        if dir then
+            parse(data, new_title_resolver(dir, titles), book)
         end
     end
     if book.ncx_item then
-        local ncx_path = resolved_href(book.ncx_item, book.opf_dir)
-        if ncx_path then
-            local ncx_data = plugin.zip_read(book_path, ncx_path)
-            if ncx_data then
-                local ncx_dir = document_dir(ncx_path)
-                if ncx_dir ~= nil then
-                    parse_ncx_titles(ncx_data, new_title_resolver(ncx_dir, titles), titles)
-                end
-            end
-        end
+        read_toc(book.ncx_item, parse_ncx_toc)
     end
-
-    if not has_titles(titles) and book.nav_item then
-        local nav_path = resolved_href(book.nav_item, book.opf_dir)
-        if nav_path then
-            local nav_data = plugin.zip_read(book_path, nav_path)
-            if nav_data then
-                local nav_dir = document_dir(nav_path)
-                if nav_dir ~= nil then
-                    parse_nav_titles(nav_data, new_title_resolver(nav_dir, titles), titles)
-                end
-            end
-        end
+    if #book.toc == 0 and book.nav_item then
+        read_toc(book.nav_item, parse_nav_toc)
     end
-
-    book.titles = titles
     return book
 end
 
@@ -792,39 +822,9 @@ local function save_pos(book_path, index, byte_offset)
     plugin.storage.set(pos_key(book_path), tostring(index) .. "\n" .. tostring(byte_offset or 0))
 end
 
-local function clip_text(s, max_bytes)
-    if not s or #s <= max_bytes then
-        return s or ""
-    end
-    -- Cut on a character boundary.
-    local clipped = s:sub(1, max_bytes + 1):gsub("[\192-\255][\128-\191]*$", "")
-    return clipped
-end
-
 local function chapter_href(book, index)
     local idref = book.spine_ids[index]
     return resolved_href(idref and book.manifest[idref], book.opf_dir)
-end
-
-local function chapter_label(book, index)
-    local idref = book.spine_ids[index]
-    local item = idref and book.manifest[idref]
-    if item and item.label ~= nil then
-        return item.label
-    end
-    local href = resolved_href(item, book.opf_dir)
-    local label = "(missing)"
-    if href then
-        label = book.titles[href]
-        if not label or label == "" then
-            label = basename(href)
-        end
-        label = clip_text(label, MAX_LABEL_BYTES)
-    end
-    if item then
-        item.label = label
-    end
-    return label
 end
 
 -- Covers and chapter pictures are scaled once into LVGL images under
@@ -1006,26 +1006,125 @@ local function queue_cover(book_path)
     })
 end
 
-local chapter_generation = 0
+-- Reading style, shared by all books and kept in plugin.storage. Normal
+-- keeps the player's default size, Theme its default colors.
+local FONT_NAMES = { "Small", "Normal", "Large", "Extra large" }
+local FONT_SIZES = { "small", false, "medium", "large" }
+local BACKGROUNDS = {
+    { name = "Theme" },
+    { name = "White", background = 0xFAFAF7, text = 0x1A1A1A },
+    { name = "Sepia", background = 0xF4ECD8, text = 0x5B4636 },
+    { name = "Dark", background = 0x2B2B2B, text = 0xD8D8D8 },
+    { name = "Black", background = 0x000000, text = 0xC8C8C8 },
+    { name = "Custom" },
+}
+local CUSTOM = #BACKGROUNDS
 
-local function open_chapter(book_path, book, index, offset, list_handle)
+local function stored_index(key, count, default)
+    local n = math.tointeger(tonumber(plugin.storage.get(key) or ""))
+    if n and n >= 1 and n <= count then
+        return n
+    end
+    return default
+end
+
+-- A custom background gets dark or light text, whichever reads better.
+local function custom_text_color(color)
+    local r, g, b = color // 65536, color // 256 % 256, color % 256
+    return (r * 299 + g * 587 + b * 114) > 140000 and 0x1A1A1A or 0xE0E0E0
+end
+
+-- Returns the text_size and colors options (nil for the defaults).
+local function reading_style()
+    local size = FONT_SIZES[stored_index("font", #FONT_NAMES, 2)] or nil
+    local choice = stored_index("bg", CUSTOM, 1)
+    local bg = BACKGROUNDS[choice]
+    if bg.background then
+        return size, { background = bg.background, text = bg.text }
+    end
+    local custom = choice == CUSTOM and math.tointeger(tonumber(plugin.storage.get("bg_custom") or ""))
+    if custom and custom >= 0 and custom <= 0xFFFFFF then
+        return size, { background = custom, text = custom_text_color(custom) }
+    end
+    return size, nil
+end
+
+-- Blocks of one spine item. Returns nil, nil and the reason on failure.
+local function read_blocks(book_path, book, index)
     local href = chapter_href(book, index)
     if not href then
-        plugin.show_toast("Missing manifest item")
-        return
+        return nil, nil, "Missing manifest item"
     end
-
     local chapter_bytes, err = plugin.zip_read(book_path, href)
     if not chapter_bytes then
-        plugin.show_toast(err or "Failed to read chapter")
-        return
+        return nil, nil, err or "Failed to read chapter"
     end
-
     local blocks, b_err = plugin.html_to_blocks(chapter_bytes)
     if not blocks then
-        plugin.show_toast(b_err or "Failed to parse chapter")
+        return nil, nil, b_err or "Failed to parse chapter"
+    end
+    return blocks, href
+end
+
+-- Whether the blocks hold any text, and whether they hold a picture.
+local function block_content(blocks)
+    local text, pic = false, false
+    for i = 1, #blocks do
+        local b = blocks[i]
+        if b.kind == "img" then
+            pic = true
+        elseif (b.kind == "h" or b.kind == "p") and b.text and b.text ~= "" then
+            text = true
+        end
+    end
+    return text, pic
+end
+
+-- First spine item from index on, in direction step, with text or a picture.
+-- Returns its index, blocks and href, or nil and the last error.
+local function find_chapter(book_path, book, index, step)
+    local last_err
+    while index >= 1 and index <= #book.spine_ids do
+        local blocks, href, err = read_blocks(book_path, book, index)
+        if blocks then
+            local text, pic = block_content(blocks)
+            if text or pic then
+                return index, blocks, href
+            end
+        else
+            last_err = err
+        end
+        index = index + step
+    end
+    return nil, last_err
+end
+
+-- Heading comparison ignores case and whitespace.
+local function fold(s)
+    return (s:lower():gsub("%s+", ""):gsub("\194\160", ""))
+end
+
+local chapter_generation = 0
+local LAST_PAGE = 9999 -- the view lands on its last page
+
+-- Opens spine item index, or the next one with content in direction step.
+-- start = { offset = bytes } or { page = n } or { title = heading text },
+-- or nil for the first page. ctx = { list = handle of the screen it was
+-- opened from } or { replace = true } to swap the content of the open view.
+local function open_chapter(book_path, book, index, step, start, ctx)
+    local found, blocks, href = find_chapter(book_path, book, index, step) -- on failure, blocks is the error
+    if not found then
+        if not ctx.replace then
+            plugin.show_toast(blocks or "Nothing to read")
+        elseif step > 0 then
+            plugin.show_toast("End of book")
+        end
         return
     end
+    if found ~= index and start and start.offset then
+        start = nil -- the saved spot belongs to a chapter that was skipped
+    end
+    index = found
 
     -- Pictures, in order of first use, up to what the text view accepts.
     local chapter_dir = dir_of(href)
@@ -1050,7 +1149,7 @@ local function open_chapter(book_path, book, index, offset, list_handle)
         if generation ~= chapter_generation then
             return -- another chapter or book was opened meanwhile
         end
-        if deferred and not (list_handle and plugin.is_list_showing(list_handle)) then
+        if deferred and not ctx.replace and not (ctx.list and plugin.is_list_showing(ctx.list)) then
             return -- the user left the screen the chapter was opened from
         end
         local images, marker_of = {}, {}
@@ -1060,35 +1159,61 @@ local function open_chapter(book_path, book, index, offset, list_handle)
                 marker_of[entry] = #images - 1
             end
         end
-        local pieces = {}
+        local pieces, size = {}, 0
+        local function add(s)
+            pieces[#pieces + 1] = s
+            size = size + #s
+        end
+        local offset = start and start.offset
+        local heading = start and start.title and fold(start.title)
         for i = 1, #blocks do
             local b = blocks[i]
             if b.kind == "h" or b.kind == "p" then
-                pieces[#pieces + 1] = (b.text or "") .. "\n\n"
+                if heading and b.kind == "h" and fold(b.text or "") == heading then
+                    offset, heading = size, nil
+                end
+                add((b.text or "") .. "\n\n")
             elseif b.kind == "img" then
                 local marker = b.text and marker_of[resolve_href(chapter_dir, b.text)]
-                pieces[#pieces + 1] = marker and ("\27" .. marker .. "\27") or "[image]\n\n"
+                add(marker and ("\27" .. marker .. "\27") or "[image]\n\n")
             elseif b.kind == "hr" then
-                pieces[#pieces + 1] = "\n"
+                add("\n")
             end
         end
 
+        local title = book.titles[href]
+        if not title or title == "" then
+            title = clip_text(book.title, MAX_LABEL_BYTES)
+        end
         local opts = {
             images = images,
+            page = start and start.page,
+            offset = offset,
             on_turn = function(_, _, byte_offset)
                 save_pos(book_path, index, byte_offset)
             end,
             on_close = function(_, byte_offset)
                 save_pos(book_path, index, byte_offset)
             end,
+            replace = ctx.replace,
+            on_end = function(direction)
+                open_chapter(
+                    book_path,
+                    book,
+                    index + direction,
+                    direction,
+                    direction < 0 and { page = LAST_PAGE } or nil,
+                    { replace = true }
+                )
+            end,
         }
-        if offset and offset >= 0 then
-            opts.offset = offset
-        end
+        opts.text_size, opts.colors = reading_style()
 
-        local ok, tv_err = plugin.show_text_view(chapter_label(book, index), table.concat(pieces), opts)
+        local ok, tv_err = plugin.show_text_view(title, table.concat(pieces), opts)
         if not ok then
-            plugin.show_toast(tv_err or "unavailable")
+            if not (ctx.replace and tv_err == "not open") then -- the user left the book
+                plugin.show_toast(tv_err or "unavailable")
+            end
             return
         end
         if plugin.storage.get("continue") ~= book_path then
@@ -1138,22 +1263,53 @@ local function open_chapter(book_path, book, index, offset, list_handle)
     end
 end
 
-local function open_book(book_path)
+-- The table of contents as a list; without one, the spine items that have
+-- text, labeled by their first heading.
+local function open_chapters(book_path)
     local book = parse_book(book_path)
     if not book then
         return
     end
-
     if #book.spine_ids == 0 then
         plugin.show_toast("Empty spine")
         return
     end
 
-    local spine_labels = {}
-    for i = 1, #book.spine_ids do
-        spine_labels[i] = chapter_label(book, i)
+    local entries = {}
+    if #book.toc > 0 then
+        for _, t in ipairs(book.toc) do
+            -- A #id is found by its heading; without a match, the file's start.
+            local index = book.spine_of[t.href]
+            if index then -- an entry outside the spine cannot be opened
+                local heading = t.frag ~= "" and t.title or nil
+                entries[#entries + 1] = { label = t.title, index = index, heading = heading }
+            end
+        end
+    else
+        for i = 1, #book.spine_ids do
+            local blocks = read_blocks(book_path, book, i)
+            if blocks and block_content(blocks) then
+                local label = "Section " .. i
+                for _, b in ipairs(blocks) do
+                    if b.kind == "h" and b.text and b.text ~= "" then
+                        label = clip_text(b.text, MAX_LABEL_BYTES)
+                        break
+                    end
+                end
+                entries[#entries + 1] = { label = label, index = i }
+            end
+        end
+    end
+    if #entries == 0 then
+        plugin.show_toast("Nothing to read")
+        return
     end
 
+    -- Long chapter titles wrap instead of scrolling.
+    local labels = {}
+    for i = 1, #entries do
+        labels[i] = { label = entries[i].label, wrap = true }
+    end
     local list_title = book.title
     if book.author and book.author ~= "" then
         list_title = list_title .. " - " .. book.author
@@ -1162,24 +1318,20 @@ local function open_book(book_path)
 
     chapter_generation = chapter_generation + 1 -- drops a chapter still preparing pictures
     local list_handle
-    list_handle = plugin.show_list(list_title, spine_labels, function(chapter_index)
-        local saved_chap, saved_off = load_pos(book_path)
-        open_chapter(
-            book_path,
-            book,
-            chapter_index,
-            saved_chap == chapter_index and saved_off or nil,
-            list_handle
-        )
+    list_handle = plugin.show_list(list_title, labels, function(i)
+        local e = entries[i]
+        if e then
+            open_chapter(book_path, book, e.index, 1, e.heading and { title = e.heading } or nil, { list = list_handle })
+        end
     end)
 end
 
-local function open_continue(book_path, list_handle)
+-- Opens the book at the saved spot, or its start.
+local function open_book(book_path, list_handle)
     local book = parse_book(book_path)
     if not book then
         return
     end
-
     if #book.spine_ids == 0 then
         plugin.show_toast("Empty spine")
         return
@@ -1189,8 +1341,7 @@ local function open_continue(book_path, list_handle)
     if not saved_chap or saved_chap < 1 or saved_chap > #book.spine_ids then
         saved_chap, saved_off = 1, 0
     end
-
-    open_chapter(book_path, book, saved_chap, saved_off, list_handle)
+    open_chapter(book_path, book, saved_chap, 1, { offset = saved_off }, { list = list_handle })
 end
 
 local function book_details(book_path)
@@ -1201,8 +1352,74 @@ local function book_details(book_path)
     return title, author or ""
 end
 
--- A grid of cover cards. Covers and titles not read yet are prepared in the
--- background and appear the next time the grid opens.
+local function show_menu(title, items, on_select, selected)
+    local ok, err = plugin.show_menu(title, items, on_select, selected and { selected = selected } or nil)
+    if not ok then
+        plugin.show_toast(err or "unavailable")
+    end
+end
+
+local function open_font_menu()
+    show_menu("Font size", FONT_NAMES, function(i)
+        plugin.storage.set("font", tostring(i))
+    end, stored_index("font", #FONT_NAMES, 2))
+end
+
+local function open_background_menu()
+    local names = {}
+    for i, bg in ipairs(BACKGROUNDS) do
+        names[i] = bg.name
+    end
+    show_menu("Background colour", names, function(i)
+        if i ~= CUSTOM then
+            plugin.storage.set("bg", tostring(i))
+            return
+        end
+        local current = math.tointeger(tonumber(plugin.storage.get("bg_custom") or ""))
+        local ok, err = plugin.pick_color(current, nil, function(color)
+            if color then
+                plugin.storage.set("bg_custom", tostring(color))
+                plugin.storage.set("bg", tostring(CUSTOM))
+            end
+        end)
+        if not ok then
+            plugin.show_toast(err or "unavailable")
+        end
+    end, stored_index("bg", #names, 1))
+end
+
+-- Long press on a book.
+local function open_book_menu(book_path)
+    local title = book_details(book_path)
+    show_menu(clip_text(title, 80), { "Chapters", "Font size", "Background colour" }, function(i)
+        if i == 1 then
+            open_chapters(book_path)
+        elseif i == 2 then
+            open_font_menu()
+        else
+            open_background_menu()
+        end
+    end)
+end
+
+-- Covers and titles not read yet are prepared in the background and appear
+-- the next time a list opens.
+local function queue_missing_covers(paths)
+    if not ensure_cache() then
+        return
+    end
+    for i = 1, #paths do
+        local key = plugin.md5(paths[i])
+        local _, _, details_cached = cached_book_details(paths[i])
+        if (not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1")
+            or not details_cached
+        then
+            queue_cover(paths[i])
+        end
+    end
+end
+
+-- A grid of cover cards.
 local function open_books_grid()
     local paths = scan_epub_files()
     if #paths == 0 then
@@ -1212,53 +1429,44 @@ local function open_books_grid()
 
     local have_cache = ensure_cache()
     local items = {}
-    local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
-    local function add(book_path)
-        local cover = cover_file(book_path)
-        local title, author = book_details(book_path)
+    for i = 1, #paths do
+        local title, author = book_details(paths[i])
         local label = title .. (author ~= "" and ("\n" .. author) or "")
-        local item = { label = clip_text(label, wrap and 511 or 159), icon = ICON_EPUB, wrap = wrap == true }
+        local item = { label = clip_text(label, 511), icon = ICON_EPUB, wrap = true }
+        local cover = cover_file(paths[i])
         if have_cache and file_exists(cover) then
             item.icon = cover
         end
-        items[#items + 1] = item
+        items[i] = item
     end
-    for i = 1, #paths do
-        add(paths[i])
-    end
-
-    if have_cache then
-        for i = 1, #paths do
-            local key = plugin.md5(paths[i])
-            local _, _, details_cached = cached_book_details(paths[i])
-            if (not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1")
-                or not details_cached
-            then
-                queue_cover(paths[i])
-            end
-        end
-    end
+    queue_missing_covers(paths)
 
     chapter_generation = chapter_generation + 1 -- drops a chapter still preparing pictures
-    plugin.show_list("EPUB Reader", items, function(index)
-        local book_path = paths[index]
-        if book_path then
-            open_book(book_path)
+    local opts = {
+        layout = "grid",
+        columns = 2,
+        on_hold = function(index)
+            if paths[index] then
+                open_book_menu(paths[index])
+            end
+        end,
+    }
+    local grid_handle
+    grid_handle = plugin.show_list("EPUB Reader", items, function(index)
+        if paths[index] then
+            open_book(paths[index], grid_handle)
         end
-    end, { layout = "grid", columns = 2 })
+    end, opts)
 end
 
 local function open_books_list()
     local paths = scan_epub_files()
     if #paths == 0 then
-        local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
         local items = {
             {
-                label = wrap
-                        and "No EPUB books found\nCopy EPUB files into the Books folder on your SD card."
-                    or "No EPUB books found. Add EPUB files to Books.",
+                label = "No EPUB books found\nCopy EPUB files into the Books folder on your SD card.",
                 icon = ICON_EPUB,
-                wrap = wrap == true,
+                wrap = true,
             },
             { label = "Refresh library", icon = ICON_EPUB },
         }
@@ -1281,43 +1489,36 @@ local function open_books_list()
     end
 
     local items = {}
-    local wrap = plugin.has_capability and plugin.has_capability("ui.list_wrap")
     if continue_path then
         local title, author = book_details(continue_path)
-        local label = wrap and ("Continue reading: " .. title .. (author ~= "" and ("\n" .. author) or ""))
-            or ("Continue: " .. title)
+        local label = "Continue reading: " .. title .. (author ~= "" and ("\n" .. author) or "")
         local cover = cover_file(continue_path)
         items[#items + 1] = {
-            label = clip_text(label, wrap and 511 or 159),
+            label = clip_text(label, 511),
             icon = have_cache and file_exists(cover) and cover or ICON_EPUB,
-            wrap = wrap == true,
+            wrap = true,
         }
     end
     items[#items + 1] = {
         label = "Browse library (" .. #paths .. ")", icon = ICON_EPUB,
     }
+    queue_missing_covers(paths)
 
-    if have_cache then
-        for i = 1, #paths do
-            local key = plugin.md5(paths[i])
-            local _, _, details_cached = cached_book_details(paths[i])
-            if (not file_exists(cover_file(paths[i])) and plugin.storage.get("nocover:" .. key) ~= "1")
-                or not details_cached
-            then
-                queue_cover(paths[i])
+    local opts = {
+        on_hold = function(index)
+            if continue_path and index == 1 then
+                open_book_menu(continue_path)
             end
-        end
-    end
+        end,
+    }
     local root_handle
     root_handle = plugin.show_list("EPUB Reader", items, function(index)
         if continue_path and index == 1 then
-            open_continue(continue_path, root_handle)
-        elseif continue_path and index == 2 then
-            open_books_grid()
-        elseif not continue_path and index == 1 then
+            open_book(continue_path, root_handle)
+        else
             open_books_grid()
         end
-    end)
+    end, opts)
 end
 
 plugin.register_list_item("books", "EPUB Reader", open_books_list, {

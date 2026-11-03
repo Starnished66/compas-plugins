@@ -185,13 +185,13 @@ plugin.define({
 
 ### Checking what the player supports
 
-- `plugin.api_version()` returns the API version, `18` on player builds that include API 18 (check it; older firmware reports less).
+- `plugin.api_version()` returns the API version, `19` on player builds that include API 19 (check it; older firmware reports less).
 - `plugin.has_capability(name)` returns whether one feature exists. Prefer it
   over `api_min` when you only need one feature. Tokens:
 
   | Area | Tokens |
   | --- | --- |
-  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.startup_image` |
+  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image` |
   | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
@@ -222,6 +222,7 @@ plugin.define({
 | 16 | Playback speed/stereo width/progress plus format/output snapshots, silent volume, transient EQ, output events, playback settings, native A–B loops/comparison, and finite HTTP seeking. Modeless progress bars and download byte snapshots are also available, as are File Manager operations and the native file picker. |
 | 17 | Consolidated additions after API 16: player-layout actions and owner-scoped background layout restoration; native hardware button lock and its event; top-level Music submenu plugin actions and native confirmation dialogs; current-track lyrics refresh; and the instrument dashboard layout. Plugins using these features require API 17, and the store rejects installation on older firmware. |
 | 18 | Player builds from the next release after 17: `plugin.network_status()` and the `network_changed` event (capability `network.status`). Also `plugin.realpath()` (capability `filesystem.realpath`) and `plugin.now_playing.set_image()` / `plugin.now_playing.set_text()` for custom widgets in plugin XML Now Playing layouts (capabilities `ui.now_playing.set_image`, `ui.now_playing.set_text`). Prefer feature detection with `has_capability("network.status")` over raising `api_min`. |
+| 19 | `show_list` `on_hold` (capability `ui.list_hold`), `plugin.show_menu()` (`ui.menu`), and the `show_text_view` options `text_size` and `colors` (`ui.text_view_style`) and `on_end` and `replace` (`ui.text_view_replace`). |
 
 All of these are additions; older plugins keep working.
 
@@ -348,6 +349,11 @@ Opens a list screen and returns a handle (`nil` on players older than API
     label below in up to two lines; without an icon, the label fills the
     card. `height` and `width` don't apply. Check `ui.list_grid`.
   - `columns`: cards per row in a grid, 2 to 4, default 3.
+  - `on_hold(index)`: called with the 1-based index of a row or card that was
+    long-pressed, in any layout. The release that follows does not select the
+    row. Must be a function. It lives and is replaced exactly like
+    `on_select`, so a `replace` call without `on_hold` removes it. API 19,
+    `ui.list_hold`.
 
 Calling `show_list` again (for example from `on_select`) opens a new screen
 on top, and Back returns to the previous one with its own callback. Up to 4
@@ -478,6 +484,31 @@ or `false, "unable to show confirmation"` if the popup cannot be created.
 Only one confirmation can be open at a time. The pending callback is released
 when the popup is cancelled or its plugin unloads.
 
+### `plugin.show_menu(title, items, on_select [, options])`
+
+Opens a native popup menu, styled like `show_confirmation`, with one tappable
+row per item and a Cancel row at the end. API 19, `ui.menu`.
+
+- `items`: 1 to 64 strings of up to 159 bytes each. Any other type or count
+  is an error.
+- `options.selected`: optional 1-based index drawn in the accent color as the
+  current choice.
+- `on_select(index)`: runs with the 1-based index after a row is tapped and
+  the popup has closed, so it may open another menu or screen. Cancel, the
+  backdrop, leaving the screen underneath, and plugin unload dismiss the menu
+  without calling it.
+- Returns `true`, `false, "busy"` if a menu is already open, or
+  `false, "unavailable"` if it cannot be shown (for example during a screen
+  transition). One menu is open at a time across all plugins, as with
+  `show_confirmation`; a menu is never replaced or answered for another
+  plugin. If the rows do not fit the screen, the popup scrolls.
+
+```lua
+plugin.show_menu("Text size", { "Small", "Medium", "Large" }, function(index)
+    -- index is 1, 2 or 3
+end, { selected = 2 })
+```
+
 ### `plugin.show_text_view(title, text [, options])`
 
 Opens a paged reader for long text. Returns `true`, or `false, "busy"` if one
@@ -485,7 +516,8 @@ is already open, or `false, "unavailable"` during a screen transition.
 
 - `text`: up to 256 KB; longer text is cut.
 - `options.page` (1-based) or `options.offset` (byte offset): where to start.
-  `page` wins.
+  `page` wins. A `page` past the last one opens the last page (once
+  pagination reaches it), so a large number opens a text at its end.
 - `options.images`: up to 64 picture files (usually made by
   `zip_image_async`). The text shows picture `n` (0-based) where it contains
   `"\27" .. n .. "\27"`. Each picture gets its own page. Check
@@ -499,11 +531,38 @@ is already open, or `false, "unavailable"` during a screen transition.
   it was closed. If it closes before reaching the requested `offset`, it
   reports that offset. Not called on a plugin reload.
 - `options.font_px` is accepted but ignored; the text uses the Font Size
-  setting.
+  setting unless `text_size` is given.
+
+Style options (API 19, `ui.text_view_style`):
+
+- `options.text_size`: `"small"`, `"medium"` or `"large"`, the same fonts as
+  `show_list` rows. The page length follows the font. Omit it for the Font
+  Size setting. Any other value is an error.
+- `options.colors = { background = 0xRRGGBB, text = 0xRRGGBB }`, each
+  optional. `background` colors the whole view screen. `text` colors the page
+  text, the title and the footer (the footer is dimmed). Omitted colors use
+  the theme, and a later view shown without `colors` goes back to the theme.
+
+Continuation options (API 19, `ui.text_view_replace`), for content split into
+parts such as the chapters of a book or the pages of a feed:
+
+- `options.on_end(direction)`: when set, turning back from page 1 (tap the
+  left third or swipe right) calls `on_end(-1)` instead of closing the view,
+  and turning forward on the last page, once pagination is complete, calls
+  `on_end(1)`. The Back button still closes the view. `on_end` may call
+  `show_text_view` with `replace = true` to continue with the next or
+  previous part.
+- `options.replace = true`: swaps the content of the open view in place when
+  it belongs to this plugin: title, text, images, `page` or `offset`,
+  `text_size`, `colors` and callbacks are all replaced, with no navigation
+  animation, and the replaced content's `on_close` is not called.
+  Pagination restarts as for a fresh view. Returns `true`, or
+  `false, "not open"` if no view is open or it belongs to another plugin.
+  Without `replace`, an open view still gives `false, "busy"`.
 
 Tap the right third or swipe left for the next page; tap the left third or
 swipe right for the previous page. Swiping right on the first page, or the
-Back button, closes the view. The footer shows `page / pages`. Pagination runs
+Back button, closes the view (unless `on_end` is set; Back always closes). The footer shows `page / pages`. Pagination runs
 in the background, so very long texts open immediately; past 8192 pages the
 rest isn't shown.
 
@@ -1750,6 +1809,11 @@ background and call `callback(dest)` or `callback(nil, reason)`.
   don't treat the image as broken.
 - `dest` is replaced only on success. Jobs are cancelled, without callback,
   when the plugins reload.
+- The player caches decoded image files by path. A finished job (and a
+  finished `download_file_async`) refreshes that path, so the new image shows.
+  A file you rewrite yourself (`io`, `os.rename`) can still show the old
+  image until it leaves the cache: write changed images to a new path, and
+  spell each path the same way everywhere.
 
 - `plugin.image_wallpaper_async(source, dest, callback)` (API 16,
   `data.wallpaper`) prepares a JPEG, PNG or BMP file up to 3 MB as a wallpaper.
@@ -1796,8 +1860,8 @@ Returns a list of `{ kind, level, text }` with a `truncated` flag, or
 `nil, reason` (`input_too_large` over 512 KB, `bad_args`, `nomem`).
 
 - `kind` is `"p"` (paragraphs, `div`, `li`, `blockquote`), `"h"` (headings,
-  with `level` 1 to 6), `"img"` (`text` is the image source, `alt` its alt
-  text) or `"hr"`.
+  with `level` 1 to 6), `"img"` (`<img>`, or an SVG `<image>` with `href` or
+  `xlink:href`; `text` is the image source, `alt` its alt text) or `"hr"`.
 - Scripts, styles, `head` and comments are dropped. Common entities are
   decoded, whitespace is collapsed, and `<br>` becomes a line break.
 - Output stops at 2000 blocks or 256 KB of text, with `truncated` set.
