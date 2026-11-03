@@ -66,7 +66,7 @@ Save it as `<SD card>/.plugins/HelloPlayer.lua`. The row appears under
 Settings > System > Additional Tools.
 
 Tip: start from the example closest to what you want to build.
-`Audiobooks.lua`, `NetRadio.lua`, `LastFmScrobbler.lua`, or the historical
+`Audiobooks.lua`, `NetRadio.lua`, `LastFmScrobblerV2.lua`, or the historical
 `Themes.lua` reference cover common shapes.
 
 ## How plugins run
@@ -1943,7 +1943,7 @@ examples are in its [`examples/` directory](https://github.com/Starnished66/comp
 | [PlaybackExtras](https://github.com/Starnished66/compas-plugins/tree/main/plugins/PlaybackExtras) | Toggles, sliders, nested settings, row icons |
 | [PlayThrough](https://github.com/Starnished66/compas-plugins/tree/main/plugins/PlayThrough) | Continuing into the next folder or album when a queue ends |
 | [ExtendedSleepTimer](https://github.com/Starnished66/compas-plugins/tree/main/plugins/ExtendedSleepTimer) | A longer sleep timer with `stop()` |
-| [LastFmScrobbler](https://github.com/Starnished66/compas-plugins/tree/main/plugins/LastFmScrobbler) | Events, timers, text input, MD5, async HTTP |
+| [LastFmScrobblerV2](https://github.com/Starnished66/compas-plugins/tree/main/plugins/LastFmScrobblerV2) | Events, timers, text input, MD5, async HTTP |
 | [AsyncHttp](https://github.com/Starnished66/compas-plugins/tree/main/examples/AsyncHttp) | `http_request` and `cancel` |
 | [PluginApiInfo](https://github.com/Starnished66/compas-plugins/tree/main/examples/PluginApiInfo) | Version and capability checks |
 | [NestedLists](https://github.com/Starnished66/compas-plugins/tree/main/examples/NestedLists) | Stacked lists and busy text input |
