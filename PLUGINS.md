@@ -194,6 +194,7 @@ plugin.define({
   | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image` |
   | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
+  | Language | `i18n.tr` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
   | Network | `network.http.sync`, `network.http.async`, `network.http.download`, `network.http.download_progress`, `network.status` |
   | Data | `data.json`, `crypto.md5`, `data.zip`, `data.zip_image`, `data.image_thumbnail`, `data.wallpaper`, `data.html` |
@@ -222,7 +223,7 @@ plugin.define({
 | 16 | Playback speed/stereo width/progress plus format/output snapshots, silent volume, transient EQ, output events, playback settings, native A–B loops/comparison, and finite HTTP seeking. Modeless progress bars and download byte snapshots are also available, as are File Manager operations and the native file picker. |
 | 17 | Consolidated additions after API 16: player-layout actions and owner-scoped background layout restoration; native hardware button lock and its event; top-level Music submenu plugin actions and native confirmation dialogs; current-track lyrics refresh; and the instrument dashboard layout. Plugins using these features require API 17, and the store rejects installation on older firmware. |
 | 18 | Player builds from the next release after 17: `plugin.network_status()` and the `network_changed` event (capability `network.status`). Also `plugin.realpath()` (capability `filesystem.realpath`) and `plugin.now_playing.set_image()` / `plugin.now_playing.set_text()` for custom widgets in plugin XML Now Playing layouts (capabilities `ui.now_playing.set_image`, `ui.now_playing.set_text`). Prefer feature detection with `has_capability("network.status")` over raising `api_min`. |
-| 19 | `show_list` `on_hold` (capability `ui.list_hold`), `plugin.show_menu()` (`ui.menu`), and the `show_text_view` options `text_size` and `colors` (`ui.text_view_style`) and `on_end` and `replace` (`ui.text_view_replace`). |
+| 19 | `show_list` `on_hold` (capability `ui.list_hold`), `plugin.show_menu()` (`ui.menu`), and the `show_text_view` options `text_size` and `colors` (`ui.text_view_style`) and `on_end` and `replace` (`ui.text_view_replace`), and `plugin.language()` / `plugin.tr()` (`i18n.tr`). |
 
 All of these are additions; older plugins keep working.
 
@@ -1614,6 +1615,33 @@ end
 event.
 
 ## Network
+
+### `plugin.language()` (API 19)
+
+Returns the player language code: `"en"`, `"de"`, `"es"`, `"fi"`, `"fr"`,
+`"it"`, `"ja"`, `"nl"`, `"pt_BR"`, `"pt_PT"`, `"ru"`, `"uk"`, `"vi"` or
+`"zh_CN"`. Capability `i18n.tr`.
+
+### `plugin.tr(text [, translations])` (API 19)
+
+Returns `text` translated into the player language. Capability `i18n.tr`.
+`translations` is an optional table of `translations[code][text]` strings,
+for example `{ es = { ["Chapters"] = "Capítulos" } }`. The lookup order is:
+
+1. `translations[code][text]` for the exact language code (`"pt_BR"`).
+2. For a regional code, `translations[base][text]` of the base language
+   (`translations.pt` for `pt_BR` and `pt_PT`).
+3. The player's own catalog entry for that exact English text.
+4. `text` unchanged.
+
+In English `text` is returned unchanged. Keep the English text as the key and
+route every user-visible string through it:
+
+```lua
+local T = { es = { ["Chapters"] = "Capítulos" } }
+local function tr(s) return plugin.tr(s, T) end
+plugin.show_toast(tr("End of book"))
+```
 
 ### `plugin.network_status()` (API 18)
 

@@ -1,9 +1,354 @@
 plugin.define({
     id = "example.epub_reader",
     name = "EPUB Reader",
-    version = "2.0.0",
+    version = "2.2.0",
     api_min = 19,
 })
+
+-- Translations for plugin.tr. Strings the player already knows (Small,
+-- Large, Custom) are left out so its own catalog supplies them. pt covers
+-- pt_BR and pt_PT.
+local T = {
+    de = {
+        ["Chapters"] = "Kapitel",
+        ["Font size"] = "Schriftgröße",
+        ["Background colour"] = "Hintergrundfarbe",
+        ["Normal"] = "Normal",
+        ["Extra large"] = "Extragroß",
+        ["Theme"] = "Design",
+        ["Sepia"] = "Sepia",
+        ["White"] = "Weiß",
+        ["Dark"] = "Dunkel",
+        ["Black"] = "Schwarz",
+        ["Nothing to read"] = "Nichts zu lesen",
+        ["End of book"] = "Ende des Buches",
+        ["Empty spine"] = "Leere Kapitelliste",
+        ["Spine truncated"] = "Kapitelliste gekürzt",
+        ["Preparing pictures. This may take a while."] = "Bilder werden vorbereitet. Das kann dauern.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Keine EPUB-Bücher gefunden\nKopiere EPUB-Dateien in den Ordner Books auf deiner SD-Karte.",
+        ["Refresh library"] = "Bibliothek aktualisieren",
+        ["Section %d"] = "Abschnitt %d",
+        ["EPUB Reader"] = "EPUB-Leser",
+        ["Failed to read container.xml"] = "container.xml konnte nicht gelesen werden",
+        ["No OPF in container.xml"] = "Kein OPF in container.xml",
+        ["Failed to read OPF"] = "OPF konnte nicht gelesen werden",
+        ["Missing manifest item"] = "Manifest-Eintrag fehlt",
+        ["Failed to read chapter"] = "Kapitel konnte nicht gelesen werden",
+        ["Failed to parse chapter"] = "Kapitel konnte nicht verarbeitet werden",
+        ["unavailable"] = "nicht verfügbar",
+    },
+    es = {
+        ["Chapters"] = "Capítulos",
+        ["Font size"] = "Tamaño de letra",
+        ["Background colour"] = "Color de fondo",
+        ["Normal"] = "Normal",
+        ["Extra large"] = "Muy grande",
+        ["Theme"] = "Tema",
+        ["Sepia"] = "Sepia",
+        ["White"] = "Blanco",
+        ["Dark"] = "Oscuro",
+        ["Black"] = "Negro",
+        ["Nothing to read"] = "Nada que leer",
+        ["End of book"] = "Fin del libro",
+        ["Empty spine"] = "Sin capítulos",
+        ["Spine truncated"] = "Capítulos truncados",
+        ["Preparing pictures. This may take a while."] = "Preparando imágenes. Esto puede tardar.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "No se encontraron libros EPUB\nCopia archivos EPUB a la carpeta Books de tu tarjeta SD.",
+        ["Refresh library"] = "Refrescar biblioteca",
+        ["Section %d"] = "Sección %d",
+        ["EPUB Reader"] = "Lector EPUB",
+        ["Failed to read container.xml"] = "No se pudo leer container.xml",
+        ["No OPF in container.xml"] = "No hay OPF en container.xml",
+        ["Failed to read OPF"] = "No se pudo leer el OPF",
+        ["Missing manifest item"] = "Falta un elemento del manifiesto",
+        ["Failed to read chapter"] = "No se pudo leer el capítulo",
+        ["Failed to parse chapter"] = "No se pudo procesar el capítulo",
+        ["unavailable"] = "no disponible",
+    },
+    fi = {
+        ["Chapters"] = "Luvut",
+        ["Font size"] = "Fontin koko",
+        ["Background colour"] = "Taustaväri",
+        ["Normal"] = "Normaali",
+        ["Extra large"] = "Erittäin suuri",
+        ["Theme"] = "Teema",
+        ["Sepia"] = "Seepia",
+        ["White"] = "Valkoinen",
+        ["Dark"] = "Tumma",
+        ["Black"] = "Musta",
+        ["Nothing to read"] = "Ei luettavaa",
+        ["End of book"] = "Kirjan loppu",
+        ["Empty spine"] = "Tyhjä sisällysluettelo",
+        ["Spine truncated"] = "Sisällysluettelo katkaistu",
+        ["Preparing pictures. This may take a while."] = "Valmistellaan kuvia. Tämä voi kestää.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "EPUB-kirjoja ei löytynyt\nKopioi EPUB-tiedostot SD-korttisi Books-kansioon.",
+        ["Refresh library"] = "Päivitä kirjasto",
+        ["Section %d"] = "Osa %d",
+        ["EPUB Reader"] = "EPUB-lukija",
+        ["Failed to read container.xml"] = "container.xml-tiedoston luku epäonnistui",
+        ["No OPF in container.xml"] = "container.xml:ssä ei ole OPF-tiedostoa",
+        ["Failed to read OPF"] = "OPF-tiedoston luku epäonnistui",
+        ["Missing manifest item"] = "Manifestin kohde puuttuu",
+        ["Failed to read chapter"] = "Luvun lukeminen epäonnistui",
+        ["Failed to parse chapter"] = "Luvun jäsentäminen epäonnistui",
+        ["unavailable"] = "ei saatavilla",
+    },
+    fr = {
+        ["Chapters"] = "Chapitres",
+        ["Font size"] = "Taille de police",
+        ["Background colour"] = "Couleur de fond",
+        ["Normal"] = "Normale",
+        ["Extra large"] = "Très grand",
+        ["Theme"] = "Thème",
+        ["Sepia"] = "Sépia",
+        ["White"] = "Blanc",
+        ["Dark"] = "Sombre",
+        ["Black"] = "Noir",
+        ["Nothing to read"] = "Rien à lire",
+        ["End of book"] = "Fin du livre",
+        ["Empty spine"] = "Livre sans chapitres",
+        ["Spine truncated"] = "Liste des chapitres tronquée",
+        ["Preparing pictures. This may take a while."] = "Préparation des images. Cela peut prendre du temps.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Aucun livre EPUB trouvé\nCopiez des fichiers EPUB dans le dossier Books de votre carte SD.",
+        ["Refresh library"] = "Actualiser la bibliothèque",
+        ["Section %d"] = "Section %d",
+        ["EPUB Reader"] = "Lecteur EPUB",
+        ["Failed to read container.xml"] = "Échec de lecture de container.xml",
+        ["No OPF in container.xml"] = "Pas d'OPF dans container.xml",
+        ["Failed to read OPF"] = "Échec de lecture de l'OPF",
+        ["Missing manifest item"] = "Élément du manifeste manquant",
+        ["Failed to read chapter"] = "Échec de lecture du chapitre",
+        ["Failed to parse chapter"] = "Échec d'analyse du chapitre",
+        ["unavailable"] = "indisponible",
+    },
+    it = {
+        ["Chapters"] = "Capitoli",
+        ["Font size"] = "Dimensione carattere",
+        ["Background colour"] = "Colore di sfondo",
+        ["Normal"] = "Normale",
+        ["Extra large"] = "Molto grande",
+        ["Theme"] = "Tema",
+        ["Sepia"] = "Seppia",
+        ["White"] = "Bianco",
+        ["Dark"] = "Scuro",
+        ["Black"] = "Nero",
+        ["Nothing to read"] = "Niente da leggere",
+        ["End of book"] = "Fine del libro",
+        ["Empty spine"] = "Nessun capitolo",
+        ["Spine truncated"] = "Capitoli troncati",
+        ["Preparing pictures. This may take a while."] = "Preparazione delle immagini. Potrebbe volerci un po'.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Nessun libro EPUB trovato\nCopia i file EPUB nella cartella Books della tua scheda SD.",
+        ["Refresh library"] = "Aggiorna libreria",
+        ["Section %d"] = "Sezione %d",
+        ["EPUB Reader"] = "Lettore EPUB",
+        ["Failed to read container.xml"] = "Lettura di container.xml non riuscita",
+        ["No OPF in container.xml"] = "Nessun OPF in container.xml",
+        ["Failed to read OPF"] = "Lettura dell'OPF non riuscita",
+        ["Missing manifest item"] = "Elemento del manifest mancante",
+        ["Failed to read chapter"] = "Lettura del capitolo non riuscita",
+        ["Failed to parse chapter"] = "Analisi del capitolo non riuscita",
+        ["unavailable"] = "non disponibile",
+    },
+    ja = {
+        ["Chapters"] = "章",
+        ["Font size"] = "文字サイズ",
+        ["Background colour"] = "背景色",
+        ["Normal"] = "標準",
+        ["Extra large"] = "特大",
+        ["Theme"] = "テーマ",
+        ["Sepia"] = "セピア",
+        ["White"] = "白",
+        ["Dark"] = "ダーク",
+        ["Black"] = "黒",
+        ["Nothing to read"] = "読む内容がありません",
+        ["End of book"] = "本の終わり",
+        ["Empty spine"] = "章がありません",
+        ["Spine truncated"] = "章を一部省略しました",
+        ["Preparing pictures. This may take a while."] = "画像を準備中です。時間がかかる場合があります。",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "EPUB の本が見つかりません\nEPUB ファイルを SD カードの Books フォルダにコピーしてください。",
+        ["Refresh library"] = "ライブラリを更新",
+        ["Section %d"] = "セクション %d",
+        ["EPUB Reader"] = "EPUB リーダー",
+        ["Failed to read container.xml"] = "container.xml を読み込めませんでした",
+        ["No OPF in container.xml"] = "container.xml に OPF がありません",
+        ["Failed to read OPF"] = "OPF を読み込めませんでした",
+        ["Missing manifest item"] = "マニフェスト項目がありません",
+        ["Failed to read chapter"] = "章を読み込めませんでした",
+        ["Failed to parse chapter"] = "章を解析できませんでした",
+        ["unavailable"] = "利用できません",
+    },
+    nl = {
+        ["Chapters"] = "Hoofdstukken",
+        ["Font size"] = "Lettergrootte",
+        ["Background colour"] = "Achtergrondkleur",
+        ["Normal"] = "Normaal",
+        ["Extra large"] = "Extra groot",
+        ["Theme"] = "Thema",
+        ["Sepia"] = "Sepia",
+        ["White"] = "Wit",
+        ["Dark"] = "Donker",
+        ["Black"] = "Zwart",
+        ["Nothing to read"] = "Niets om te lezen",
+        ["End of book"] = "Einde van het boek",
+        ["Empty spine"] = "Geen hoofdstukken",
+        ["Spine truncated"] = "Hoofdstukken ingekort",
+        ["Preparing pictures. This may take a while."] = "Afbeeldingen voorbereiden. Dit kan even duren.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Geen EPUB-boeken gevonden\nKopieer EPUB-bestanden naar de map Books op je SD-kaart.",
+        ["Refresh library"] = "Bibliotheek vernieuwen",
+        ["Section %d"] = "Sectie %d",
+        ["EPUB Reader"] = "EPUB-lezer",
+        ["Failed to read container.xml"] = "container.xml lezen mislukt",
+        ["No OPF in container.xml"] = "Geen OPF in container.xml",
+        ["Failed to read OPF"] = "OPF lezen mislukt",
+        ["Missing manifest item"] = "Manifestitem ontbreekt",
+        ["Failed to read chapter"] = "Hoofdstuk lezen mislukt",
+        ["Failed to parse chapter"] = "Hoofdstuk verwerken mislukt",
+        ["unavailable"] = "niet beschikbaar",
+    },
+    pt = {
+        ["Chapters"] = "Capítulos",
+        ["Font size"] = "Tamanho da fonte",
+        ["Background colour"] = "Cor de fundo",
+        ["Normal"] = "Normal",
+        ["Extra large"] = "Extra grande",
+        ["Theme"] = "Tema",
+        ["Sepia"] = "Sépia",
+        ["White"] = "Branco",
+        ["Dark"] = "Escuro",
+        ["Black"] = "Preto",
+        ["Nothing to read"] = "Nada para ler",
+        ["End of book"] = "Fim do livro",
+        ["Empty spine"] = "Sem capítulos",
+        ["Spine truncated"] = "Capítulos truncados",
+        ["Preparing pictures. This may take a while."] = "Preparando imagens. Isso pode demorar.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Nenhum livro EPUB encontrado\nCopie arquivos EPUB para a pasta Books do seu cartão SD.",
+        ["Refresh library"] = "Atualizar biblioteca",
+        ["Section %d"] = "Seção %d",
+        ["EPUB Reader"] = "Leitor de EPUB",
+        ["Failed to read container.xml"] = "Falha ao ler container.xml",
+        ["No OPF in container.xml"] = "Sem OPF em container.xml",
+        ["Failed to read OPF"] = "Falha ao ler o OPF",
+        ["Missing manifest item"] = "Item do manifesto ausente",
+        ["Failed to read chapter"] = "Falha ao ler o capítulo",
+        ["Failed to parse chapter"] = "Falha ao analisar o capítulo",
+        ["unavailable"] = "indisponível",
+    },
+    ru = {
+        ["Chapters"] = "Главы",
+        ["Font size"] = "Размер шрифта",
+        ["Background colour"] = "Цвет фона",
+        ["Normal"] = "Обычный",
+        ["Extra large"] = "Очень большой",
+        ["Theme"] = "Тема",
+        ["Sepia"] = "Сепия",
+        ["White"] = "Белый",
+        ["Dark"] = "Тёмный",
+        ["Black"] = "Чёрный",
+        ["Nothing to read"] = "Нечего читать",
+        ["End of book"] = "Конец книги",
+        ["Empty spine"] = "Нет глав",
+        ["Spine truncated"] = "Список глав обрезан",
+        ["Preparing pictures. This may take a while."] = "Подготовка изображений. Это может занять время.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Книги EPUB не найдены\nСкопируйте файлы EPUB в папку Books на SD-карте.",
+        ["Refresh library"] = "Обновить библиотеку",
+        ["Section %d"] = "Раздел %d",
+        ["EPUB Reader"] = "Читалка EPUB",
+        ["Failed to read container.xml"] = "Не удалось прочитать container.xml",
+        ["No OPF in container.xml"] = "В container.xml нет OPF",
+        ["Failed to read OPF"] = "Не удалось прочитать OPF",
+        ["Missing manifest item"] = "Отсутствует элемент манифеста",
+        ["Failed to read chapter"] = "Не удалось прочитать главу",
+        ["Failed to parse chapter"] = "Не удалось разобрать главу",
+        ["unavailable"] = "недоступно",
+    },
+    uk = {
+        ["Chapters"] = "Розділи",
+        ["Font size"] = "Розмір шрифту",
+        ["Background colour"] = "Колір тла",
+        ["Normal"] = "Звичайний",
+        ["Extra large"] = "Дуже великий",
+        ["Theme"] = "Тема",
+        ["Sepia"] = "Сепія",
+        ["White"] = "Білий",
+        ["Dark"] = "Темний",
+        ["Black"] = "Чорний",
+        ["Nothing to read"] = "Нічого читати",
+        ["End of book"] = "Кінець книги",
+        ["Empty spine"] = "Немає розділів",
+        ["Spine truncated"] = "Список розділів обрізано",
+        ["Preparing pictures. This may take a while."] = "Підготовка зображень. Це може зайняти час.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Книги EPUB не знайдено\nСкопіюйте файли EPUB до теки Books на SD-карті.",
+        ["Refresh library"] = "Оновити бібліотеку",
+        ["Section %d"] = "Розділ %d",
+        ["EPUB Reader"] = "Читалка EPUB",
+        ["Failed to read container.xml"] = "Не вдалося прочитати container.xml",
+        ["No OPF in container.xml"] = "У container.xml немає OPF",
+        ["Failed to read OPF"] = "Не вдалося прочитати OPF",
+        ["Missing manifest item"] = "Відсутній елемент маніфесту",
+        ["Failed to read chapter"] = "Не вдалося прочитати розділ",
+        ["Failed to parse chapter"] = "Не вдалося розібрати розділ",
+        ["unavailable"] = "недоступно",
+    },
+    vi = {
+        ["Chapters"] = "Chương",
+        ["Font size"] = "Cỡ chữ",
+        ["Background colour"] = "Màu nền",
+        ["Normal"] = "Bình thường",
+        ["Extra large"] = "Rất lớn",
+        ["Theme"] = "Giao diện",
+        ["Sepia"] = "Nâu đỏ",
+        ["White"] = "Trắng",
+        ["Dark"] = "Tối",
+        ["Black"] = "Đen",
+        ["Nothing to read"] = "Không có gì để đọc",
+        ["End of book"] = "Hết sách",
+        ["Empty spine"] = "Không có chương",
+        ["Spine truncated"] = "Danh sách chương bị cắt bớt",
+        ["Preparing pictures. This may take a while."] = "Đang chuẩn bị hình ảnh. Việc này có thể mất một lúc.",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "Không tìm thấy sách EPUB\nHãy chép tệp EPUB vào thư mục Books trên thẻ SD.",
+        ["Refresh library"] = "Làm mới thư viện",
+        ["Section %d"] = "Phần %d",
+        ["EPUB Reader"] = "Trình đọc EPUB",
+        ["Failed to read container.xml"] = "Không đọc được container.xml",
+        ["No OPF in container.xml"] = "container.xml không có OPF",
+        ["Failed to read OPF"] = "Không đọc được OPF",
+        ["Missing manifest item"] = "Thiếu mục trong manifest",
+        ["Failed to read chapter"] = "Không đọc được chương",
+        ["Failed to parse chapter"] = "Không phân tích được chương",
+        ["unavailable"] = "không khả dụng",
+    },
+    zh_CN = {
+        ["Chapters"] = "章节",
+        ["Font size"] = "字体大小",
+        ["Background colour"] = "背景颜色",
+        ["Normal"] = "正常",
+        ["Extra large"] = "特大",
+        ["Theme"] = "主题",
+        ["Sepia"] = "棕褐色",
+        ["White"] = "白色",
+        ["Dark"] = "深色",
+        ["Black"] = "黑色",
+        ["Nothing to read"] = "没有可读内容",
+        ["End of book"] = "全书完",
+        ["Empty spine"] = "没有章节",
+        ["Spine truncated"] = "章节已截断",
+        ["Preparing pictures. This may take a while."] = "正在准备图片。这可能需要一些时间。",
+        ["No EPUB books found\nCopy EPUB files into the Books folder on your SD card."] = "未找到 EPUB 图书\n请将 EPUB 文件复制到 SD 卡的 Books 文件夹。",
+        ["Refresh library"] = "刷新书库",
+        ["Section %d"] = "第 %d 节",
+        ["EPUB Reader"] = "EPUB 阅读器",
+        ["Failed to read container.xml"] = "无法读取 container.xml",
+        ["No OPF in container.xml"] = "container.xml 中没有 OPF",
+        ["Failed to read OPF"] = "无法读取 OPF",
+        ["Missing manifest item"] = "缺少清单项",
+        ["Failed to read chapter"] = "无法读取章节",
+        ["Failed to parse chapter"] = "无法解析章节",
+        ["unavailable"] = "不可用",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- EPUB reader for unencrypted books stored under <SD card>/Books.
 -- Scans Books and immediate subfolders, parses container.xml and the OPF,
@@ -625,7 +970,7 @@ local function parse_opf(opf, book_path)
                 if #spine_ids < 500 then
                     spine_ids[#spine_ids + 1] = idref
                 elseif not spine_truncated then
-                    plugin.show_toast("Spine truncated")
+                    plugin.show_toast(tr("Spine truncated"))
                     spine_truncated = true
                 end
             end
@@ -746,23 +1091,23 @@ local function read_opf(book_path, quiet)
     end
     local container_data, err = plugin.zip_read(book_path, "META-INF/container.xml")
     if not container_data then
-        return fail(err or "Failed to read container.xml")
+        return fail(err or tr("Failed to read container.xml"))
     end
 
     local opf_path = find_opf_path(container_data)
     if not opf_path then
-        return fail("No OPF in container.xml")
+        return fail(tr("No OPF in container.xml"))
     end
 
     local opf_bytes, opf_err = plugin.zip_read(book_path, opf_path)
     if not opf_bytes then
-        return fail(opf_err or "Failed to read OPF")
+        return fail(opf_err or tr("Failed to read OPF"))
     end
 
     local book = parse_opf(opf_bytes, book_path)
     local opf_dir = document_dir(opf_path)
     if opf_dir == nil then
-        return fail("No OPF in container.xml")
+        return fail(tr("No OPF in container.xml"))
     end
     book.opf_dir = opf_dir
     return book
@@ -1053,15 +1398,15 @@ end
 local function read_blocks(book_path, book, index)
     local href = chapter_href(book, index)
     if not href then
-        return nil, nil, "Missing manifest item"
+        return nil, nil, tr("Missing manifest item")
     end
     local chapter_bytes, err = plugin.zip_read(book_path, href)
     if not chapter_bytes then
-        return nil, nil, err or "Failed to read chapter"
+        return nil, nil, err or tr("Failed to read chapter")
     end
     local blocks, b_err = plugin.html_to_blocks(chapter_bytes)
     if not blocks then
-        return nil, nil, b_err or "Failed to parse chapter"
+        return nil, nil, b_err or tr("Failed to parse chapter")
     end
     return blocks, href
 end
@@ -1115,9 +1460,9 @@ local function open_chapter(book_path, book, index, step, start, ctx)
     local found, blocks, href = find_chapter(book_path, book, index, step) -- on failure, blocks is the error
     if not found then
         if not ctx.replace then
-            plugin.show_toast(blocks or "Nothing to read")
+            plugin.show_toast(blocks or tr("Nothing to read"))
         elseif step > 0 then
-            plugin.show_toast("End of book")
+            plugin.show_toast(tr("End of book"))
         end
         return
     end
@@ -1212,7 +1557,7 @@ local function open_chapter(book_path, book, index, step, start, ctx)
         local ok, tv_err = plugin.show_text_view(title, table.concat(pieces), opts)
         if not ok then
             if not (ctx.replace and tv_err == "not open") then -- the user left the book
-                plugin.show_toast(tv_err or "unavailable")
+                plugin.show_toast(tv_err or tr("unavailable"))
             end
             return
         end
@@ -1238,7 +1583,7 @@ local function open_chapter(book_path, book, index, step, start, ctx)
         show()
         return
     end
-    plugin.show_toast("Preparing pictures. This may take a while.")
+    plugin.show_toast(tr("Preparing pictures. This may take a while."))
     deferred = true
     -- Queued in reverse at the front, so they run in reading order ahead of
     -- any covers still being prepared.
@@ -1271,7 +1616,7 @@ local function open_chapters(book_path)
         return
     end
     if #book.spine_ids == 0 then
-        plugin.show_toast("Empty spine")
+        plugin.show_toast(tr("Empty spine"))
         return
     end
 
@@ -1289,7 +1634,7 @@ local function open_chapters(book_path)
         for i = 1, #book.spine_ids do
             local blocks = read_blocks(book_path, book, i)
             if blocks and block_content(blocks) then
-                local label = "Section " .. i
+                local label = string.format(tr("Section %d"), i)
                 for _, b in ipairs(blocks) do
                     if b.kind == "h" and b.text and b.text ~= "" then
                         label = clip_text(b.text, MAX_LABEL_BYTES)
@@ -1301,7 +1646,7 @@ local function open_chapters(book_path)
         end
     end
     if #entries == 0 then
-        plugin.show_toast("Nothing to read")
+        plugin.show_toast(tr("Nothing to read"))
         return
     end
 
@@ -1333,7 +1678,7 @@ local function open_book(book_path, list_handle)
         return
     end
     if #book.spine_ids == 0 then
-        plugin.show_toast("Empty spine")
+        plugin.show_toast(tr("Empty spine"))
         return
     end
 
@@ -1355,12 +1700,20 @@ end
 local function show_menu(title, items, on_select, selected)
     local ok, err = plugin.show_menu(title, items, on_select, selected and { selected = selected } or nil)
     if not ok then
-        plugin.show_toast(err or "unavailable")
+        plugin.show_toast(err or tr("unavailable"))
     end
 end
 
+local function font_labels()
+    local names = {}
+    for i, name in ipairs(FONT_NAMES) do
+        names[i] = tr(name)
+    end
+    return names
+end
+
 local function open_font_menu()
-    show_menu("Font size", FONT_NAMES, function(i)
+    show_menu(tr("Font size"), font_labels(), function(i)
         plugin.storage.set("font", tostring(i))
     end, stored_index("font", #FONT_NAMES, 2))
 end
@@ -1368,9 +1721,9 @@ end
 local function open_background_menu()
     local names = {}
     for i, bg in ipairs(BACKGROUNDS) do
-        names[i] = bg.name
+        names[i] = tr(bg.name)
     end
-    show_menu("Background colour", names, function(i)
+    show_menu(tr("Background colour"), names, function(i)
         if i ~= CUSTOM then
             plugin.storage.set("bg", tostring(i))
             return
@@ -1383,7 +1736,7 @@ local function open_background_menu()
             end
         end)
         if not ok then
-            plugin.show_toast(err or "unavailable")
+            plugin.show_toast(err or tr("unavailable"))
         end
     end, stored_index("bg", #names, 1))
 end
@@ -1391,7 +1744,7 @@ end
 -- Long press on a book.
 local function open_book_menu(book_path)
     local title = book_details(book_path)
-    show_menu(clip_text(title, 80), { "Chapters", "Font size", "Background colour" }, function(i)
+    show_menu(clip_text(title, 80), { tr("Chapters"), tr("Font size"), tr("Background colour") }, function(i)
         if i == 1 then
             open_chapters(book_path)
         elseif i == 2 then
@@ -1419,12 +1772,31 @@ local function queue_missing_covers(paths)
     end
 end
 
--- A grid of cover cards.
-local function open_books_grid()
+-- The library: a grid of cover cards, the book read last first. Each book
+-- opens at its own saved position; a long press offers its menu.
+local function open_library()
     local paths = scan_epub_files()
     if #paths == 0 then
-        plugin.show_toast("No EPUB files in Books")
+        local items = {
+            {
+                label = tr("No EPUB books found\nCopy EPUB files into the Books folder on your SD card."),
+                icon = ICON_EPUB,
+                wrap = true,
+            },
+            { label = tr("Refresh library"), icon = ICON_EPUB },
+        }
+        plugin.show_list(tr("EPUB Reader"), items, function(index)
+            if index == 2 then open_library() end
+        end)
         return
+    end
+
+    local last = plugin.storage.get("continue")
+    for i = 2, #paths do
+        if paths[i] == last then
+            table.insert(paths, 1, table.remove(paths, i))
+            break
+        end
     end
 
     local have_cache = ensure_cache()
@@ -1452,75 +1824,13 @@ local function open_books_grid()
         end,
     }
     local grid_handle
-    grid_handle = plugin.show_list("EPUB Reader", items, function(index)
+    grid_handle = plugin.show_list(tr("EPUB Reader"), items, function(index)
         if paths[index] then
             open_book(paths[index], grid_handle)
         end
     end, opts)
 end
 
-local function open_books_list()
-    local paths = scan_epub_files()
-    if #paths == 0 then
-        local items = {
-            {
-                label = "No EPUB books found\nCopy EPUB files into the Books folder on your SD card.",
-                icon = ICON_EPUB,
-                wrap = true,
-            },
-            { label = "Refresh library", icon = ICON_EPUB },
-        }
-        plugin.show_list("EPUB Reader", items, function(index)
-            if index == 2 then open_books_list() end
-        end)
-        return
-    end
-
-    local have_cache = ensure_cache()
-    local saved_continue = plugin.storage.get("continue")
-    local continue_path
-    if saved_continue then
-        for i = 1, #paths do
-            if paths[i] == saved_continue then
-                continue_path = saved_continue
-                break
-            end
-        end
-    end
-
-    local items = {}
-    if continue_path then
-        local title, author = book_details(continue_path)
-        local label = "Continue reading: " .. title .. (author ~= "" and ("\n" .. author) or "")
-        local cover = cover_file(continue_path)
-        items[#items + 1] = {
-            label = clip_text(label, 511),
-            icon = have_cache and file_exists(cover) and cover or ICON_EPUB,
-            wrap = true,
-        }
-    end
-    items[#items + 1] = {
-        label = "Browse library (" .. #paths .. ")", icon = ICON_EPUB,
-    }
-    queue_missing_covers(paths)
-
-    local opts = {
-        on_hold = function(index)
-            if continue_path and index == 1 then
-                open_book_menu(continue_path)
-            end
-        end,
-    }
-    local root_handle
-    root_handle = plugin.show_list("EPUB Reader", items, function(index)
-        if continue_path and index == 1 then
-            open_book(continue_path, root_handle)
-        else
-            open_books_grid()
-        end
-    end, opts)
-end
-
-plugin.register_list_item("books", "EPUB Reader", open_books_list, {
+plugin.register_list_item("books", "EPUB Reader", open_library, {
     icon = ICON_EPUB,
 })
