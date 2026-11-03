@@ -1,4 +1,167 @@
-plugin.define({ id = "example.sound_profiles", name = "Sound Profiles", version = "1.2", api_min = 13 })
+plugin.define({ id = "example.sound_profiles", name = "Sound Profiles", version = "1.3.0", api_min = 19 })
+
+local T = {
+    de = {
+        ["Sound Profiles"] = "Klangprofile",
+        ["Sound Profile"] = "Klangprofil",
+        ["Flat (Default)"] = "Neutral (Standard)",
+        ["Bass Boost"] = "Bass-Boost",
+        ["Vocal"] = "Stimme",
+        ["Treble Boost"] = "Höhen-Boost",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V-Kurve",
+        ["U Shape"] = "U-Kurve",
+        ["Could not apply sound profile. Try again."] = "Klangprofil konnte nicht angewendet werden. Erneut versuchen.",
+        ["Sound profile applied"] = "Klangprofil angewendet",
+    },
+    es = {
+        ["Sound Profiles"] = "Perfiles de sonido",
+        ["Sound Profile"] = "Perfil de sonido",
+        ["Flat (Default)"] = "Plano (predeterminado)",
+        ["Bass Boost"] = "Realce de graves",
+        ["Vocal"] = "Vocal",
+        ["Treble Boost"] = "Realce de agudos",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "Curva en V",
+        ["U Shape"] = "Curva en U",
+        ["Could not apply sound profile. Try again."] = "No se pudo aplicar el perfil de sonido. Inténtalo de nuevo.",
+        ["Sound profile applied"] = "Perfil de sonido aplicado",
+    },
+    fi = {
+        ["Sound Profiles"] = "Ääniprofiilit",
+        ["Sound Profile"] = "Ääniprofiili",
+        ["Flat (Default)"] = "Tasainen (oletus)",
+        ["Bass Boost"] = "Basson korostus",
+        ["Vocal"] = "Laulu",
+        ["Treble Boost"] = "Diskantin korostus",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V-käyrä",
+        ["U Shape"] = "U-käyrä",
+        ["Could not apply sound profile. Try again."] = "Ääniprofiilin käyttö epäonnistui. Yritä uudelleen.",
+        ["Sound profile applied"] = "Ääniprofiili käytössä",
+    },
+    fr = {
+        ["Sound Profiles"] = "Profils sonores",
+        ["Sound Profile"] = "Profil sonore",
+        ["Flat (Default)"] = "Plat (par défaut)",
+        ["Bass Boost"] = "Amplification des basses",
+        ["Vocal"] = "Voix",
+        ["Treble Boost"] = "Amplification des aigus",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "Courbe en V",
+        ["U Shape"] = "Courbe en U",
+        ["Could not apply sound profile. Try again."] = "Impossible d'appliquer le profil sonore. Réessayez.",
+        ["Sound profile applied"] = "Profil sonore appliqué",
+    },
+    it = {
+        ["Sound Profiles"] = "Profili audio",
+        ["Sound Profile"] = "Profilo audio",
+        ["Flat (Default)"] = "Piatto (predefinito)",
+        ["Bass Boost"] = "Rinforzo bassi",
+        ["Vocal"] = "Voce",
+        ["Treble Boost"] = "Rinforzo alti",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "Curva a V",
+        ["U Shape"] = "Curva a U",
+        ["Could not apply sound profile. Try again."] = "Impossibile applicare il profilo audio. Riprova.",
+        ["Sound profile applied"] = "Profilo audio applicato",
+    },
+    ja = {
+        ["Sound Profiles"] = "サウンドプロファイル",
+        ["Sound Profile"] = "サウンドプロファイル",
+        ["Flat (Default)"] = "フラット（標準）",
+        ["Bass Boost"] = "低音ブースト",
+        ["Vocal"] = "ボーカル",
+        ["Treble Boost"] = "高音ブースト",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V 字型",
+        ["U Shape"] = "U 字型",
+        ["Could not apply sound profile. Try again."] = "サウンドプロファイルを適用できませんでした。再試行してください。",
+        ["Sound profile applied"] = "サウンドプロファイルを適用しました",
+    },
+    nl = {
+        ["Sound Profiles"] = "Geluidsprofielen",
+        ["Sound Profile"] = "Geluidsprofiel",
+        ["Flat (Default)"] = "Vlak (standaard)",
+        ["Bass Boost"] = "Basversterking",
+        ["Vocal"] = "Vocaal",
+        ["Treble Boost"] = "Treble-versterking",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V-vorm",
+        ["U Shape"] = "U-vorm",
+        ["Could not apply sound profile. Try again."] = "Kan geluidsprofiel niet toepassen. Probeer het opnieuw.",
+        ["Sound profile applied"] = "Geluidsprofiel toegepast",
+    },
+    pt = {
+        ["Sound Profiles"] = "Perfis de som",
+        ["Sound Profile"] = "Perfil de som",
+        ["Flat (Default)"] = "Plano (padrão)",
+        ["Bass Boost"] = "Reforço de graves",
+        ["Vocal"] = "Vocal",
+        ["Treble Boost"] = "Reforço de agudos",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "Curva em V",
+        ["U Shape"] = "Curva em U",
+        ["Could not apply sound profile. Try again."] = "Não foi possível aplicar o perfil de som. Tente novamente.",
+        ["Sound profile applied"] = "Perfil de som aplicado",
+    },
+    ru = {
+        ["Sound Profiles"] = "Профили звука",
+        ["Sound Profile"] = "Профиль звука",
+        ["Flat (Default)"] = "Ровный (по умолчанию)",
+        ["Bass Boost"] = "Усиление басов",
+        ["Vocal"] = "Вокал",
+        ["Treble Boost"] = "Усиление высоких",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V-образный",
+        ["U Shape"] = "U-образный",
+        ["Could not apply sound profile. Try again."] = "Не удалось применить профиль звука. Повторите попытку.",
+        ["Sound profile applied"] = "Профиль звука применён",
+    },
+    uk = {
+        ["Sound Profiles"] = "Профілі звуку",
+        ["Sound Profile"] = "Профіль звуку",
+        ["Flat (Default)"] = "Рівний (за замовчуванням)",
+        ["Bass Boost"] = "Підсилення басів",
+        ["Vocal"] = "Вокал",
+        ["Treble Boost"] = "Підсилення високих",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V-подібний",
+        ["U Shape"] = "U-подібний",
+        ["Could not apply sound profile. Try again."] = "Не вдалося застосувати профіль звуку. Спробуйте ще раз.",
+        ["Sound profile applied"] = "Профіль звуку застосовано",
+    },
+    vi = {
+        ["Sound Profiles"] = "Cấu hình âm thanh",
+        ["Sound Profile"] = "Cấu hình âm thanh",
+        ["Flat (Default)"] = "Phẳng (Mặc định)",
+        ["Bass Boost"] = "Tăng âm trầm",
+        ["Vocal"] = "Giọng hát",
+        ["Treble Boost"] = "Tăng âm cao",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "Dạng chữ V",
+        ["U Shape"] = "Dạng chữ U",
+        ["Could not apply sound profile. Try again."] = "Không thể áp dụng cấu hình âm thanh. Hãy thử lại.",
+        ["Sound profile applied"] = "Đã áp dụng cấu hình âm thanh",
+    },
+    zh_CN = {
+        ["Sound Profiles"] = "声音配置",
+        ["Sound Profile"] = "声音配置",
+        ["Flat (Default)"] = "平直（默认）",
+        ["Bass Boost"] = "低音增强",
+        ["Vocal"] = "人声",
+        ["Treble Boost"] = "高音增强",
+        ["Harman IE 2017"] = "Harman IE 2017",
+        ["V Shape"] = "V 形曲线",
+        ["U Shape"] = "U 形曲线",
+        ["Could not apply sound profile. Try again."] = "无法应用声音配置。请重试。",
+        ["Sound profile applied"] = "已应用声音配置",
+    },
+}
+
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Sound profile switcher, adds a "Sound Profile" row to Settings -> Music
 -- Settings -> Audio.
@@ -123,17 +286,17 @@ end
 
 local current_key = read_state()
 
-plugin.register_list_item("music_audio", "Sound Profile", function()
-    local names = { "Flat (Default)" }
-    for _, p in ipairs(PROFILES) do table.insert(names, p.name) end
+plugin.register_list_item("music_audio", tr("Sound Profile"), function()
+    local names = { tr("Flat (Default)") }
+    for _, p in ipairs(PROFILES) do table.insert(names, tr(p.name)) end
 
-    plugin.show_list("Sound Profile", names, function(index)
+    plugin.show_list(tr("Sound Profile"), names, function(index)
         local key = (index == 1) and "flat" or PROFILES[index - 1].key
         if not apply_profile(key) or not write_state(key) then
-            plugin.show_toast("Could not apply sound profile. Try again.")
+            plugin.show_toast(tr("Could not apply sound profile. Try again."))
             return
         end
         current_key = key
-        plugin.show_toast("Sound profile applied")
+        plugin.show_toast(tr("Sound profile applied"))
     end)
 end, { group = "effects" })

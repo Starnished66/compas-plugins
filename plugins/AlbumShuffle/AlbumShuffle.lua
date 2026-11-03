@@ -1,9 +1,112 @@
 plugin.define({
     id = "example.album_shuffle",
     name = "Album Shuffle",
-    version = "1.1.1",
-    api_min = 17,
+    version = "1.2.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Album Shuffle"] = "Alben-Zufallswiedergabe",
+        ["Start Album Shuffle"] = "Alben-Zufallswiedergabe starten",
+        ["Album: %s"] = "Album: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Wiedergabemodus zuerst auf sequenziell stellen (Plugin kann ihn nicht ändern)",
+        ["No albums in the library"] = "Keine Alben in der Bibliothek",
+        ["No playable album tracks"] = "Keine abspielbaren Albumtitel",
+    },
+    es = {
+        ["Album Shuffle"] = "Álbumes al azar",
+        ["Start Album Shuffle"] = "Iniciar álbumes al azar",
+        ["Album: %s"] = "Álbum: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Pon primero el modo secuencial (el plugin no puede cambiarlo)",
+        ["No albums in the library"] = "No hay álbumes en la biblioteca",
+        ["No playable album tracks"] = "No hay pistas de álbum reproducibles",
+    },
+    fi = {
+        ["Album Shuffle"] = "Albumien satunnaistoisto",
+        ["Start Album Shuffle"] = "Aloita albumien satunnaistoisto",
+        ["Album: %s"] = "Albumi: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Aseta toistotila ensin peräkkäiseksi (lisäosa ei voi muuttaa sitä)",
+        ["No albums in the library"] = "Kirjastossa ei ole albumeita",
+        ["No playable album tracks"] = "Ei toistettavia albumin kappaleita",
+    },
+    fr = {
+        ["Album Shuffle"] = "Albums aléatoires",
+        ["Start Album Shuffle"] = "Lancer les albums aléatoires",
+        ["Album: %s"] = "Album : %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Réglez d'abord le mode de lecture sur séquentiel (le plugin ne peut pas le changer)",
+        ["No albums in the library"] = "Aucun album dans la bibliothèque",
+        ["No playable album tracks"] = "Aucune piste d'album lisible",
+    },
+    it = {
+        ["Album Shuffle"] = "Album casuali",
+        ["Start Album Shuffle"] = "Avvia album casuali",
+        ["Album: %s"] = "Album: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Imposta prima la riproduzione sequenziale (il plugin non può cambiarla)",
+        ["No albums in the library"] = "Nessun album nella libreria",
+        ["No playable album tracks"] = "Nessun brano dell'album riproducibile",
+    },
+    ja = {
+        ["Album Shuffle"] = "アルバムシャッフル",
+        ["Start Album Shuffle"] = "アルバムシャッフルを開始",
+        ["Album: %s"] = "アルバム: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "先に再生モードを順次に設定してください（プラグインでは変更できません）",
+        ["No albums in the library"] = "ライブラリにアルバムがありません",
+        ["No playable album tracks"] = "再生できるアルバム曲がありません",
+    },
+    nl = {
+        ["Album Shuffle"] = "Willekeurige albums",
+        ["Start Album Shuffle"] = "Willekeurige albums starten",
+        ["Album: %s"] = "Album: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Zet afspeelmodus eerst op opeenvolgend (plug-in kan dit niet wijzigen)",
+        ["No albums in the library"] = "Geen albums in de bibliotheek",
+        ["No playable album tracks"] = "Geen afspeelbare albumnummers",
+    },
+    pt = {
+        ["Album Shuffle"] = "Álbuns aleatórios",
+        ["Start Album Shuffle"] = "Iniciar álbuns aleatórios",
+        ["Album: %s"] = "Álbum: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Defina primeiro o modo sequencial (o plugin não pode alterá-lo)",
+        ["No albums in the library"] = "Nenhum álbum na biblioteca",
+        ["No playable album tracks"] = "Nenhuma faixa de álbum reproduzível",
+    },
+    ru = {
+        ["Album Shuffle"] = "Случайные альбомы",
+        ["Start Album Shuffle"] = "Запустить случайные альбомы",
+        ["Album: %s"] = "Альбом: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Сначала включите последовательный режим (плагин не может его изменить)",
+        ["No albums in the library"] = "В фонотеке нет альбомов",
+        ["No playable album tracks"] = "Нет доступных треков альбома",
+    },
+    uk = {
+        ["Album Shuffle"] = "Випадкові альбоми",
+        ["Start Album Shuffle"] = "Запустити випадкові альбоми",
+        ["Album: %s"] = "Альбом: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Спочатку увімкніть послідовний режим (плагін не може його змінити)",
+        ["No albums in the library"] = "У бібліотеці немає альбомів",
+        ["No playable album tracks"] = "Немає доступних треків альбому",
+    },
+    vi = {
+        ["Album Shuffle"] = "Phát ngẫu nhiên album",
+        ["Start Album Shuffle"] = "Bắt đầu phát ngẫu nhiên album",
+        ["Album: %s"] = "Album: %s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "Hãy đặt chế độ phát tuần tự trước (plugin không thể tự đổi)",
+        ["No albums in the library"] = "Không có album trong thư viện",
+        ["No playable album tracks"] = "Không có bài hát album nào phát được",
+    },
+    zh_CN = {
+        ["Album Shuffle"] = "随机播放专辑",
+        ["Start Album Shuffle"] = "开始随机播放专辑",
+        ["Album: %s"] = "专辑：%s",
+        ["Set play mode to sequential first (plugin cannot change it)"] = "请先将播放模式设为顺序播放（插件无法更改）",
+        ["No albums in the library"] = "媒体库中没有专辑",
+        ["No playable album tracks"] = "没有可播放的专辑曲目",
+    },
+}
+
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Plays a random album with tracks in album order, then another when the
 -- queue is exhausted forward. library_get_albums() rows are {name, count,
@@ -126,7 +229,7 @@ local function start_album(ident)
     session.paths = path_set(tracks)
     plugin.play_list(tracks, 1)
     session.continuing = false
-    toast("Album: " .. ident.album)
+    toast(string.format(tr("Album: %s"), ident.album))
     return true
 end
 
@@ -136,13 +239,13 @@ end
 
 local function play_random_album()
     if not sequential_ok() then
-        toast("Set play mode to sequential first (plugin cannot change it)")
+        toast(tr("Set play mode to sequential first (plugin cannot change it)"))
         stop_session()
         return false
     end
     local chosen, alt, n = pick_album_group()
     if n == 0 or not chosen then
-        toast("No albums in the library")
+        toast(tr("No albums in the library"))
         stop_session()
         return false
     end
@@ -164,7 +267,7 @@ local function play_random_album()
             ident = identity_from_group(alt)
         end
     end
-    toast("No playable album tracks")
+    toast(tr("No playable album tracks"))
     stop_session()
     return false
 end
@@ -234,8 +337,8 @@ plugin.set_interval(1, function()
 end)
 
 local SHUFFLE_ICON = plugin.sd_root() .. "/.plugin-assets/AlbumShuffle/shuffle.png"
-plugin.register_list_item("music", "Album Shuffle", function()
-    plugin.show_confirmation("Album Shuffle", "Start Album Shuffle", start_from_ui)
+plugin.register_list_item("music", tr("Album Shuffle"), function()
+    plugin.show_confirmation(tr("Album Shuffle"), tr("Start Album Shuffle"), start_from_ui)
 end, { icon = SHUFFLE_ICON })
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then

@@ -1,9 +1,172 @@
 plugin.define({
     id = "example.play_through",
     name = "Play Through",
-    version = "1.1.0",
-    api_min = 13,
+    version = "1.2.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Play Through"] = "Weiterwiedergabe",
+        ["Play Through Folders"] = "Ordner weiter abspielen",
+        ["Play Through Albums"] = "Alben weiter abspielen",
+        ["How It Works"] = "Funktionsweise",
+        ["About Play Through"] = "Über Weiterwiedergabe",
+        ["Albums continue in the artist's alphabetical album order."] = "Alben werden in alphabetischer Reihenfolge des Künstlers fortgesetzt.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Ordner werden in alphabetischer Reihenfolge der Nachbarordner fortgesetzt.",
+        ["Album mode has priority when both options are enabled."] = "Der Albummodus hat Vorrang, wenn beide Optionen aktiviert sind.",
+        ["Shuffle and repeat modes are left unchanged."] = "Zufalls- und Wiederholungsmodus bleiben unverändert.",
+        ["Continuing playback"] = "Wiedergabe wird fortgesetzt",
+        ["Could not save Play Through settings"] = "Einstellungen für Weiterwiedergabe konnten nicht gespeichert werden",
+    },
+    es = {
+        ["Play Through"] = "Reproducción continua",
+        ["Play Through Folders"] = "Continuar entre carpetas",
+        ["Play Through Albums"] = "Continuar entre álbumes",
+        ["How It Works"] = "Cómo funciona",
+        ["About Play Through"] = "Acerca de Reproducción continua",
+        ["Albums continue in the artist's alphabetical album order."] = "Los álbumes continúan en el orden alfabético del artista.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Las carpetas continúan en orden alfabético (sin distinguir mayúsculas) entre carpetas vecinas.",
+        ["Album mode has priority when both options are enabled."] = "El modo de álbum tiene prioridad cuando ambas opciones están activadas.",
+        ["Shuffle and repeat modes are left unchanged."] = "Los modos aleatorio y de repetición no cambian.",
+        ["Continuing playback"] = "Continuando la reproducción",
+        ["Could not save Play Through settings"] = "No se pudieron guardar los ajustes de Reproducción continua",
+    },
+    fi = {
+        ["Play Through"] = "Jatkuva toisto",
+        ["Play Through Folders"] = "Jatka kansioiden läpi",
+        ["Play Through Albums"] = "Jatka albumien läpi",
+        ["How It Works"] = "Miten se toimii",
+        ["About Play Through"] = "Tietoja jatkuvasta toistosta",
+        ["Albums continue in the artist's alphabetical album order."] = "Albumit jatkuvat esittäjän aakkosjärjestyksessä.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Kansiot jatkuvat rinnakkaiskansioiden aakkosjärjestyksessä.",
+        ["Album mode has priority when both options are enabled."] = "Albumitila on ensisijainen, kun molemmat valinnat ovat käytössä.",
+        ["Shuffle and repeat modes are left unchanged."] = "Satunnais- ja kertaustiloja ei muuteta.",
+        ["Continuing playback"] = "Jatketaan toistoa",
+        ["Could not save Play Through settings"] = "Jatkuvan toiston asetuksia ei voitu tallentaa",
+    },
+    fr = {
+        ["Play Through"] = "Lecture enchaînée",
+        ["Play Through Folders"] = "Enchaîner les dossiers",
+        ["Play Through Albums"] = "Enchaîner les albums",
+        ["How It Works"] = "Fonctionnement",
+        ["About Play Through"] = "À propos de Lecture enchaînée",
+        ["Albums continue in the artist's alphabetical album order."] = "Les albums s'enchaînent dans l'ordre alphabétique des albums de l'artiste.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Les dossiers s'enchaînent dans l'ordre alphabétique des dossiers voisins.",
+        ["Album mode has priority when both options are enabled."] = "Le mode album est prioritaire lorsque les deux options sont activées.",
+        ["Shuffle and repeat modes are left unchanged."] = "Les modes aléatoire et répétition restent inchangés.",
+        ["Continuing playback"] = "Poursuite de la lecture",
+        ["Could not save Play Through settings"] = "Impossible d'enregistrer les paramètres de Lecture enchaînée",
+    },
+    it = {
+        ["Play Through"] = "Riproduzione continua",
+        ["Play Through Folders"] = "Continua tra le cartelle",
+        ["Play Through Albums"] = "Continua tra gli album",
+        ["How It Works"] = "Come funziona",
+        ["About Play Through"] = "Informazioni su Riproduzione continua",
+        ["Albums continue in the artist's alphabetical album order."] = "Gli album proseguono nell'ordine alfabetico dell'artista.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Le cartelle proseguono in ordine alfabetico tra le cartelle adiacenti.",
+        ["Album mode has priority when both options are enabled."] = "La modalità album ha la priorità quando entrambe le opzioni sono attive.",
+        ["Shuffle and repeat modes are left unchanged."] = "Le modalità casuale e ripetizione restano invariate.",
+        ["Continuing playback"] = "Proseguimento della riproduzione",
+        ["Could not save Play Through settings"] = "Impossibile salvare le impostazioni di Riproduzione continua",
+    },
+    ja = {
+        ["Play Through"] = "連続再生",
+        ["Play Through Folders"] = "フォルダを連続再生",
+        ["Play Through Albums"] = "アルバムを連続再生",
+        ["How It Works"] = "仕組み",
+        ["About Play Through"] = "連続再生について",
+        ["Albums continue in the artist's alphabetical album order."] = "アルバムはアーティストのアルバム名順（アルファベット順）で続きます。",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "フォルダは大文字小文字を区別しない名前順で次のフォルダへ続きます。",
+        ["Album mode has priority when both options are enabled."] = "両方有効な場合はアルバムモードが優先されます。",
+        ["Shuffle and repeat modes are left unchanged."] = "シャッフルとリピートモードは変更されません。",
+        ["Continuing playback"] = "再生を継続中",
+        ["Could not save Play Through settings"] = "連続再生の設定を保存できませんでした",
+    },
+    nl = {
+        ["Play Through"] = "Doorblijven spelen",
+        ["Play Through Folders"] = "Mappen doorspelen",
+        ["Play Through Albums"] = "Albums doorspelen",
+        ["How It Works"] = "Hoe het werkt",
+        ["About Play Through"] = "Over Doorblijven spelen",
+        ["Albums continue in the artist's alphabetical album order."] = "Albums gaan verder in alfabetische albumvolgorde van de artiest.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Mappen gaan verder in alfabetische volgorde van naastgelegen mappen.",
+        ["Album mode has priority when both options are enabled."] = "Albummodus heeft voorrang wanneer beide opties zijn ingeschakeld.",
+        ["Shuffle and repeat modes are left unchanged."] = "Shuffle- en herhaalmodi blijven ongewijzigd.",
+        ["Continuing playback"] = "Afspelen wordt voortgezet",
+        ["Could not save Play Through settings"] = "Kon instellingen voor Doorblijven spelen niet opslaan",
+    },
+    pt = {
+        ["Play Through"] = "Reprodução contínua",
+        ["Play Through Folders"] = "Continuar pelas pastas",
+        ["Play Through Albums"] = "Continuar pelos álbuns",
+        ["How It Works"] = "Como funciona",
+        ["About Play Through"] = "Sobre a Reprodução contínua",
+        ["Albums continue in the artist's alphabetical album order."] = "Os álbuns continuam na ordem alfabética dos álbuns do artista.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "As pastas continuam em ordem alfabética entre pastas vizinhas.",
+        ["Album mode has priority when both options are enabled."] = "O modo de álbum tem prioridade quando ambas as opções estão ativadas.",
+        ["Shuffle and repeat modes are left unchanged."] = "Os modos aleatório e de repetição permanecem inalterados.",
+        ["Continuing playback"] = "Continuando a reprodução",
+        ["Could not save Play Through settings"] = "Não foi possível salvar as configurações de Reprodução contínua",
+    },
+    ru = {
+        ["Play Through"] = "Сквозное воспроизведение",
+        ["Play Through Folders"] = "Переходить к следующей папке",
+        ["Play Through Albums"] = "Переходить к следующему альбому",
+        ["How It Works"] = "Как это работает",
+        ["About Play Through"] = "О сквозном воспроизведении",
+        ["Albums continue in the artist's alphabetical album order."] = "Альбомы продолжаются в алфавитном порядке альбомов исполнителя.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Папки продолжаются в алфавитном порядке соседних папок (без учёта регистра).",
+        ["Album mode has priority when both options are enabled."] = "Режим альбомов имеет приоритет, когда включены оба параметра.",
+        ["Shuffle and repeat modes are left unchanged."] = "Режимы перемешивания и повтора не изменяются.",
+        ["Continuing playback"] = "Продолжение воспроизведения",
+        ["Could not save Play Through settings"] = "Не удалось сохранить настройки сквозного воспроизведения",
+    },
+    uk = {
+        ["Play Through"] = "Наскрізне відтворення",
+        ["Play Through Folders"] = "Переходити до наступної теки",
+        ["Play Through Albums"] = "Переходити до наступного альбому",
+        ["How It Works"] = "Як це працює",
+        ["About Play Through"] = "Про наскрізне відтворення",
+        ["Albums continue in the artist's alphabetical album order."] = "Альбоми продовжуються в алфавітному порядку альбомів виконавця.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Теки продовжуються в алфавітному порядку сусідніх тек (без урахування регістру).",
+        ["Album mode has priority when both options are enabled."] = "Режим альбомів має пріоритет, коли увімкнено обидва параметри.",
+        ["Shuffle and repeat modes are left unchanged."] = "Режими перемішування та повтору залишаються без змін.",
+        ["Continuing playback"] = "Продовження відтворення",
+        ["Could not save Play Through settings"] = "Не вдалося зберегти налаштування наскрізного відтворення",
+    },
+    vi = {
+        ["Play Through"] = "Phát nối tiếp",
+        ["Play Through Folders"] = "Phát tiếp qua các thư mục",
+        ["Play Through Albums"] = "Phát tiếp qua các album",
+        ["How It Works"] = "Cách hoạt động",
+        ["About Play Through"] = "Giới thiệu Phát nối tiếp",
+        ["Albums continue in the artist's alphabetical album order."] = "Các album tiếp tục theo thứ tự bảng chữ cái của nghệ sĩ.",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Các thư mục tiếp tục theo thứ tự bảng chữ cái của thư mục cùng cấp.",
+        ["Album mode has priority when both options are enabled."] = "Chế độ album được ưu tiên khi bật cả hai tùy chọn.",
+        ["Shuffle and repeat modes are left unchanged."] = "Chế độ phát ngẫu nhiên và lặp lại được giữ nguyên.",
+        ["Continuing playback"] = "Đang tiếp tục phát",
+        ["Could not save Play Through settings"] = "Không thể lưu cài đặt Phát nối tiếp",
+    },
+    zh_CN = {
+        ["Play Through"] = "连续播放",
+        ["Play Through Folders"] = "跨文件夹连续播放",
+        ["Play Through Albums"] = "跨专辑连续播放",
+        ["How It Works"] = "工作原理",
+        ["About Play Through"] = "关于连续播放",
+        ["Albums continue in the artist's alphabetical album order."] = "专辑按艺人专辑名称的字母顺序继续播放。",
+        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "文件夹按同级文件夹的字母顺序（不区分大小写）继续播放。",
+        ["Album mode has priority when both options are enabled."] = "同时启用两个选项时，专辑模式优先。",
+        ["Shuffle and repeat modes are left unchanged."] = "随机播放和重复模式保持不变。",
+        ["Continuing playback"] = "正在继续播放",
+        ["Could not save Play Through settings"] = "无法保存连续播放设置",
+    },
+}
+
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Continues playback after a playlist reaches its natural end:
 --   * Play Through Albums starts the artist's next album.
@@ -38,14 +201,14 @@ local function save_state()
     local tmp = STATE_PATH .. ".tmp"
     local f = io.open(tmp, "w")
     if not f then
-        plugin.show_toast("Could not save Play Through settings")
+        plugin.show_toast(tr("Could not save Play Through settings"))
         return
     end
     local wrote = f:write("folders=", state.folders and "1" or "0", "\n",
         "albums=", state.albums and "1" or "0", "\n")
     local closed = f:close()
     if not wrote or not closed or not os.rename(tmp, STATE_PATH) then
-        plugin.show_toast("Could not save Play Through settings")
+        plugin.show_toast(tr("Could not save Play Through settings"))
     end
 end
 
@@ -196,7 +359,7 @@ local function continue_now()
     if candidate_index > #candidate_paths then candidate_paths = nil end
     stopped_polls = 0
     plugin.play_list(paths, 1)
-    plugin.show_toast("Continuing playback")
+    plugin.show_toast(tr("Continuing playback"))
 end
 
 plugin.on("queue_exhausted", function(direction)
@@ -222,19 +385,19 @@ plugin.set_interval(1, function()
 end)
 
 local function open_about()
-    plugin.show_list("About Play Through", {
-        "Albums continue in the artist's alphabetical album order.",
-        "Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order.",
-        "Album mode has priority when both options are enabled.",
-        "Shuffle and repeat modes are left unchanged.",
+    plugin.show_list(tr("About Play Through"), {
+        tr("Albums continue in the artist's alphabetical album order."),
+        tr("Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."),
+        tr("Album mode has priority when both options are enabled."),
+        tr("Shuffle and repeat modes are left unchanged."),
     }, function() end)
 end
 
 local function open_settings()
-    plugin.show_settings_list("Play Through", {
+    plugin.show_settings_list(tr("Play Through"), {
         {
             type = "toggle",
-            label = "Play Through Folders",
+            label = tr("Play Through Folders"),
             value = state.folders,
             on_change = function(value)
                 state.folders = value
@@ -244,7 +407,7 @@ local function open_settings()
         },
         {
             type = "toggle",
-            label = "Play Through Albums",
+            label = tr("Play Through Albums"),
             value = state.albums,
             on_change = function(value)
                 state.albums = value
@@ -254,11 +417,11 @@ local function open_settings()
         },
         {
             type = "row",
-            label = "How It Works",
+            label = tr("How It Works"),
             on_select = open_about,
         },
     })
 end
 
 load_state()
-plugin.register_list_item("playback", "Play Through", open_settings)
+plugin.register_list_item("playback", tr("Play Through"), open_settings)

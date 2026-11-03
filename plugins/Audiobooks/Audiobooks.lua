@@ -1,4 +1,1163 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.7.6", api_min = 17 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.8.0", api_min = 19 })
+
+local T = {
+    de = {
+        ["Audiobooks"] = "Hörbücher",
+        ["Audiobooks settings"] = "Hörbuch-Einstellungen",
+        ["Skip by 30 seconds"] = "30 Sekunden springen",
+        ["30 second skip requires a newer player"] = "30-Sekunden-Sprung erfordert eine neuere Player-Version",
+        ["Could not apply transport skip setting"] = "Sprung-Einstellung konnte nicht angewendet werden",
+        ["Could not save transport skip setting"] = "Sprung-Einstellung konnte nicht gespeichert werden",
+        ["Playback speed: %sx"] = "Geschwindigkeit: %sx",
+        ["Playback speed"] = "Wiedergabegeschwindigkeit",
+        ["Playback speed requires a newer player"] = "Wiedergabegeschwindigkeit erfordert eine neuere Player-Version",
+        ["Speed is unavailable for this audio format"] = "Geschwindigkeit für dieses Audioformat nicht verfügbar",
+        ["Could not save playback speed"] = "Wiedergabegeschwindigkeit konnte nicht gespeichert werden",
+        ["Playback speed set to %sx"] = "Wiedergabegeschwindigkeit auf %sx gesetzt",
+        ["Too many bookmarks to save; some were removed"] = "Zu viele Lesezeichen zum Speichern; einige wurden entfernt",
+        ["%s (saved collection)"] = "%s (gespeicherte Sammlung)",
+        ["Library scan limit reached; Browse folders shows more"] = "Scan-Limit erreicht; Ordner durchsuchen zeigt mehr",
+        ["Some files could not be listed"] = "Einige Dateien konnten nicht aufgelistet werden",
+        ["Chapter %d"] = "Kapitel %d",
+        ["No audio files in %s"] = "Keine Audiodateien in %s",
+        ["Chapter file not found; starting from the beginning"] = "Kapiteldatei nicht gefunden; Start von vorn",
+        ["Playback started; state could not be saved"] = "Wiedergabe gestartet; Status konnte nicht gespeichert werden",
+        ["Audiobooks play best in sequential mode"] = "Hörbücher funktionieren am besten im sequenziellen Modus",
+        ["Finished"] = "Beendet",
+        ["Current file: %d%%"] = "Aktuelle Datei: %d%%",
+        ["Current file position: %s"] = "Aktuelle Dateiposition: %s",
+        ["File Manager is not supported on this device"] = "Dateimanager wird auf diesem Gerät nicht unterstützt",
+        ["Could not open File Manager"] = "Dateimanager konnte nicht geöffnet werden",
+        ["Could not open folder in File Manager"] = "Ordner konnte im Dateimanager nicht geöffnet werden",
+        ["No authors folders found"] = "Keine Autorenordner gefunden",
+        ["No series folders found"] = "Keine Serienordner gefunden",
+        [" · part %d"] = " · Teil %d",
+        ["%s to %s"] = "%s bis %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Weiterhören · %d gespeicherte Bücher · %d/%d",
+        ["Previous page"] = "Vorherige Seite",
+        ["Next page"] = "Nächste Seite",
+        ["No available books on this page"] = "Keine verfügbaren Bücher auf dieser Seite",
+        ["Continue listening"] = "Weiterhören",
+        ["Continue listening: %s"] = "Weiterhören: %s",
+        ["Continue listening · %d saved books"] = "Weiterhören · %d gespeicherte Bücher",
+        ["Browse folders"] = "Ordner durchsuchen",
+        ["All audiobooks · scan library"] = "Alle Hörbücher · Bibliothek scannen",
+        ["All audiobooks"] = "Alle Hörbücher",
+        ["Authors"] = "Autoren",
+        ["Series"] = "Serien",
+        ["Settings"] = "Einstellungen",
+        ["In progress"] = "In Bearbeitung",
+        ["Not started"] = "Nicht begonnen",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Dateien in Audiobooks auf der SD-Karte ablegen und aktualisieren.",
+        ["Refresh library"] = "Bibliothek aktualisieren",
+        ["Library refreshed."] = "Bibliothek aktualisiert.",
+        ["No chapters found"] = "Keine Kapitel gefunden",
+        ["Position history could not be saved"] = "Positionsverlauf konnte nicht gespeichert werden",
+        ["Chapters"] = "Kapitel",
+        ["Chapters %d-%d"] = "Kapitel %d-%d",
+        ["The file is still opening; try again"] = "Die Datei wird noch geöffnet; bitte erneut versuchen",
+        ["Play this book before adding a bookmark"] = "Dieses Buch erst abspielen, bevor ein Lesezeichen gesetzt wird",
+        ["Bookmark could not be saved"] = "Lesezeichen konnte nicht gespeichert werden",
+        ["That bookmark could not be kept"] = "Dieses Lesezeichen konnte nicht behalten werden",
+        ["Bookmark note could not be saved"] = "Lesezeichen-Notiz konnte nicht gespeichert werden",
+        ["Bookmark added"] = "Lesezeichen hinzugefügt",
+        ["Bookmark note (optional)"] = "Lesezeichen-Notiz (optional)",
+        ["Text input busy"] = "Texteingabe belegt",
+        ["No bookmarks"] = "Keine Lesezeichen",
+        ["Bookmarks"] = "Lesezeichen",
+        ["Bookmark"] = "Lesezeichen",
+        ["That bookmark is gone"] = "Dieses Lesezeichen existiert nicht mehr",
+        ["Play from here"] = "Ab hier abspielen",
+        ["Delete"] = "Löschen",
+        ["Bookmark deleted"] = "Lesezeichen gelöscht",
+        ["Could not save bookmark deletion"] = "Löschen des Lesezeichens konnte nicht gespeichert werden",
+        ["15 minutes"] = "15 Minuten",
+        ["30 minutes"] = "30 Minuten",
+        ["45 minutes"] = "45 Minuten",
+        ["60 minutes"] = "60 Minuten",
+        ["90 minutes"] = "90 Minuten",
+        ["End of this chapter"] = "Ende dieses Kapitels",
+        ["Off"] = "Aus",
+        ["Sleep timer"] = "Schlummerfunktion",
+        ["Sleep timer: %s"] = "Schlummerfunktion: %s",
+        ["Open folder in File Manager"] = "Ordner im Dateimanager öffnen",
+        ["Play selected file"] = "Ausgewählte Datei abspielen",
+        ["Selected file is no longer available"] = "Ausgewählte Datei ist nicht mehr verfügbar",
+        ["Resume listening"] = "Weiterhören",
+        ["Start listening"] = "Hören starten",
+        ["Play / Pause"] = "Wiedergabe / Pause",
+        ["Add bookmark"] = "Lesezeichen hinzufügen",
+        ["Return to previous position"] = "Zur vorherigen Position zurückkehren",
+        ["Mark as finished"] = "Als beendet markieren",
+        ["Finished state could not be saved"] = "Beendet-Status konnte nicht gespeichert werden",
+        ["Book controls"] = "Buchsteuerung",
+        ["Resume position could not be saved"] = "Fortsetzungsposition konnte nicht gespeichert werden",
+        ["Audiobooks · Reading Room"] = "Hörbücher · Lesezimmer",
+        ["Could not apply Reading Room: %s"] = "Lesezimmer konnte nicht angewendet werden: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Hörbücher-Lesezimmer für diese Sitzung aktiviert",
+        ["Reading Room controls are for Audiobooks"] = "Lesezimmer-Steuerung ist nur für Hörbücher",
+    },
+    es = {
+        ["Audiobooks"] = "Audiolibros",
+        ["Audiobooks settings"] = "Ajustes de audiolibros",
+        ["Skip by 30 seconds"] = "Saltar 30 segundos",
+        ["30 second skip requires a newer player"] = "El salto de 30 segundos requiere un reproductor más reciente",
+        ["Could not apply transport skip setting"] = "No se pudo aplicar el ajuste de salto",
+        ["Could not save transport skip setting"] = "No se pudo guardar el ajuste de salto",
+        ["Playback speed: %sx"] = "Velocidad de reproducción: %sx",
+        ["Playback speed"] = "Velocidad de reproducción",
+        ["Playback speed requires a newer player"] = "La velocidad de reproducción requiere un reproductor más reciente",
+        ["Speed is unavailable for this audio format"] = "La velocidad no está disponible para este formato de audio",
+        ["Could not save playback speed"] = "No se pudo guardar la velocidad de reproducción",
+        ["Playback speed set to %sx"] = "Velocidad de reproducción ajustada a %sx",
+        ["Too many bookmarks to save; some were removed"] = "Demasiados marcadores para guardar; se eliminaron algunos",
+        ["%s (saved collection)"] = "%s (colección guardada)",
+        ["Library scan limit reached; Browse folders shows more"] = "Límite de escaneo alcanzado; Explorar carpetas muestra más",
+        ["Some files could not be listed"] = "Algunos archivos no se pudieron listar",
+        ["Chapter %d"] = "Capítulo %d",
+        ["No audio files in %s"] = "No hay archivos de audio en %s",
+        ["Chapter file not found; starting from the beginning"] = "Archivo de capítulo no encontrado; empezando desde el principio",
+        ["Playback started; state could not be saved"] = "Reproducción iniciada; no se pudo guardar el estado",
+        ["Audiobooks play best in sequential mode"] = "Los audiolibros se reproducen mejor en modo secuencial",
+        ["Finished"] = "Terminado",
+        ["Current file: %d%%"] = "Archivo actual: %d%%",
+        ["Current file position: %s"] = "Posición del archivo actual: %s",
+        ["File Manager is not supported on this device"] = "El gestor de archivos no es compatible con este dispositivo",
+        ["Could not open File Manager"] = "No se pudo abrir el gestor de archivos",
+        ["Could not open folder in File Manager"] = "No se pudo abrir la carpeta en el gestor de archivos",
+        ["No authors folders found"] = "No se encontraron carpetas de autores",
+        ["No series folders found"] = "No se encontraron carpetas de series",
+        [" · part %d"] = " · parte %d",
+        ["%s to %s"] = "%s a %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Seguir escuchando · %d libros guardados · %d/%d",
+        ["Previous page"] = "Página anterior",
+        ["Next page"] = "Página siguiente",
+        ["No available books on this page"] = "No hay libros disponibles en esta página",
+        ["Continue listening"] = "Seguir escuchando",
+        ["Continue listening: %s"] = "Seguir escuchando: %s",
+        ["Continue listening · %d saved books"] = "Seguir escuchando · %d libros guardados",
+        ["Browse folders"] = "Explorar carpetas",
+        ["All audiobooks · scan library"] = "Todos los audiolibros · escanear biblioteca",
+        ["All audiobooks"] = "Todos los audiolibros",
+        ["Authors"] = "Autores",
+        ["Series"] = "Series",
+        ["Settings"] = "Ajustes",
+        ["In progress"] = "En curso",
+        ["Not started"] = "Sin empezar",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Añade archivos a Audiobooks en tu tarjeta SD y luego refresca.",
+        ["Refresh library"] = "Refrescar biblioteca",
+        ["Library refreshed."] = "Biblioteca refrescada.",
+        ["No chapters found"] = "No se encontraron capítulos",
+        ["Position history could not be saved"] = "No se pudo guardar el historial de posición",
+        ["Chapters"] = "Capítulos",
+        ["Chapters %d-%d"] = "Capítulos %d-%d",
+        ["The file is still opening; try again"] = "El archivo aún se está abriendo; inténtalo de nuevo",
+        ["Play this book before adding a bookmark"] = "Reproduce este libro antes de añadir un marcador",
+        ["Bookmark could not be saved"] = "No se pudo guardar el marcador",
+        ["That bookmark could not be kept"] = "No se pudo conservar ese marcador",
+        ["Bookmark note could not be saved"] = "No se pudo guardar la nota del marcador",
+        ["Bookmark added"] = "Marcador añadido",
+        ["Bookmark note (optional)"] = "Nota del marcador (opcional)",
+        ["Text input busy"] = "Entrada de texto ocupada",
+        ["No bookmarks"] = "Sin marcadores",
+        ["Bookmarks"] = "Marcadores",
+        ["Bookmark"] = "Marcador",
+        ["That bookmark is gone"] = "Ese marcador ya no existe",
+        ["Play from here"] = "Reproducir desde aquí",
+        ["Delete"] = "Eliminar",
+        ["Bookmark deleted"] = "Marcador eliminado",
+        ["Could not save bookmark deletion"] = "No se pudo guardar la eliminación del marcador",
+        ["15 minutes"] = "15 minutos",
+        ["30 minutes"] = "30 minutos",
+        ["45 minutes"] = "45 minutos",
+        ["60 minutes"] = "60 minutos",
+        ["90 minutes"] = "90 minutos",
+        ["End of this chapter"] = "Final de este capítulo",
+        ["Off"] = "Apagado",
+        ["Sleep timer"] = "Temporizador de apagado",
+        ["Sleep timer: %s"] = "Temporizador: %s",
+        ["Open folder in File Manager"] = "Abrir carpeta en el gestor de archivos",
+        ["Play selected file"] = "Reproducir archivo seleccionado",
+        ["Selected file is no longer available"] = "El archivo seleccionado ya no está disponible",
+        ["Resume listening"] = "Reanudar escucha",
+        ["Start listening"] = "Empezar a escuchar",
+        ["Play / Pause"] = "Reproducir / Pausar",
+        ["Add bookmark"] = "Añadir marcador",
+        ["Return to previous position"] = "Volver a la posición anterior",
+        ["Mark as finished"] = "Marcar como terminado",
+        ["Finished state could not be saved"] = "No se pudo guardar el estado de terminado",
+        ["Book controls"] = "Controles del libro",
+        ["Resume position could not be saved"] = "No se pudo guardar la posición de reanudación",
+        ["Audiobooks · Reading Room"] = "Audiolibros · Sala de lectura",
+        ["Could not apply Reading Room: %s"] = "No se pudo aplicar Sala de lectura: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Sala de lectura aplicada para esta sesión",
+        ["Reading Room controls are for Audiobooks"] = "Los controles de Sala de lectura son para audiolibros",
+    },
+    fi = {
+        ["Audiobooks"] = "Äänikirjat",
+        ["Audiobooks settings"] = "Äänikirja-asetukset",
+        ["Skip by 30 seconds"] = "Ohita 30 sekuntia",
+        ["30 second skip requires a newer player"] = "30 sekunnin ohitus vaatii uudemman soittimen",
+        ["Could not apply transport skip setting"] = "Ohitusasetusta ei voitu ottaa käyttöön",
+        ["Could not save transport skip setting"] = "Ohitusasetusta ei voitu tallentaa",
+        ["Playback speed: %sx"] = "Toistonopeus: %sx",
+        ["Playback speed"] = "Toistonopeus",
+        ["Playback speed requires a newer player"] = "Toistonopeus vaatii uudemman soittimen",
+        ["Speed is unavailable for this audio format"] = "Nopeus ei ole käytettävissä tälle äänimuodolle",
+        ["Could not save playback speed"] = "Toistonopeutta ei voitu tallentaa",
+        ["Playback speed set to %sx"] = "Toistonopeudeksi asetettu %sx",
+        ["Too many bookmarks to save; some were removed"] = "Liikaa kirjanmerkkejä tallennettavaksi; osa poistettiin",
+        ["%s (saved collection)"] = "%s (tallennettu kokoelma)",
+        ["Library scan limit reached; Browse folders shows more"] = "Kirjaston hakuraja saavutettu; Selaa kansioita näyttää lisää",
+        ["Some files could not be listed"] = "Joitakin tiedostoja ei voitu luetella",
+        ["Chapter %d"] = "Luku %d",
+        ["No audio files in %s"] = "Ei äänitiedostoja kohteessa %s",
+        ["Chapter file not found; starting from the beginning"] = "Lukutiedostoa ei löytynyt; aloitetaan alusta",
+        ["Playback started; state could not be saved"] = "Toisto aloitettu; tilaa ei voitu tallentaa",
+        ["Audiobooks play best in sequential mode"] = "Äänikirjat toistuvat parhaiten peräkkäistilassa",
+        ["Finished"] = "Valmis",
+        ["Current file: %d%%"] = "Nykyinen tiedosto: %d%%",
+        ["Current file position: %s"] = "Nykyisen tiedoston kohta: %s",
+        ["File Manager is not supported on this device"] = "Tiedostonhallintaa ei tueta tällä laitteella",
+        ["Could not open File Manager"] = "Tiedostonhallintaa ei voitu avata",
+        ["Could not open folder in File Manager"] = "Kansiota ei voitu avata tiedostonhallinnassa",
+        ["No authors folders found"] = "Tekijäkansioita ei löytynyt",
+        ["No series folders found"] = "Sarjakansioita ei löytynyt",
+        [" · part %d"] = " · osa %d",
+        ["%s to %s"] = "%s – %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Jatka kuuntelua · %d tallennettua kirjaa · %d/%d",
+        ["Previous page"] = "Edellinen sivu",
+        ["Next page"] = "Seuraava sivu",
+        ["No available books on this page"] = "Tällä sivulla ei ole saatavilla olevia kirjoja",
+        ["Continue listening"] = "Jatka kuuntelua",
+        ["Continue listening: %s"] = "Jatka kuuntelua: %s",
+        ["Continue listening · %d saved books"] = "Jatka kuuntelua · %d tallennettua kirjaa",
+        ["Browse folders"] = "Selaa kansioita",
+        ["All audiobooks · scan library"] = "Kaikki äänikirjat · tarkista kirjasto",
+        ["All audiobooks"] = "Kaikki äänikirjat",
+        ["Authors"] = "Tekijät",
+        ["Series"] = "Sarjat",
+        ["Settings"] = "Asetukset",
+        ["In progress"] = "Kesken",
+        ["Not started"] = "Aloittamatta",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Lisää tiedostoja SD-kortin Audiobooks-kansioon ja päivitä.",
+        ["Refresh library"] = "Päivitä kirjasto",
+        ["Library refreshed."] = "Kirjasto päivitetty.",
+        ["No chapters found"] = "Lukuja ei löytynyt",
+        ["Position history could not be saved"] = "Sijaintihistoriaa ei voitu tallentaa",
+        ["Chapters"] = "Luvut",
+        ["Chapters %d-%d"] = "Luvut %d-%d",
+        ["The file is still opening; try again"] = "Tiedostoa avataan vielä; yritä uudelleen",
+        ["Play this book before adding a bookmark"] = "Toista tätä kirjaa ennen kirjanmerkin lisäämistä",
+        ["Bookmark could not be saved"] = "Kirjanmerkkiä ei voitu tallentaa",
+        ["That bookmark could not be kept"] = "Kirjanmerkkiä ei voitu säilyttää",
+        ["Bookmark note could not be saved"] = "Kirjanmerkin muistiinpanoa ei voitu tallentaa",
+        ["Bookmark added"] = "Kirjanmerkki lisätty",
+        ["Bookmark note (optional)"] = "Kirjanmerkin muistiinpano (valinnainen)",
+        ["Text input busy"] = "Tekstinsyöttö varattu",
+        ["No bookmarks"] = "Ei kirjanmerkkejä",
+        ["Bookmarks"] = "Kirjanmerkit",
+        ["Bookmark"] = "Kirjanmerkki",
+        ["That bookmark is gone"] = "Kirjanmerkkiä ei enää ole",
+        ["Play from here"] = "Toista tästä",
+        ["Delete"] = "Poista",
+        ["Bookmark deleted"] = "Kirjanmerkki poistettu",
+        ["Could not save bookmark deletion"] = "Kirjanmerkin poistoa ei voitu tallentaa",
+        ["15 minutes"] = "15 minuuttia",
+        ["30 minutes"] = "30 minuuttia",
+        ["45 minutes"] = "45 minuuttia",
+        ["60 minutes"] = "60 minuuttia",
+        ["90 minutes"] = "90 minuuttia",
+        ["End of this chapter"] = "Tämän luvun loppuun",
+        ["Off"] = "Pois",
+        ["Sleep timer"] = "Uniajastin",
+        ["Sleep timer: %s"] = "Uniajastin: %s",
+        ["Open folder in File Manager"] = "Avaa kansio tiedostonhallinnassa",
+        ["Play selected file"] = "Toista valittu tiedosto",
+        ["Selected file is no longer available"] = "Valittu tiedosto ei ole enää saatavilla",
+        ["Resume listening"] = "Jatka kuuntelua",
+        ["Start listening"] = "Aloita kuuntelu",
+        ["Play / Pause"] = "Toista / Tauko",
+        ["Add bookmark"] = "Lisää kirjanmerkki",
+        ["Return to previous position"] = "Palaa edelliseen kohtaan",
+        ["Mark as finished"] = "Merkitse valmiiksi",
+        ["Finished state could not be saved"] = "Valmis-tilaa ei voitu tallentaa",
+        ["Book controls"] = "Kirjan ohjaimet",
+        ["Resume position could not be saved"] = "Jatkamiskohtaa ei voitu tallentaa",
+        ["Audiobooks · Reading Room"] = "Äänikirjat · Lukusali",
+        ["Could not apply Reading Room: %s"] = "Lukusalia ei voitu ottaa käyttöön: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Äänikirjojen Lukusali otettu käyttöön tälle istunnolle",
+        ["Reading Room controls are for Audiobooks"] = "Lukusalin säätimet ovat äänikirjoille",
+    },
+    fr = {
+        ["Audiobooks"] = "Livres audio",
+        ["Audiobooks settings"] = "Paramètres des livres audio",
+        ["Skip by 30 seconds"] = "Saut de 30 secondes",
+        ["30 second skip requires a newer player"] = "Le saut de 30 secondes nécessite un lecteur plus récent",
+        ["Could not apply transport skip setting"] = "Impossible d'appliquer le paramètre de saut",
+        ["Could not save transport skip setting"] = "Impossible d'enregistrer le paramètre de saut",
+        ["Playback speed: %sx"] = "Vitesse de lecture : %sx",
+        ["Playback speed"] = "Vitesse de lecture",
+        ["Playback speed requires a newer player"] = "La vitesse de lecture nécessite un lecteur plus récent",
+        ["Speed is unavailable for this audio format"] = "La vitesse n'est pas disponible pour ce format audio",
+        ["Could not save playback speed"] = "Impossible d'enregistrer la vitesse de lecture",
+        ["Playback speed set to %sx"] = "Vitesse de lecture définie sur %sx",
+        ["Too many bookmarks to save; some were removed"] = "Trop de marque-pages à enregistrer ; certains ont été supprimés",
+        ["%s (saved collection)"] = "%s (collection enregistrée)",
+        ["Library scan limit reached; Browse folders shows more"] = "Limite d'analyse atteinte ; Parcourir les dossiers en affiche plus",
+        ["Some files could not be listed"] = "Certains fichiers n'ont pas pu être listés",
+        ["Chapter %d"] = "Chapitre %d",
+        ["No audio files in %s"] = "Aucun fichier audio dans %s",
+        ["Chapter file not found; starting from the beginning"] = "Fichier de chapitre introuvable ; reprise depuis le début",
+        ["Playback started; state could not be saved"] = "Lecture démarrée ; l'état n'a pas pu être enregistré",
+        ["Audiobooks play best in sequential mode"] = "Les livres audio s'écoutent mieux en mode séquentiel",
+        ["Finished"] = "Terminé",
+        ["Current file: %d%%"] = "Fichier actuel : %d%%",
+        ["Current file position: %s"] = "Position du fichier actuel : %s",
+        ["File Manager is not supported on this device"] = "Le gestionnaire de fichiers n'est pas pris en charge sur cet appareil",
+        ["Could not open File Manager"] = "Impossible d'ouvrir le gestionnaire de fichiers",
+        ["Could not open folder in File Manager"] = "Impossible d'ouvrir le dossier dans le gestionnaire de fichiers",
+        ["No authors folders found"] = "Aucun dossier d'auteur trouvé",
+        ["No series folders found"] = "Aucun dossier de série trouvé",
+        [" · part %d"] = " · partie %d",
+        ["%s to %s"] = "%s à %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Reprendre l'écoute · %d livres enregistrés · %d/%d",
+        ["Previous page"] = "Page précédente",
+        ["Next page"] = "Page suivante",
+        ["No available books on this page"] = "Aucun livre disponible sur cette page",
+        ["Continue listening"] = "Reprendre l'écoute",
+        ["Continue listening: %s"] = "Reprendre l'écoute : %s",
+        ["Continue listening · %d saved books"] = "Reprendre l'écoute · %d livres enregistrés",
+        ["Browse folders"] = "Parcourir les dossiers",
+        ["All audiobooks · scan library"] = "Tous les livres audio · analyser la bibliothèque",
+        ["All audiobooks"] = "Tous les livres audio",
+        ["Authors"] = "Auteurs",
+        ["Series"] = "Séries",
+        ["Settings"] = "Paramètres",
+        ["In progress"] = "En cours",
+        ["Not started"] = "Non commencé",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Ajoutez des fichiers dans Audiobooks sur votre carte SD, puis actualisez.",
+        ["Refresh library"] = "Actualiser la bibliothèque",
+        ["Library refreshed."] = "Bibliothèque actualisée.",
+        ["No chapters found"] = "Aucun chapitre trouvé",
+        ["Position history could not be saved"] = "Impossible d'enregistrer l'historique de position",
+        ["Chapters"] = "Chapitres",
+        ["Chapters %d-%d"] = "Chapitres %d-%d",
+        ["The file is still opening; try again"] = "Le fichier est encore en cours d'ouverture ; réessayez",
+        ["Play this book before adding a bookmark"] = "Écoutez ce livre avant d'ajouter un marque-page",
+        ["Bookmark could not be saved"] = "Impossible d'enregistrer le marque-page",
+        ["That bookmark could not be kept"] = "Ce marque-page n'a pas pu être conservé",
+        ["Bookmark note could not be saved"] = "Impossible d'enregistrer la note du marque-page",
+        ["Bookmark added"] = "Marque-page ajouté",
+        ["Bookmark note (optional)"] = "Note du marque-page (facultatif)",
+        ["Text input busy"] = "Saisie de texte occupée",
+        ["No bookmarks"] = "Aucun marque-page",
+        ["Bookmarks"] = "Marque-pages",
+        ["Bookmark"] = "Marque-page",
+        ["That bookmark is gone"] = "Ce marque-page n'existe plus",
+        ["Play from here"] = "Lire à partir d'ici",
+        ["Delete"] = "Supprimer",
+        ["Bookmark deleted"] = "Marque-page supprimé",
+        ["Could not save bookmark deletion"] = "Impossible d'enregistrer la suppression du marque-page",
+        ["15 minutes"] = "15 minutes",
+        ["30 minutes"] = "30 minutes",
+        ["45 minutes"] = "45 minutes",
+        ["60 minutes"] = "60 minutes",
+        ["90 minutes"] = "90 minutes",
+        ["End of this chapter"] = "Fin de ce chapitre",
+        ["Off"] = "Désactivé",
+        ["Sleep timer"] = "Minuterie de veille",
+        ["Sleep timer: %s"] = "Minuterie de veille : %s",
+        ["Open folder in File Manager"] = "Ouvrir le dossier dans le gestionnaire de fichiers",
+        ["Play selected file"] = "Lire le fichier sélectionné",
+        ["Selected file is no longer available"] = "Le fichier sélectionné n'est plus disponible",
+        ["Resume listening"] = "Reprendre l'écoute",
+        ["Start listening"] = "Commencer l'écoute",
+        ["Play / Pause"] = "Lecture / Pause",
+        ["Add bookmark"] = "Ajouter un marque-page",
+        ["Return to previous position"] = "Revenir à la position précédente",
+        ["Mark as finished"] = "Marquer comme terminé",
+        ["Finished state could not be saved"] = "Impossible d'enregistrer l'état terminé",
+        ["Book controls"] = "Commandes du livre",
+        ["Resume position could not be saved"] = "Impossible d'enregistrer la position de reprise",
+        ["Audiobooks · Reading Room"] = "Livres audio · Salon de lecture",
+        ["Could not apply Reading Room: %s"] = "Impossible d'appliquer le Salon de lecture : %s",
+        ["Audiobooks Reading Room applied for this session"] = "Salon de lecture appliqué pour cette session",
+        ["Reading Room controls are for Audiobooks"] = "Les commandes du Salon de lecture sont réservées aux livres audio",
+    },
+    it = {
+        ["Audiobooks"] = "Audiolibri",
+        ["Audiobooks settings"] = "Impostazioni audiolibri",
+        ["Skip by 30 seconds"] = "Salta di 30 secondi",
+        ["30 second skip requires a newer player"] = "Il salto di 30 secondi richiede un lettore più recente",
+        ["Could not apply transport skip setting"] = "Impossibile applicare l'impostazione di salto",
+        ["Could not save transport skip setting"] = "Impossibile salvare l'impostazione di salto",
+        ["Playback speed: %sx"] = "Velocità di riproduzione: %sx",
+        ["Playback speed"] = "Velocità di riproduzione",
+        ["Playback speed requires a newer player"] = "La velocità di riproduzione richiede un lettore più recente",
+        ["Speed is unavailable for this audio format"] = "La velocità non è disponibile per questo formato audio",
+        ["Could not save playback speed"] = "Impossibile salvare la velocità di riproduzione",
+        ["Playback speed set to %sx"] = "Velocità di riproduzione impostata a %sx",
+        ["Too many bookmarks to save; some were removed"] = "Troppi segnalibri da salvare; alcuni sono stati rimossi",
+        ["%s (saved collection)"] = "%s (raccolta salvata)",
+        ["Library scan limit reached; Browse folders shows more"] = "Limite di scansione raggiunto; Sfoglia cartelle mostra altro",
+        ["Some files could not be listed"] = "Alcuni file non hanno potuto essere elencati",
+        ["Chapter %d"] = "Capitolo %d",
+        ["No audio files in %s"] = "Nessun file audio in %s",
+        ["Chapter file not found; starting from the beginning"] = "File del capitolo non trovato; avvio dall'inizio",
+        ["Playback started; state could not be saved"] = "Riproduzione avviata; impossibile salvare lo stato",
+        ["Audiobooks play best in sequential mode"] = "Gli audiolibri si ascoltano meglio in modalità sequenziale",
+        ["Finished"] = "Completato",
+        ["Current file: %d%%"] = "File attuale: %d%%",
+        ["Current file position: %s"] = "Posizione file attuale: %s",
+        ["File Manager is not supported on this device"] = "Il gestore file non è supportato su questo dispositivo",
+        ["Could not open File Manager"] = "Impossibile aprire il gestore file",
+        ["Could not open folder in File Manager"] = "Impossibile aprire la cartella nel gestore file",
+        ["No authors folders found"] = "Nessuna cartella autori trovata",
+        ["No series folders found"] = "Nessuna cartella serie trovata",
+        [" · part %d"] = " · parte %d",
+        ["%s to %s"] = "da %s a %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Continua ad ascoltare · %d libri salvati · %d/%d",
+        ["Previous page"] = "Pagina precedente",
+        ["Next page"] = "Pagina successiva",
+        ["No available books on this page"] = "Nessun libro disponibile in questa pagina",
+        ["Continue listening"] = "Continua ad ascoltare",
+        ["Continue listening: %s"] = "Continua ad ascoltare: %s",
+        ["Continue listening · %d saved books"] = "Continua ad ascoltare · %d libri salvati",
+        ["Browse folders"] = "Sfoglia cartelle",
+        ["All audiobooks · scan library"] = "Tutti gli audiolibri · scansiona libreria",
+        ["All audiobooks"] = "Tutti gli audiolibri",
+        ["Authors"] = "Autori",
+        ["Series"] = "Serie",
+        ["Settings"] = "Impostazioni",
+        ["In progress"] = "In corso",
+        ["Not started"] = "Non iniziato",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Aggiungi file in Audiobooks sulla scheda SD, poi aggiorna.",
+        ["Refresh library"] = "Aggiorna libreria",
+        ["Library refreshed."] = "Libreria aggiornata.",
+        ["No chapters found"] = "Nessun capitolo trovato",
+        ["Position history could not be saved"] = "Impossibile salvare la cronologia delle posizioni",
+        ["Chapters"] = "Capitoli",
+        ["Chapters %d-%d"] = "Capitoli %d-%d",
+        ["The file is still opening; try again"] = "Il file si sta ancora aprendo; riprova",
+        ["Play this book before adding a bookmark"] = "Riproduci questo libro prima di aggiungere un segnalibro",
+        ["Bookmark could not be saved"] = "Impossibile salvare il segnalibro",
+        ["That bookmark could not be kept"] = "Impossibile mantenere quel segnalibro",
+        ["Bookmark note could not be saved"] = "Impossibile salvare la nota del segnalibro",
+        ["Bookmark added"] = "Segnalibro aggiunto",
+        ["Bookmark note (optional)"] = "Nota segnalibro (opzionale)",
+        ["Text input busy"] = "Inserimento testo occupato",
+        ["No bookmarks"] = "Nessun segnalibro",
+        ["Bookmarks"] = "Segnalibri",
+        ["Bookmark"] = "Segnalibro",
+        ["That bookmark is gone"] = "Quel segnalibro non c'è più",
+        ["Play from here"] = "Riproduci da qui",
+        ["Delete"] = "Elimina",
+        ["Bookmark deleted"] = "Segnalibro eliminato",
+        ["Could not save bookmark deletion"] = "Impossibile salvare l'eliminazione del segnalibro",
+        ["15 minutes"] = "15 minuti",
+        ["30 minutes"] = "30 minuti",
+        ["45 minutes"] = "45 minuti",
+        ["60 minutes"] = "60 minuti",
+        ["90 minutes"] = "90 minuti",
+        ["End of this chapter"] = "Fine di questo capitolo",
+        ["Off"] = "Disattivato",
+        ["Sleep timer"] = "Timer spegnimento",
+        ["Sleep timer: %s"] = "Timer spegnimento: %s",
+        ["Open folder in File Manager"] = "Apri cartella nel gestore file",
+        ["Play selected file"] = "Riproduci file selezionato",
+        ["Selected file is no longer available"] = "Il file selezionato non è più disponibile",
+        ["Resume listening"] = "Riprendi ascolto",
+        ["Start listening"] = "Inizia ascolto",
+        ["Play / Pause"] = "Riproduci / Pausa",
+        ["Add bookmark"] = "Aggiungi segnalibro",
+        ["Return to previous position"] = "Torna alla posizione precedente",
+        ["Mark as finished"] = "Segna come completato",
+        ["Finished state could not be saved"] = "Impossibile salvare lo stato di completamento",
+        ["Book controls"] = "Controlli libro",
+        ["Resume position could not be saved"] = "Impossibile salvare la posizione di ripresa",
+        ["Audiobooks · Reading Room"] = "Audiolibri · Sala di lettura",
+        ["Could not apply Reading Room: %s"] = "Impossibile applicare Sala di lettura: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Sala di lettura applicata per questa sessione",
+        ["Reading Room controls are for Audiobooks"] = "I controlli della Sala di lettura sono per gli audiolibri",
+    },
+    ja = {
+        ["Audiobooks"] = "オーディオブック",
+        ["Audiobooks settings"] = "オーディオブック設定",
+        ["Skip by 30 seconds"] = "30秒スキップ",
+        ["30 second skip requires a newer player"] = "30秒スキップには新しいプレーヤーが必要です",
+        ["Could not apply transport skip setting"] = "スキップ設定を適用できませんでした",
+        ["Could not save transport skip setting"] = "スキップ設定を保存できませんでした",
+        ["Playback speed: %sx"] = "再生速度: %sx",
+        ["Playback speed"] = "再生速度",
+        ["Playback speed requires a newer player"] = "再生速度の変更には新しいプレーヤーが必要です",
+        ["Speed is unavailable for this audio format"] = "この音声形式では速度変更できません",
+        ["Could not save playback speed"] = "再生速度を保存できませんでした",
+        ["Playback speed set to %sx"] = "再生速度を %sx に設定しました",
+        ["Too many bookmarks to save; some were removed"] = "ブックマークが多すぎるため一部削除されました",
+        ["%s (saved collection)"] = "%s (保存済みコレクション)",
+        ["Library scan limit reached; Browse folders shows more"] = "スキャン上限に達しました。フォルダを参照でさらに表示できます",
+        ["Some files could not be listed"] = "一部のファイルを表示できませんでした",
+        ["Chapter %d"] = "チャプター %d",
+        ["No audio files in %s"] = "%s に音声ファイルがありません",
+        ["Chapter file not found; starting from the beginning"] = "チャプターファイルが見つかりません。最初から再生します",
+        ["Playback started; state could not be saved"] = "再生を開始しましたが状態を保存できませんでした",
+        ["Audiobooks play best in sequential mode"] = "オーディオブックは順次再生モードに最適です",
+        ["Finished"] = "再生済み",
+        ["Current file: %d%%"] = "現在のファイル: %d%%",
+        ["Current file position: %s"] = "現在のファイル位置: %s",
+        ["File Manager is not supported on this device"] = "このデバイスではファイルマネージャーはサポートされていません",
+        ["Could not open File Manager"] = "ファイルマネージャーを開けませんでした",
+        ["Could not open folder in File Manager"] = "ファイルマネージャーでフォルダを開けませんでした",
+        ["No authors folders found"] = "著者フォルダが見つかりません",
+        ["No series folders found"] = "シリーズフォルダが見つかりません",
+        [" · part %d"] = " · パート %d",
+        ["%s to %s"] = "%s ～ %s",
+        ["Continue listening · %d saved books · %d/%d"] = "続きを聴く · 保存済み %d 冊 · %d/%d",
+        ["Previous page"] = "前のページ",
+        ["Next page"] = "次のページ",
+        ["No available books on this page"] = "このページに利用可能な本はありません",
+        ["Continue listening"] = "続きを聴く",
+        ["Continue listening: %s"] = "続きを聴く: %s",
+        ["Continue listening · %d saved books"] = "続きを聴く · 保存済み %d 冊",
+        ["Browse folders"] = "フォルダを参照",
+        ["All audiobooks · scan library"] = "すべてのオーディオブック · ライブラリをスキャン",
+        ["All audiobooks"] = "すべてのオーディオブック",
+        ["Authors"] = "著者",
+        ["Series"] = "シリーズ",
+        ["Settings"] = "設定",
+        ["In progress"] = "再生中",
+        ["Not started"] = "未再生",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "SD カードの Audiobooks にファイルを追加して更新してください。",
+        ["Refresh library"] = "ライブラリを更新",
+        ["Library refreshed."] = "ライブラリを更新しました。",
+        ["No chapters found"] = "チャプターが見つかりません",
+        ["Position history could not be saved"] = "位置履歴を保存できませんでした",
+        ["Chapters"] = "チャプター",
+        ["Chapters %d-%d"] = "チャプター %d-%d",
+        ["The file is still opening; try again"] = "ファイルを開いています。もう一度お試しください",
+        ["Play this book before adding a bookmark"] = "ブックマークを追加する前にこの本を再生してください",
+        ["Bookmark could not be saved"] = "ブックマークを保存できませんでした",
+        ["That bookmark could not be kept"] = "そのブックマークを保持できませんでした",
+        ["Bookmark note could not be saved"] = "ブックマークのメモを保存できませんでした",
+        ["Bookmark added"] = "ブックマークを追加しました",
+        ["Bookmark note (optional)"] = "ブックマークのメモ (任意)",
+        ["Text input busy"] = "テキスト入力が使用中です",
+        ["No bookmarks"] = "ブックマークがありません",
+        ["Bookmarks"] = "ブックマーク",
+        ["Bookmark"] = "ブックマーク",
+        ["That bookmark is gone"] = "そのブックマークは削除されています",
+        ["Play from here"] = "ここから再生",
+        ["Delete"] = "削除",
+        ["Bookmark deleted"] = "ブックマークを削除しました",
+        ["Could not save bookmark deletion"] = "ブックマークの削除を保存できませんでした",
+        ["15 minutes"] = "15分",
+        ["30 minutes"] = "30分",
+        ["45 minutes"] = "45分",
+        ["60 minutes"] = "60分",
+        ["90 minutes"] = "90分",
+        ["End of this chapter"] = "このチャプターの終わり",
+        ["Off"] = "オフ",
+        ["Sleep timer"] = "スリープタイマー",
+        ["Sleep timer: %s"] = "スリープタイマー: %s",
+        ["Open folder in File Manager"] = "ファイルマネージャーでフォルダを開く",
+        ["Play selected file"] = "選択したファイルを再生",
+        ["Selected file is no longer available"] = "選択したファイルは利用できなくなりました",
+        ["Resume listening"] = "再生を再開",
+        ["Start listening"] = "再生を開始",
+        ["Play / Pause"] = "再生 / 一時停止",
+        ["Add bookmark"] = "ブックマークを追加",
+        ["Return to previous position"] = "前の位置に戻る",
+        ["Mark as finished"] = "再生済みにする",
+        ["Finished state could not be saved"] = "再生済み状態を保存できませんでした",
+        ["Book controls"] = "ブック操作",
+        ["Resume position could not be saved"] = "再開位置を保存できませんでした",
+        ["Audiobooks · Reading Room"] = "オーディオブック · リーディングルーム",
+        ["Could not apply Reading Room: %s"] = "リーディングルームを適用できませんでした: %s",
+        ["Audiobooks Reading Room applied for this session"] = "このセッションにリーディングルームを適用しました",
+        ["Reading Room controls are for Audiobooks"] = "リーディングルームの操作はオーディオブック専用です",
+    },
+    nl = {
+        ["Audiobooks"] = "Luisterboeken",
+        ["Audiobooks settings"] = "Luisterboekinstellingen",
+        ["Skip by 30 seconds"] = "30 seconden springen",
+        ["30 second skip requires a newer player"] = "30 seconden springen vereist een nieuwere speler",
+        ["Could not apply transport skip setting"] = "Kon springinstelling niet toepassen",
+        ["Could not save transport skip setting"] = "Kon springinstelling niet opslaan",
+        ["Playback speed: %sx"] = "Afspeelsnelheid: %sx",
+        ["Playback speed"] = "Afspeelsnelheid",
+        ["Playback speed requires a newer player"] = "Afspeelsnelheid vereist een nieuwere speler",
+        ["Speed is unavailable for this audio format"] = "Snelheid is niet beschikbaar voor dit audioformaat",
+        ["Could not save playback speed"] = "Kon afspeelsnelheid niet opslaan",
+        ["Playback speed set to %sx"] = "Afspeelsnelheid ingesteld op %sx",
+        ["Too many bookmarks to save; some were removed"] = "Te veel bladwijzers om op te slaan; sommige zijn verwijderd",
+        ["%s (saved collection)"] = "%s (opgeslagen collectie)",
+        ["Library scan limit reached; Browse folders shows more"] = "Scanlimiet bereikt; Mappen doorbladeren toont meer",
+        ["Some files could not be listed"] = "Sommige bestanden konden niet worden weergegeven",
+        ["Chapter %d"] = "Hoofdstuk %d",
+        ["No audio files in %s"] = "Geen audiobestanden in %s",
+        ["Chapter file not found; starting from the beginning"] = "Hoofdstukbestand niet gevonden; start vanaf het begin",
+        ["Playback started; state could not be saved"] = "Afspelen gestart; status kon niet worden opgeslagen",
+        ["Audiobooks play best in sequential mode"] = "Luisterboeken spelen het best in opeenvolgende modus",
+        ["Finished"] = "Voltooid",
+        ["Current file: %d%%"] = "Huidig bestand: %d%%",
+        ["Current file position: %s"] = "Positie huidig bestand: %s",
+        ["File Manager is not supported on this device"] = "Bestandsbeheer wordt niet ondersteund op dit apparaat",
+        ["Could not open File Manager"] = "Kon Bestandsbeheer niet openen",
+        ["Could not open folder in File Manager"] = "Kon map niet openen in Bestandsbeheer",
+        ["No authors folders found"] = "Geen auteursmappen gevonden",
+        ["No series folders found"] = "Geen seriemappen gevonden",
+        [" · part %d"] = " · deel %d",
+        ["%s to %s"] = "%s tot %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Verder luisteren · %d opgeslagen boeken · %d/%d",
+        ["Previous page"] = "Vorige pagina",
+        ["Next page"] = "Volgende pagina",
+        ["No available books on this page"] = "Geen beschikbare boeken op deze pagina",
+        ["Continue listening"] = "Verder luisteren",
+        ["Continue listening: %s"] = "Verder luisteren: %s",
+        ["Continue listening · %d saved books"] = "Verder luisteren · %d opgeslagen boeken",
+        ["Browse folders"] = "Mappen doorbladeren",
+        ["All audiobooks · scan library"] = "Alle luisterboeken · bibliotheek scannen",
+        ["All audiobooks"] = "Alle luisterboeken",
+        ["Authors"] = "Auteurs",
+        ["Series"] = "Series",
+        ["Settings"] = "Instellingen",
+        ["In progress"] = "Bezig",
+        ["Not started"] = "Niet gestart",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Voeg bestanden toe aan Audiobooks op je SD-kaart en vernieuw.",
+        ["Refresh library"] = "Bibliotheek vernieuwen",
+        ["Library refreshed."] = "Bibliotheek vernieuwd.",
+        ["No chapters found"] = "Geen hoofdstukken gevonden",
+        ["Position history could not be saved"] = "Positiegeschiedenis kon niet worden opgeslagen",
+        ["Chapters"] = "Hoofdstukken",
+        ["Chapters %d-%d"] = "Hoofdstukken %d-%d",
+        ["The file is still opening; try again"] = "Het bestand wordt nog geopend; probeer het opnieuw",
+        ["Play this book before adding a bookmark"] = "Speel dit boek af voordat je een bladwijzer toevoegt",
+        ["Bookmark could not be saved"] = "Bladwijzer kon niet worden opgeslagen",
+        ["That bookmark could not be kept"] = "Die bladwijzer kon niet worden bewaard",
+        ["Bookmark note could not be saved"] = "Bladwijzernotitie kon niet worden opgeslagen",
+        ["Bookmark added"] = "Bladwijzer toegevoegd",
+        ["Bookmark note (optional)"] = "Bladwijzernotitie (optioneel)",
+        ["Text input busy"] = "Tekstinvoer bezet",
+        ["No bookmarks"] = "Geen bladwijzers",
+        ["Bookmarks"] = "Bladwijzers",
+        ["Bookmark"] = "Bladwijzer",
+        ["That bookmark is gone"] = "Die bladwijzer bestaat niet meer",
+        ["Play from here"] = "Vanaf hier afspelen",
+        ["Delete"] = "Verwijderen",
+        ["Bookmark deleted"] = "Bladwijzer verwijderd",
+        ["Could not save bookmark deletion"] = "Verwijderen van bladwijzer kon niet worden opgeslagen",
+        ["15 minutes"] = "15 minuten",
+        ["30 minutes"] = "30 minuten",
+        ["45 minutes"] = "45 minuten",
+        ["60 minutes"] = "60 minuten",
+        ["90 minutes"] = "90 minuten",
+        ["End of this chapter"] = "Einde van dit hoofdstuk",
+        ["Off"] = "Uit",
+        ["Sleep timer"] = "Slaaptimer",
+        ["Sleep timer: %s"] = "Slaaptimer: %s",
+        ["Open folder in File Manager"] = "Map openen in Bestandsbeheer",
+        ["Play selected file"] = "Geselecteerd bestand afspelen",
+        ["Selected file is no longer available"] = "Geselecteerd bestand is niet meer beschikbaar",
+        ["Resume listening"] = "Luisteren hervatten",
+        ["Start listening"] = "Beginnen met luisteren",
+        ["Play / Pause"] = "Afspelen / Pauze",
+        ["Add bookmark"] = "Bladwijzer toevoegen",
+        ["Return to previous position"] = "Terug naar vorige positie",
+        ["Mark as finished"] = "Markeren als voltooid",
+        ["Finished state could not be saved"] = "Voltooide status kon niet worden opgeslagen",
+        ["Book controls"] = "Boekbediening",
+        ["Resume position could not be saved"] = "Hervattingspositie kon niet worden opgeslagen",
+        ["Audiobooks · Reading Room"] = "Luisterboeken · Leeskamer",
+        ["Could not apply Reading Room: %s"] = "Kon Leeskamer niet toepassen: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Luisterboeken-Leeskamer toegepast voor deze sessie",
+        ["Reading Room controls are for Audiobooks"] = "Leeskamer-bediening is alleen voor luisterboeken",
+    },
+    pt = {
+        ["Audiobooks"] = "Audiolivros",
+        ["Audiobooks settings"] = "Configurações de audiolivros",
+        ["Skip by 30 seconds"] = "Pular 30 segundos",
+        ["30 second skip requires a newer player"] = "O pulo de 30 segundos requer um reprodutor mais recente",
+        ["Could not apply transport skip setting"] = "Não foi possível aplicar a configuração de pulo",
+        ["Could not save transport skip setting"] = "Não foi possível salvar a configuração de pulo",
+        ["Playback speed: %sx"] = "Velocidade de reprodução: %sx",
+        ["Playback speed"] = "Velocidade de reprodução",
+        ["Playback speed requires a newer player"] = "A velocidade de reprodução requer um reprodutor mais recente",
+        ["Speed is unavailable for this audio format"] = "A velocidade não está disponível para este formato de áudio",
+        ["Could not save playback speed"] = "Não foi possível salvar a velocidade de reprodução",
+        ["Playback speed set to %sx"] = "Velocidade de reprodução definida para %sx",
+        ["Too many bookmarks to save; some were removed"] = "Muitos marcadores para salvar; alguns foram removidos",
+        ["%s (saved collection)"] = "%s (coleção salva)",
+        ["Library scan limit reached; Browse folders shows more"] = "Limite de varredura atingido; Procurar pastas mostra mais",
+        ["Some files could not be listed"] = "Alguns arquivos não puderam ser listados",
+        ["Chapter %d"] = "Capítulo %d",
+        ["No audio files in %s"] = "Nenhum arquivo de áudio em %s",
+        ["Chapter file not found; starting from the beginning"] = "Arquivo do capítulo não encontrado; iniciando do começo",
+        ["Playback started; state could not be saved"] = "Reprodução iniciada; não foi possível salvar o estado",
+        ["Audiobooks play best in sequential mode"] = "Audiolivros tocam melhor no modo sequencial",
+        ["Finished"] = "Concluído",
+        ["Current file: %d%%"] = "Arquivo atual: %d%%",
+        ["Current file position: %s"] = "Posição do arquivo atual: %s",
+        ["File Manager is not supported on this device"] = "O gerenciador de arquivos não é suportado neste dispositivo",
+        ["Could not open File Manager"] = "Não foi possível abrir o gerenciador de arquivos",
+        ["Could not open folder in File Manager"] = "Não foi possível abrir a pasta no gerenciador de arquivos",
+        ["No authors folders found"] = "Nenhuma pasta de autores encontrada",
+        ["No series folders found"] = "Nenhuma pasta de séries encontrada",
+        [" · part %d"] = " · parte %d",
+        ["%s to %s"] = "%s até %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Continuar ouvindo · %d livros salvos · %d/%d",
+        ["Previous page"] = "Página anterior",
+        ["Next page"] = "Próxima página",
+        ["No available books on this page"] = "Nenhum livro disponível nesta página",
+        ["Continue listening"] = "Continuar ouvindo",
+        ["Continue listening: %s"] = "Continuar ouvindo: %s",
+        ["Continue listening · %d saved books"] = "Continuar ouvindo · %d livros salvos",
+        ["Browse folders"] = "Procurar pastas",
+        ["All audiobooks · scan library"] = "Todos os audiolivros · verificar biblioteca",
+        ["All audiobooks"] = "Todos os audiolivros",
+        ["Authors"] = "Autores",
+        ["Series"] = "Séries",
+        ["Settings"] = "Configurações",
+        ["In progress"] = "Em andamento",
+        ["Not started"] = "Não iniciado",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Adicione arquivos à pasta Audiobooks no cartão SD e atualize.",
+        ["Refresh library"] = "Atualizar biblioteca",
+        ["Library refreshed."] = "Biblioteca atualizada.",
+        ["No chapters found"] = "Nenhum capítulo encontrado",
+        ["Position history could not be saved"] = "Não foi possível salvar o histórico de posição",
+        ["Chapters"] = "Capítulos",
+        ["Chapters %d-%d"] = "Capítulos %d-%d",
+        ["The file is still opening; try again"] = "O arquivo ainda está abrindo; tente novamente",
+        ["Play this book before adding a bookmark"] = "Reproduza este livro antes de adicionar um marcador",
+        ["Bookmark could not be saved"] = "Não foi possível salvar o marcador",
+        ["That bookmark could not be kept"] = "Não foi possível manter esse marcador",
+        ["Bookmark note could not be saved"] = "Não foi possível salvar a nota do marcador",
+        ["Bookmark added"] = "Marcador adicionado",
+        ["Bookmark note (optional)"] = "Nota do marcador (opcional)",
+        ["Text input busy"] = "Entrada de texto ocupada",
+        ["No bookmarks"] = "Sem marcadores",
+        ["Bookmarks"] = "Marcadores",
+        ["Bookmark"] = "Marcador",
+        ["That bookmark is gone"] = "Esse marcador não existe mais",
+        ["Play from here"] = "Reproduzir daqui",
+        ["Delete"] = "Excluir",
+        ["Bookmark deleted"] = "Marcador excluído",
+        ["Could not save bookmark deletion"] = "Não foi possível salvar a exclusão do marcador",
+        ["15 minutes"] = "15 minutos",
+        ["30 minutes"] = "30 minutos",
+        ["45 minutes"] = "45 minutos",
+        ["60 minutes"] = "60 minutos",
+        ["90 minutes"] = "90 minutos",
+        ["End of this chapter"] = "Fim deste capítulo",
+        ["Off"] = "Desativado",
+        ["Sleep timer"] = "Temporizador",
+        ["Sleep timer: %s"] = "Temporizador: %s",
+        ["Open folder in File Manager"] = "Abrir pasta no gerenciador de arquivos",
+        ["Play selected file"] = "Reproduzir arquivo selecionado",
+        ["Selected file is no longer available"] = "O arquivo selecionado não está mais disponível",
+        ["Resume listening"] = "Retomar audição",
+        ["Start listening"] = "Começar a ouvir",
+        ["Play / Pause"] = "Reproduzir / Pausar",
+        ["Add bookmark"] = "Adicionar marcador",
+        ["Return to previous position"] = "Voltar à posição anterior",
+        ["Mark as finished"] = "Marcar como concluído",
+        ["Finished state could not be saved"] = "Não foi possível salvar o estado de concluído",
+        ["Book controls"] = "Controles do livro",
+        ["Resume position could not be saved"] = "Não foi possível salvar a posição de retomada",
+        ["Audiobooks · Reading Room"] = "Audiolivros · Sala de leitura",
+        ["Could not apply Reading Room: %s"] = "Não foi possível aplicar a Sala de leitura: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Sala de leitura aplicada para esta sessão",
+        ["Reading Room controls are for Audiobooks"] = "Os controles da Sala de leitura são para audiolivros",
+    },
+    ru = {
+        ["Audiobooks"] = "Аудиокниги",
+        ["Audiobooks settings"] = "Настройки аудиокниг",
+        ["Skip by 30 seconds"] = "Перемотка на 30 секунд",
+        ["30 second skip requires a newer player"] = "Перемотка на 30 секунд требует более новой версии плеера",
+        ["Could not apply transport skip setting"] = "Не удалось применить настройку перемотки",
+        ["Could not save transport skip setting"] = "Не удалось сохранить настройку перемотки",
+        ["Playback speed: %sx"] = "Скорость: %sx",
+        ["Playback speed"] = "Скорость воспроизведения",
+        ["Playback speed requires a newer player"] = "Скорость воспроизведения требует более новой версии плеера",
+        ["Speed is unavailable for this audio format"] = "Изменение скорости недоступно для этого формата",
+        ["Could not save playback speed"] = "Не удалось сохранить скорость воспроизведения",
+        ["Playback speed set to %sx"] = "Скорость воспроизведения: %sx",
+        ["Too many bookmarks to save; some were removed"] = "Слишком много закладок; часть была удалена",
+        ["%s (saved collection)"] = "%s (сохранённая коллекция)",
+        ["Library scan limit reached; Browse folders shows more"] = "Достигнут предел сканирования; в обзоре папок показано больше",
+        ["Some files could not be listed"] = "Некоторые файлы не удалось отобразить",
+        ["Chapter %d"] = "Глава %d",
+        ["No audio files in %s"] = "Нет аудиофайлов в %s",
+        ["Chapter file not found; starting from the beginning"] = "Файл главы не найден; воспроизведение с начала",
+        ["Playback started; state could not be saved"] = "Воспроизведение начато; не удалось сохранить состояние",
+        ["Audiobooks play best in sequential mode"] = "Аудиокниги лучше слушать в последовательном режиме",
+        ["Finished"] = "Прослушано",
+        ["Current file: %d%%"] = "Текущий файл: %d%%",
+        ["Current file position: %s"] = "Позиция в файле: %s",
+        ["File Manager is not supported on this device"] = "Файловый менеджер не поддерживается на этом устройстве",
+        ["Could not open File Manager"] = "Не удалось открыть файловый менеджер",
+        ["Could not open folder in File Manager"] = "Не удалось открыть папку в файловом менеджере",
+        ["No authors folders found"] = "Папки авторов не найдены",
+        ["No series folders found"] = "Папки серий не найдены",
+        [" · part %d"] = " · часть %d",
+        ["%s to %s"] = "%s — %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Продолжить · %d сохр. книг · %d/%d",
+        ["Previous page"] = "Предыдущая страница",
+        ["Next page"] = "Следующая страница",
+        ["No available books on this page"] = "На этой странице нет доступных книг",
+        ["Continue listening"] = "Продолжить прослушивание",
+        ["Continue listening: %s"] = "Продолжить: %s",
+        ["Continue listening · %d saved books"] = "Продолжить · %d сохр. книг",
+        ["Browse folders"] = "Обзор папок",
+        ["All audiobooks · scan library"] = "Все аудиокниги · сканировать библиотеку",
+        ["All audiobooks"] = "Все аудиокниги",
+        ["Authors"] = "Авторы",
+        ["Series"] = "Серии",
+        ["Settings"] = "Настройки",
+        ["In progress"] = "В процессе",
+        ["Not started"] = "Не начатые",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Добавьте файлы в папку Audiobooks на SD-карте и обновите.",
+        ["Refresh library"] = "Обновить библиотеку",
+        ["Library refreshed."] = "Библиотека обновлена.",
+        ["No chapters found"] = "Главы не найдены",
+        ["Position history could not be saved"] = "Не удалось сохранить историю позиций",
+        ["Chapters"] = "Главы",
+        ["Chapters %d-%d"] = "Главы %d-%d",
+        ["The file is still opening; try again"] = "Файл ещё открывается; попробуйте снова",
+        ["Play this book before adding a bookmark"] = "Запустите книгу перед добавлением закладки",
+        ["Bookmark could not be saved"] = "Не удалось сохранить закладку",
+        ["That bookmark could not be kept"] = "Эту закладку не удалось сохранить",
+        ["Bookmark note could not be saved"] = "Не удалось сохранить заметку к закладке",
+        ["Bookmark added"] = "Закладка добавлена",
+        ["Bookmark note (optional)"] = "Заметка к закладке (необязательно)",
+        ["Text input busy"] = "Ввод текста занят",
+        ["No bookmarks"] = "Нет закладок",
+        ["Bookmarks"] = "Закладки",
+        ["Bookmark"] = "Закладка",
+        ["That bookmark is gone"] = "Эта закладка удалена",
+        ["Play from here"] = "Воспроизвести отсюда",
+        ["Delete"] = "Удалить",
+        ["Bookmark deleted"] = "Закладка удалена",
+        ["Could not save bookmark deletion"] = "Не удалось сохранить удаление закладки",
+        ["15 minutes"] = "15 минут",
+        ["30 minutes"] = "30 минут",
+        ["45 minutes"] = "45 минут",
+        ["60 minutes"] = "60 минут",
+        ["90 minutes"] = "90 минут",
+        ["End of this chapter"] = "До конца главы",
+        ["Off"] = "Выкл.",
+        ["Sleep timer"] = "Таймер сна",
+        ["Sleep timer: %s"] = "Таймер сна: %s",
+        ["Open folder in File Manager"] = "Открыть папку в файловом менеджере",
+        ["Play selected file"] = "Воспроизвести выбранный файл",
+        ["Selected file is no longer available"] = "Выбранный файл больше недоступен",
+        ["Resume listening"] = "Продолжить прослушивание",
+        ["Start listening"] = "Начать прослушивание",
+        ["Play / Pause"] = "Воспроизведение / Пауза",
+        ["Add bookmark"] = "Добавить закладку",
+        ["Return to previous position"] = "Вернуться к предыдущей позиции",
+        ["Mark as finished"] = "Отметить как прослушанное",
+        ["Finished state could not be saved"] = "Не удалось сохранить статус прослушивания",
+        ["Book controls"] = "Управление книгой",
+        ["Resume position could not be saved"] = "Не удалось сохранить позицию продолжения",
+        ["Audiobooks · Reading Room"] = "Аудиокниги · Читальный зал",
+        ["Could not apply Reading Room: %s"] = "Не удалось применить Читальный зал: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Читальный зал применён для текущего сеанса",
+        ["Reading Room controls are for Audiobooks"] = "Управление Читальным залом предназначено для аудиокниг",
+    },
+    uk = {
+        ["Audiobooks"] = "Аудіокниги",
+        ["Audiobooks settings"] = "Налаштування аудіокниг",
+        ["Skip by 30 seconds"] = "Перемотування на 30 секунд",
+        ["30 second skip requires a newer player"] = "Перемотування на 30 секунд потребує новішої версії плеєра",
+        ["Could not apply transport skip setting"] = "Не вдалося застосувати налаштування перемотування",
+        ["Could not save transport skip setting"] = "Не вдалося зберегти налаштування перемотування",
+        ["Playback speed: %sx"] = "Швидкість: %sx",
+        ["Playback speed"] = "Швидкість відтворення",
+        ["Playback speed requires a newer player"] = "Швидкість відтворення потребує новішої версії плеєра",
+        ["Speed is unavailable for this audio format"] = "Зміна швидкості недоступна для цього аудіоформату",
+        ["Could not save playback speed"] = "Не вдалося зберегти швидкість відтворення",
+        ["Playback speed set to %sx"] = "Швидкість відтворення: %sx",
+        ["Too many bookmarks to save; some were removed"] = "Забагато закладок для збереження; частину видалено",
+        ["%s (saved collection)"] = "%s (збережена колекція)",
+        ["Library scan limit reached; Browse folders shows more"] = "Досягнуто межі сканування; у перегляді тек показано більше",
+        ["Some files could not be listed"] = "Деякі файли не вдалося показати",
+        ["Chapter %d"] = "Розділ %d",
+        ["No audio files in %s"] = "Немає аудіофайлів у %s",
+        ["Chapter file not found; starting from the beginning"] = "Файл розділу не знайдено; відтворення з початку",
+        ["Playback started; state could not be saved"] = "Відтворення розпочато; не вдалося зберегти стан",
+        ["Audiobooks play best in sequential mode"] = "Аудіокниги найкраще слухати в послідовному режимі",
+        ["Finished"] = "Прослухано",
+        ["Current file: %d%%"] = "Поточний файл: %d%%",
+        ["Current file position: %s"] = "Позиція у файлі: %s",
+        ["File Manager is not supported on this device"] = "Файловий менеджер не підтримується на цьому пристрої",
+        ["Could not open File Manager"] = "Не вдалося відкрити файловий менеджер",
+        ["Could not open folder in File Manager"] = "Не вдалося відкрити теку у файловому менеджері",
+        ["No authors folders found"] = "Теки авторів не знайдено",
+        ["No series folders found"] = "Теки серій не знайдено",
+        [" · part %d"] = " · частина %d",
+        ["%s to %s"] = "%s — %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Продовжити · %d збереж. книг · %d/%d",
+        ["Previous page"] = "Попередня сторінка",
+        ["Next page"] = "Наступна сторінка",
+        ["No available books on this page"] = "На цій сторінці немає доступних книг",
+        ["Continue listening"] = "Продовжити прослуховування",
+        ["Continue listening: %s"] = "Продовжити: %s",
+        ["Continue listening · %d saved books"] = "Продовжити · %d збереж. книг",
+        ["Browse folders"] = "Перегляд тек",
+        ["All audiobooks · scan library"] = "Усі аудіокниги · сканувати бібліотеку",
+        ["All audiobooks"] = "Усі аудіокниги",
+        ["Authors"] = "Автори",
+        ["Series"] = "Серії",
+        ["Settings"] = "Налаштування",
+        ["In progress"] = "У процесі",
+        ["Not started"] = "Не розпочаті",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Додайте файли до теки Audiobooks на SD-карті й оновіть.",
+        ["Refresh library"] = "Оновити бібліотеку",
+        ["Library refreshed."] = "Бібліотеку оновлено.",
+        ["No chapters found"] = "Розділи не знайдено",
+        ["Position history could not be saved"] = "Не вдалося зберегти історію позицій",
+        ["Chapters"] = "Розділи",
+        ["Chapters %d-%d"] = "Розділи %d-%d",
+        ["The file is still opening; try again"] = "Файл ще відкривається; спробуйте знову",
+        ["Play this book before adding a bookmark"] = "Запустіть цю книгу перед додаванням закладки",
+        ["Bookmark could not be saved"] = "Не вдалося зберегти закладку",
+        ["That bookmark could not be kept"] = "Цю закладку не вдалося зберегти",
+        ["Bookmark note could not be saved"] = "Не вдалося зберегти нотатку до закладки",
+        ["Bookmark added"] = "Закладку додано",
+        ["Bookmark note (optional)"] = "Нотатка до закладки (необов'язково)",
+        ["Text input busy"] = "Введення тексту зайняте",
+        ["No bookmarks"] = "Немає закладок",
+        ["Bookmarks"] = "Закладки",
+        ["Bookmark"] = "Закладка",
+        ["That bookmark is gone"] = "Цієї закладки більше немає",
+        ["Play from here"] = "Відтворити звідси",
+        ["Delete"] = "Видалити",
+        ["Bookmark deleted"] = "Закладку видалено",
+        ["Could not save bookmark deletion"] = "Не вдалося зберегти видалення закладки",
+        ["15 minutes"] = "15 хвилин",
+        ["30 minutes"] = "30 хвилин",
+        ["45 minutes"] = "45 хвилин",
+        ["60 minutes"] = "60 хвилин",
+        ["90 minutes"] = "90 хвилин",
+        ["End of this chapter"] = "До кінця розділу",
+        ["Off"] = "Вимк.",
+        ["Sleep timer"] = "Таймер сну",
+        ["Sleep timer: %s"] = "Таймер сну: %s",
+        ["Open folder in File Manager"] = "Відкрити теку у файловому менеджері",
+        ["Play selected file"] = "Відтворити вибраний файл",
+        ["Selected file is no longer available"] = "Вибраний файл більше недоступний",
+        ["Resume listening"] = "Продовжити прослуховування",
+        ["Start listening"] = "Почати прослуховування",
+        ["Play / Pause"] = "Відтворення / Пауза",
+        ["Add bookmark"] = "Додати закладку",
+        ["Return to previous position"] = "Повернутися до попередньої позиції",
+        ["Mark as finished"] = "Позначити як прослухане",
+        ["Finished state could not be saved"] = "Не вдалося зберегти стан прослуханого",
+        ["Book controls"] = "Керування книгою",
+        ["Resume position could not be saved"] = "Не вдалося зберегти позицію продовження",
+        ["Audiobooks · Reading Room"] = "Аудіокниги · Читальна зала",
+        ["Could not apply Reading Room: %s"] = "Не вдалося застосувати Читальну залу: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Читальну залу застосовано для цього сеансу",
+        ["Reading Room controls are for Audiobooks"] = "Керування Читальною залою призначене для аудіокниг",
+    },
+    vi = {
+        ["Audiobooks"] = "Sách nói",
+        ["Audiobooks settings"] = "Cài đặt sách nói",
+        ["Skip by 30 seconds"] = "Tua 30 giây",
+        ["30 second skip requires a newer player"] = "Tua 30 giây cần phiên bản máy phát mới hơn",
+        ["Could not apply transport skip setting"] = "Không thể áp dụng cài đặt tua",
+        ["Could not save transport skip setting"] = "Không thể lưu cài đặt tua",
+        ["Playback speed: %sx"] = "Tốc độ phát: %sx",
+        ["Playback speed"] = "Tốc độ phát",
+        ["Playback speed requires a newer player"] = "Tốc độ phát cần phiên bản máy phát mới hơn",
+        ["Speed is unavailable for this audio format"] = "Tốc độ không khả dụng cho định dạng âm thanh này",
+        ["Could not save playback speed"] = "Không thể lưu tốc độ phát",
+        ["Playback speed set to %sx"] = "Đã đặt tốc độ phát thành %sx",
+        ["Too many bookmarks to save; some were removed"] = "Quá nhiều dấu trang để lưu; một số đã bị xóa",
+        ["%s (saved collection)"] = "%s (bộ sưu tập đã lưu)",
+        ["Library scan limit reached; Browse folders shows more"] = "Đã đạt giới hạn quét; Duyệt thư mục sẽ hiển thị thêm",
+        ["Some files could not be listed"] = "Một số tệp không thể liệt kê",
+        ["Chapter %d"] = "Chương %d",
+        ["No audio files in %s"] = "Không có tệp âm thanh trong %s",
+        ["Chapter file not found; starting from the beginning"] = "Không tìm thấy tệp chương; bắt đầu từ đầu",
+        ["Playback started; state could not be saved"] = "Đã bắt đầu phát; không thể lưu trạng thái",
+        ["Audiobooks play best in sequential mode"] = "Sách nói phát tốt nhất ở chế độ tuần tự",
+        ["Finished"] = "Đã xong",
+        ["Current file: %d%%"] = "Tệp hiện tại: %d%%",
+        ["Current file position: %s"] = "Vị trí tệp hiện tại: %s",
+        ["File Manager is not supported on this device"] = "Trình quản lý tệp không được hỗ trợ trên thiết bị này",
+        ["Could not open File Manager"] = "Không thể mở Trình quản lý tệp",
+        ["Could not open folder in File Manager"] = "Không thể mở thư mục trong Trình quản lý tệp",
+        ["No authors folders found"] = "Không tìm thấy thư mục tác giả",
+        ["No series folders found"] = "Không tìm thấy thư mục bộ sách",
+        [" · part %d"] = " · phần %d",
+        ["%s to %s"] = "%s đến %s",
+        ["Continue listening · %d saved books · %d/%d"] = "Nghe tiếp · %d sách đã lưu · %d/%d",
+        ["Previous page"] = "Trang trước",
+        ["Next page"] = "Trang sau",
+        ["No available books on this page"] = "Không có sách khả dụng trên trang này",
+        ["Continue listening"] = "Nghe tiếp",
+        ["Continue listening: %s"] = "Nghe tiếp: %s",
+        ["Continue listening · %d saved books"] = "Nghe tiếp · %d sách đã lưu",
+        ["Browse folders"] = "Duyệt thư mục",
+        ["All audiobooks · scan library"] = "Tất cả sách nói · quét thư viện",
+        ["All audiobooks"] = "Tất cả sách nói",
+        ["Authors"] = "Tác giả",
+        ["Series"] = "Bộ sách",
+        ["Settings"] = "Cài đặt",
+        ["In progress"] = "Đang nghe",
+        ["Not started"] = "Chưa nghe",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "Thêm tệp vào Audiobooks trên thẻ SD, sau đó làm mới.",
+        ["Refresh library"] = "Làm mới thư viện",
+        ["Library refreshed."] = "Đã làm mới thư viện.",
+        ["No chapters found"] = "Không tìm thấy chương nào",
+        ["Position history could not be saved"] = "Không thể lưu lịch sử vị trí",
+        ["Chapters"] = "Chương",
+        ["Chapters %d-%d"] = "Chương %d-%d",
+        ["The file is still opening; try again"] = "Tệp vẫn đang mở; hãy thử lại",
+        ["Play this book before adding a bookmark"] = "Hãy phát sách này trước khi thêm dấu trang",
+        ["Bookmark could not be saved"] = "Không thể lưu dấu trang",
+        ["That bookmark could not be kept"] = "Không thể giữ dấu trang đó",
+        ["Bookmark note could not be saved"] = "Không thể lưu ghi chú dấu trang",
+        ["Bookmark added"] = "Đã thêm dấu trang",
+        ["Bookmark note (optional)"] = "Ghi chú dấu trang (tùy chọn)",
+        ["Text input busy"] = "Nhập văn bản đang bận",
+        ["No bookmarks"] = "Không có dấu trang",
+        ["Bookmarks"] = "Dấu trang",
+        ["Bookmark"] = "Dấu trang",
+        ["That bookmark is gone"] = "Dấu trang đó không còn nữa",
+        ["Play from here"] = "Phát từ đây",
+        ["Delete"] = "Xóa",
+        ["Bookmark deleted"] = "Đã xóa dấu trang",
+        ["Could not save bookmark deletion"] = "Không thể lưu việc xóa dấu trang",
+        ["15 minutes"] = "15 phút",
+        ["30 minutes"] = "30 phút",
+        ["45 minutes"] = "45 phút",
+        ["60 minutes"] = "60 phút",
+        ["90 minutes"] = "90 phút",
+        ["End of this chapter"] = "Hết chương này",
+        ["Off"] = "Tắt",
+        ["Sleep timer"] = "Hẹn giờ tắt",
+        ["Sleep timer: %s"] = "Hẹn giờ tắt: %s",
+        ["Open folder in File Manager"] = "Mở thư mục trong Trình quản lý tệp",
+        ["Play selected file"] = "Phát tệp đã chọn",
+        ["Selected file is no longer available"] = "Tệp đã chọn không còn khả dụng",
+        ["Resume listening"] = "Tiếp tục nghe",
+        ["Start listening"] = "Bắt đầu nghe",
+        ["Play / Pause"] = "Phát / Tạm dừng",
+        ["Add bookmark"] = "Thêm dấu trang",
+        ["Return to previous position"] = "Quay lại vị trí trước",
+        ["Mark as finished"] = "Đánh dấu đã nghe xong",
+        ["Finished state could not be saved"] = "Không thể lưu trạng thái đã xong",
+        ["Book controls"] = "Điều khiển sách",
+        ["Resume position could not be saved"] = "Không thể lưu vị trí nghe tiếp",
+        ["Audiobooks · Reading Room"] = "Sách nói · Phòng đọc",
+        ["Could not apply Reading Room: %s"] = "Không thể áp dụng Phòng đọc: %s",
+        ["Audiobooks Reading Room applied for this session"] = "Đã áp dụng Phòng đọc sách nói cho phiên này",
+        ["Reading Room controls are for Audiobooks"] = "Điều khiển Phòng đọc chỉ dành cho Sách nói",
+    },
+    zh_CN = {
+        ["Audiobooks"] = "有声书",
+        ["Audiobooks settings"] = "有声书设置",
+        ["Skip by 30 seconds"] = "跳过 30 秒",
+        ["30 second skip requires a newer player"] = "30 秒跳转需要更新版本的播放器",
+        ["Could not apply transport skip setting"] = "无法应用跳转设置",
+        ["Could not save transport skip setting"] = "无法保存跳转设置",
+        ["Playback speed: %sx"] = "播放速度：%sx",
+        ["Playback speed"] = "播放速度",
+        ["Playback speed requires a newer player"] = "播放速度功能需要更新版本的播放器",
+        ["Speed is unavailable for this audio format"] = "此音频格式不支持调整速度",
+        ["Could not save playback speed"] = "无法保存播放速度",
+        ["Playback speed set to %sx"] = "播放速度已设为 %sx",
+        ["Too many bookmarks to save; some were removed"] = "书签过多无法全部保存；已移除部分书签",
+        ["%s (saved collection)"] = "%s（已保存合集）",
+        ["Library scan limit reached; Browse folders shows more"] = "已达扫描上限；浏览文件夹可查看更多",
+        ["Some files could not be listed"] = "部分文件无法列出",
+        ["Chapter %d"] = "第 %d 章",
+        ["No audio files in %s"] = "%s 中没有音频文件",
+        ["Chapter file not found; starting from the beginning"] = "未找到章节文件；从头开始播放",
+        ["Playback started; state could not be saved"] = "已开始播放；无法保存状态",
+        ["Audiobooks play best in sequential mode"] = "有声书在顺序模式下播放效果最佳",
+        ["Finished"] = "已听完",
+        ["Current file: %d%%"] = "当前文件：%d%%",
+        ["Current file position: %s"] = "当前文件位置：%s",
+        ["File Manager is not supported on this device"] = "此设备不支持文件管理器",
+        ["Could not open File Manager"] = "无法打开文件管理器",
+        ["Could not open folder in File Manager"] = "无法在文件管理器中打开文件夹",
+        ["No authors folders found"] = "未找到作者文件夹",
+        ["No series folders found"] = "未找到系列文件夹",
+        [" · part %d"] = " · 第 %d 部分",
+        ["%s to %s"] = "%s 至 %s",
+        ["Continue listening · %d saved books · %d/%d"] = "继续收听 · %d 本已保存图书 · %d/%d",
+        ["Previous page"] = "上一页",
+        ["Next page"] = "下一页",
+        ["No available books on this page"] = "此页没有可用图书",
+        ["Continue listening"] = "继续收听",
+        ["Continue listening: %s"] = "继续收听：%s",
+        ["Continue listening · %d saved books"] = "继续收听 · %d 本已保存图书",
+        ["Browse folders"] = "浏览文件夹",
+        ["All audiobooks · scan library"] = "所有有声书 · 扫描书库",
+        ["All audiobooks"] = "所有有声书",
+        ["Authors"] = "作者",
+        ["Series"] = "系列",
+        ["Settings"] = "设置",
+        ["In progress"] = "进行中",
+        ["Not started"] = "未开始",
+        ["Add files to Audiobooks on your SD card, then refresh."] = "请将文件添加到 SD 卡的 Audiobooks 文件夹，然后刷新。",
+        ["Refresh library"] = "刷新书库",
+        ["Library refreshed."] = "书库已刷新。",
+        ["No chapters found"] = "未找到章节",
+        ["Position history could not be saved"] = "无法保存位置历史记录",
+        ["Chapters"] = "章节",
+        ["Chapters %d-%d"] = "第 %d-%d 章",
+        ["The file is still opening; try again"] = "文件仍在打开中；请重试",
+        ["Play this book before adding a bookmark"] = "请先播放此书再添加书签",
+        ["Bookmark could not be saved"] = "无法保存书签",
+        ["That bookmark could not be kept"] = "无法保留该书签",
+        ["Bookmark note could not be saved"] = "无法保存书签备注",
+        ["Bookmark added"] = "已添加书签",
+        ["Bookmark note (optional)"] = "书签备注（可选）",
+        ["Text input busy"] = "文本输入正忙",
+        ["No bookmarks"] = "没有书签",
+        ["Bookmarks"] = "书签",
+        ["Bookmark"] = "书签",
+        ["That bookmark is gone"] = "该书签已不存在",
+        ["Play from here"] = "从此处播放",
+        ["Delete"] = "删除",
+        ["Bookmark deleted"] = "书签已删除",
+        ["Could not save bookmark deletion"] = "无法保存书签删除操作",
+        ["15 minutes"] = "15 分钟",
+        ["30 minutes"] = "30 分钟",
+        ["45 minutes"] = "45 分钟",
+        ["60 minutes"] = "60 分钟",
+        ["90 minutes"] = "90 分钟",
+        ["End of this chapter"] = "本章结束时",
+        ["Off"] = "关闭",
+        ["Sleep timer"] = "睡眠定时器",
+        ["Sleep timer: %s"] = "睡眠定时器：%s",
+        ["Open folder in File Manager"] = "在文件管理器中打开文件夹",
+        ["Play selected file"] = "播放所选文件",
+        ["Selected file is no longer available"] = "所选文件已不可用",
+        ["Resume listening"] = "继续收听",
+        ["Start listening"] = "开始收听",
+        ["Play / Pause"] = "播放 / 暂停",
+        ["Add bookmark"] = "添加书签",
+        ["Return to previous position"] = "返回上一位置",
+        ["Mark as finished"] = "标记为已听完",
+        ["Finished state could not be saved"] = "无法保存已听完状态",
+        ["Book controls"] = "图书控制",
+        ["Resume position could not be saved"] = "无法保存续播位置",
+        ["Audiobooks · Reading Room"] = "有声书 · 阅览室",
+        ["Could not apply Reading Room: %s"] = "无法应用阅览室：%s",
+        ["Audiobooks Reading Room applied for this session"] = "已为本次会话应用有声书阅览室",
+        ["Reading Room controls are for Audiobooks"] = "阅览室控制仅适用于有声书",
+    },
+}
+
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Audiobooks live under <SD>/Audiobooks as Title/files, Title/CD1/files,
 -- Author/Title/files, Author/Series/Title/files, with optional disc folders,
@@ -112,48 +1271,48 @@ open_settings = function(update_existing)
     local available = plugin.has_capability and plugin.has_capability("playback.transport_skip")
     local rows = {
         {
-            type = "toggle", label = "Skip by 30 seconds", value = skip_by_30,
+            type = "toggle", label = tr("Skip by 30 seconds"), value = skip_by_30,
             icon = ICON_SETTINGS,
             on_change = function(value)
                 if not available then
-                    plugin.show_toast("30 second skip requires a newer player")
+                    plugin.show_toast(tr("30 second skip requires a newer player"))
                     return
                 end
                 local previous = skip_by_30
                 skip_by_30 = value == true
                 if not set_transport_skip(skip_by_30) then
                     skip_by_30 = previous
-                    plugin.show_toast("Could not apply transport skip setting")
+                    plugin.show_toast(tr("Could not apply transport skip setting"))
                     return
                 end
                 if not save_settings() then
                     skip_by_30 = previous
                     set_transport_skip(skip_by_30)
-                    plugin.show_toast("Could not save transport skip setting")
+                    plugin.show_toast(tr("Could not save transport skip setting"))
                     return
                 end
             end,
         },
     }
     rows[#rows + 1] = {
-        type = "row", label = "Playback speed: " .. tostring(playback_speed) .. "x",
+        type = "row", label = string.format(tr("Playback speed: %sx"), tostring(playback_speed)),
         icon = ICON_SETTINGS,
         on_select = function() open_speed_menu(true) end,
     }
-    plugin.show_settings_list("Audiobooks settings", rows,
+    plugin.show_settings_list(tr("Audiobooks settings"), rows,
         update_existing and { update = true } or nil)
 end
 
 open_speed_menu = function(refresh_settings)
     if not speed_supported() then
-        plugin.show_toast("Playback speed requires a newer player")
+        plugin.show_toast(tr("Playback speed requires a newer player"))
         return
     end
     local choices = {}
     for _, value in ipairs(SPEEDS) do
         choices[#choices + 1] = tostring(value) .. "x"
     end
-    plugin.show_list("Playback speed", choices, function(index)
+    plugin.show_list(tr("Playback speed"), choices, function(index)
         local speed = SPEEDS[index]
         if not speed then return end
         if not refresh_settings and not current_audiobook_path() then return end
@@ -161,7 +1320,7 @@ open_speed_menu = function(refresh_settings)
         local defer_until_ready = active_path and speed_waiting_for_resume(active_path)
         local previous = playback_speed
         if active_path and not defer_until_ready and not apply_speed(speed) then
-            plugin.show_toast("Speed is unavailable for this audio format")
+            plugin.show_toast(tr("Speed is unavailable for this audio format"))
             return
         end
         playback_speed = speed
@@ -172,7 +1331,7 @@ open_speed_menu = function(refresh_settings)
             else
                 speed_retry_pending = true
             end
-            plugin.show_toast("Could not save playback speed")
+            plugin.show_toast(tr("Could not save playback speed"))
             return
         end
         speed_retry_pending = active_path == nil or defer_until_ready == true
@@ -181,7 +1340,7 @@ open_speed_menu = function(refresh_settings)
             -- so Back returns to the updated playback-speed label.
             open_settings(true)
         end
-        plugin.show_toast("Playback speed set to " .. tostring(speed) .. "x")
+        plugin.show_toast(string.format(tr("Playback speed set to %sx"), tostring(speed)))
     end)
 end
 
@@ -536,7 +1695,7 @@ local function save_state()
         end
         if dropped_marks and not warned_state_full then
             warned_state_full = true
-            plugin.show_toast("Too many bookmarks to save; some were removed")
+            plugin.show_toast(tr("Too many bookmarks to save; some were removed"))
         end
     end
     state_dirty = not ok
@@ -672,7 +1831,7 @@ local function scan_library()
                             if saved and (saved.file or saved.finished or #(saved.bookmarks or {}) > 0
                                 or #(saved.history or {}) > 0) and has_audio(path, 2) then
                                 -- Old releases treated this whole series as one book.
-                                add(key, child.name .. " (saved collection)", root.name, child.name)
+                                add(key, string.format(tr("%s (saved collection)"), child.name), root.name, child.name)
                             end
                             for _, book in ipairs(entries(path)) do
                                 if book.dir and has_audio(path .. "/" .. book.name, 2) then
@@ -691,7 +1850,7 @@ local function scan_library()
     saved_books_hydrated = false
     if partial and not warned_scan_limit then
         warned_scan_limit = true
-        plugin.show_toast("Library scan limit reached; Browse folders shows more")
+        plugin.show_toast(tr("Library scan limit reached; Browse folders shows more"))
     end
 end
 
@@ -801,7 +1960,7 @@ local function scan_book(book, quiet)
         end
     end
     if cut and not quiet then
-        plugin.show_toast("Some files could not be listed")
+        plugin.show_toast(tr("Some files could not be listed"))
     end
     return files
 end
@@ -1049,7 +2208,7 @@ local function parse_id3(path, size)
     end)
     for i, c in ipairs(chapters) do
         if c.title == "" then
-            c.title = "Chapter " .. i
+            c.title = string.format(tr("Chapter %d"), i)
         end
     end
     return chapters
@@ -1115,7 +2274,7 @@ local function parse_cue(path, book, audio_path)
                 if selected and mm then
                     local start = (tonumber(mm) * 60 + tonumber(ss)) + tonumber(ff) / 75
                     entries[#entries + 1] =
-                        { start = start, title = track_title or ("Chapter " .. (#entries + 1)) }
+                        { start = start, title = track_title or string.format(tr("Chapter %d"), #entries + 1) }
                 end
                 pos = e + 1
             end
@@ -1380,7 +2539,7 @@ local function parse_mp4(path, size)
     end)
     for i, c in ipairs(chapters) do
         if c.title == "" then
-            c.title = "Chapter " .. i
+            c.title = string.format(tr("Chapter %d"), i)
         end
     end
     return chapters
@@ -1418,7 +2577,7 @@ local function chapter_list(book, file)
     for i, c in ipairs(chapters) do
         if finite(c.start, 0, 10000000) then
             out[#out + 1] =
-                { start = c.start, title = cap(c.title ~= "" and c.title or ("Chapter " .. i), 160) }
+                { start = c.start, title = cap(c.title ~= "" and c.title or string.format(tr("Chapter %d"), i), 160) }
         end
     end
     -- Kept for the session only: parsing is cheap, and cached lists in the
@@ -1488,7 +2647,7 @@ local function start_book(book, rel, position, record_jump)
     remember_book(book)
     local files = get_files(book)
     if #files == 0 then
-        plugin.show_toast("No audio files in " .. cap(book.title, 100))
+        plugin.show_toast(string.format(tr("No audio files in %s"), cap(book.title, 100)))
         return
     end
     local idx
@@ -1501,7 +2660,7 @@ local function start_book(book, rel, position, record_jump)
     if not idx then
         -- A saved chapter file that is gone: its offset belongs to nothing.
         if rel and rel ~= "" then
-            plugin.show_toast("Chapter file not found; starting from the beginning")
+            plugin.show_toast(tr("Chapter file not found; starting from the beginning"))
         end
         idx, position = 1, 0
     end
@@ -1528,12 +2687,12 @@ local function start_book(book, rel, position, record_jump)
     s.finished_manual = false
     state_dirty = true
     if not save_state() then
-        plugin.show_toast("Playback started; state could not be saved")
+        plugin.show_toast(tr("Playback started; state could not be saved"))
     end
     if not warned_mode then
         local mode = plugin.get_play_mode()
         if mode == "shuffle" or mode == "repeat_one" then
-            plugin.show_toast("Audiobooks play best in sequential mode")
+            plugin.show_toast(tr("Audiobooks play best in sequential mode"))
             warned_mode = true
         end
     end
@@ -1564,12 +2723,12 @@ local function book_progress(book)
         return ""
     end
     if s.finished then
-        return "Finished"
+        return tr("Finished")
     end
     if s.file and s.file ~= "" then
         local position, duration = s.position or 0, s.duration or 0
-        return duration > 0 and ("Current file: " .. math.floor(position / duration * 100) .. "%")
-            or ("Current file position: " .. time_label(position))
+        return duration > 0 and string.format(tr("Current file: %d%%"), math.floor(position / duration * 100))
+            or string.format(tr("Current file position: %s"), time_label(position))
     end
     return ""
 end
@@ -1641,18 +2800,18 @@ end
 
 local function open_audiobooks_folder(folder)
     if not (plugin.has_capability and plugin.has_capability("ui.file_manager")) then
-        plugin.show_toast("File Manager is not supported on this device")
+        plugin.show_toast(tr("File Manager is not supported on this device"))
         return
     end
     folder = folder or ROOT
     pcall(plugin.mkdir, ROOT)
     local ok, res, err = pcall(plugin.open_file_manager, folder)
     if not ok then
-        plugin.show_toast("Could not open File Manager")
+        plugin.show_toast(tr("Could not open File Manager"))
         return
     end
     if not res then
-        plugin.show_toast(err or "Could not open folder in File Manager")
+        plugin.show_toast(err or tr("Could not open folder in File Manager"))
     end
 end
 
@@ -1716,6 +2875,7 @@ end
 -- two settings-screen slots. Numbered ranges also bound large author lists.
 local function open_shelves(field, title)
     if not books then scan_library() end
+    title = tr(title)
     local groups, keys = {}, {}
     for _, book in ipairs(books) do
         local name = book[field] or ""
@@ -1726,14 +2886,17 @@ local function open_shelves(field, title)
         end
     end
     table.sort(keys, natural_less)
-    if #keys == 0 then plugin.show_toast("No " .. title:lower() .. " folders found"); return end
+    if #keys == 0 then
+        plugin.show_toast(field == "series" and tr("No series folders found") or tr("No authors folders found"))
+        return
+    end
     local shelves = {}
     for _, key in ipairs(keys) do
         local group = groups[key]
         for first = 1, #group, MAX_ROWS do
             local slice = {}
             for i = first, math.min(#group, first + MAX_ROWS - 1) do slice[#slice + 1] = group[i] end
-            shelves[#shelves + 1] = { label = key .. (#group > MAX_ROWS and (" · part " .. math.ceil(first / MAX_ROWS)) or ""), books = slice }
+            shelves[#shelves + 1] = { label = key .. (#group > MAX_ROWS and string.format(tr(" · part %d"), math.ceil(first / MAX_ROWS)) or ""), books = slice }
         end
     end
     local function show_page(first)
@@ -1749,7 +2912,7 @@ local function open_shelves(field, title)
     local rows, starts = {}, {}
     for first = 1, #shelves, MAX_ROWS do
         starts[#starts + 1] = first
-        rows[#rows + 1] = list_row(shelves[first].label .. " to " .. shelves[math.min(#shelves, first + MAX_ROWS - 1)].label, ICON_LIBRARY)
+        rows[#rows + 1] = list_row(string.format(tr("%s to %s"), shelves[first].label, shelves[math.min(#shelves, first + MAX_ROWS - 1)].label), ICON_LIBRARY)
     end
     plugin.show_list(title, rows, function(i) if starts[i] then show_page(starts[i]) end end)
 end
@@ -1851,10 +3014,10 @@ local function open_continue_list(page)
             wrap = wrap == true and settings_wrap == true, on_select = action,
         }
     end
-    add_row("Continue listening · " .. #entries .. " saved books · " .. page .. "/" .. page_count,
+    add_row(string.format(tr("Continue listening · %d saved books · %d/%d"), #entries, page, page_count),
         ICON_IN_PROGRESS, function() end, true)
     if page > 1 then
-        add_row("Previous page", ICON_LIBRARY, function() open_continue_list(page - 1) end)
+        add_row(tr("Previous page"), ICON_LIBRARY, function() open_continue_list(page - 1) end)
     end
     local available = 0
     for i = first, last do
@@ -1867,12 +3030,12 @@ local function open_continue_list(page)
         end
     end
     if page < page_count then
-        add_row("Next page", ICON_LIBRARY, function() open_continue_list(page + 1) end)
+        add_row(tr("Next page"), ICON_LIBRARY, function() open_continue_list(page + 1) end)
     end
     if available == 0 then
-        add_row("No available books on this page", ICON_BOOK, function() end)
+        add_row(tr("No available books on this page"), ICON_BOOK, function() end)
     end
-    plugin.show_settings_list("Continue listening", rows, { update = true })
+    plugin.show_settings_list(tr("Continue listening"), rows, { update = true })
 end
 
 local function open_library()
@@ -1897,21 +3060,21 @@ local function open_library()
         if author ~= "" then continuation[#continuation + 1] = author end
         local progress = book_progress(recent)
         if progress ~= "" then continuation[#continuation + 1] = progress end
-        local label = "Continue listening: " .. recent.title
+        local label = string.format(tr("Continue listening: %s"), recent.title)
             .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, ICON_BOOK, function() resume_book(recent) end, true)
     end
     local continue_count = #saved_books
     if continue_count > 0 then
-        add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
+        add_row(string.format(tr("Continue listening · %d saved books"), continue_count), ICON_IN_PROGRESS,
             function() open_continue_list(1) end)
     end
-    add_row("Browse folders", ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
-    add_row("All audiobooks · scan library", ICON_LIBRARY, open_legacy_library)
-    add_row("Authors", ICON_LIBRARY, function() open_shelves("author", "Authors") end)
-    add_row("Series", ICON_LIBRARY, function() open_shelves("series", "Series") end)
-    add_row("Settings", ICON_SETTINGS, open_settings)
-    plugin.show_settings_list("Audiobooks", rows)
+    add_row(tr("Browse folders"), ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
+    add_row(tr("All audiobooks · scan library"), ICON_LIBRARY, open_legacy_library)
+    add_row(tr("Authors"), ICON_LIBRARY, function() open_shelves("author", "Authors") end)
+    add_row(tr("Series"), ICON_LIBRARY, function() open_shelves("series", "Series") end)
+    add_row(tr("Settings"), ICON_SETTINGS, open_settings)
+    plugin.show_settings_list(tr("Audiobooks"), rows)
 end
 
 open_legacy_library = function()
@@ -1939,22 +3102,22 @@ open_legacy_library = function()
         if author ~= "" then continuation[#continuation + 1] = author end
         local progress = book_progress(recent)
         if progress ~= "" then continuation[#continuation + 1] = progress end
-        local label = "Continue listening: " .. recent.title
+        local label = string.format(tr("Continue listening: %s"), recent.title)
             .. (#continuation > 0 and ("\n" .. table.concat(continuation, " · ")) or "")
         add_row(label, cover_for(recent), function() resume_book(recent) end, true)
     end
     local continue_count = #saved_progress
     if continue_count > 0 then
-        add_row("Continue listening · " .. continue_count .. " saved books", ICON_IN_PROGRESS,
+        add_row(string.format(tr("Continue listening · %d saved books"), continue_count), ICON_IN_PROGRESS,
             function() open_continue_list(1) end)
     end
-    add_row("Browse folders", ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
-    add_row("All audiobooks (" .. #books .. ")", ICON_LIBRARY, function()
-        split_group("All audiobooks", books)
+    add_row(tr("Browse folders"), ICON_LIBRARY, function() open_audiobooks_folder(ROOT) end)
+    add_row(tr("All audiobooks") .. " (" .. #books .. ")", ICON_LIBRARY, function()
+        split_group(tr("All audiobooks"), books)
     end)
-    add_row("Authors", ICON_LIBRARY, function() open_shelves("author", "Authors") end)
-    add_row("Series", ICON_LIBRARY, function() open_shelves("series", "Series") end)
-    add_row("Settings", ICON_SETTINGS, open_settings)
+    add_row(tr("Authors"), ICON_LIBRARY, function() open_shelves("author", "Authors") end)
+    add_row(tr("Series"), ICON_LIBRARY, function() open_shelves("series", "Series") end)
+    add_row(tr("Settings"), ICON_SETTINGS, open_settings)
     for _, spec in ipairs({
         { "In progress", "progress", ICON_IN_PROGRESS },
         { "Not started", "new", ICON_NEW },
@@ -1962,26 +3125,26 @@ open_legacy_library = function()
     }) do
         local group = group_for(spec[2])
         if #group > 0 then
-            add_row(spec[1] .. " (" .. #group .. ")", spec[3], function()
-                split_group(spec[1], group_for(spec[2]))
+            add_row(tr(spec[1]) .. " (" .. #group .. ")", spec[3], function()
+                split_group(tr(spec[1]), group_for(spec[2]))
             end)
         end
     end
     if #books == 0 then
-        plugin.show_toast("Add files to Audiobooks on your SD card, then refresh.")
+        plugin.show_toast(tr("Add files to Audiobooks on your SD card, then refresh."))
     end
-    add_row("Refresh library", ICON_REFRESH, function()
+    add_row(tr("Refresh library"), ICON_REFRESH, function()
         books, file_cache, chapter_cache = nil, {}, {}
         file_cache_order, chapter_cache_order = {}, {}
         scan_library()
         if #books == 0 then
-            plugin.show_toast("Add files to Audiobooks on your SD card, then refresh.")
+            plugin.show_toast(tr("Add files to Audiobooks on your SD card, then refresh."))
         else
-            plugin.show_toast("Library refreshed.")
+            plugin.show_toast(tr("Library refreshed."))
         end
         open_legacy_library()
     end)
-    plugin.show_settings_list("Audiobooks", rows, { update = true })
+    plugin.show_settings_list(tr("Audiobooks"), rows, { update = true })
 end
 
 local function chapters_for_book(book)
@@ -2004,7 +3167,7 @@ end
 local function open_chapters(book)
     local chapters, embedded = chapters_for_book(book)
     if #chapters == 0 then
-        plugin.show_toast("No chapters found")
+        plugin.show_toast(tr("No chapters found"))
         return
     end
     local current = current_for_book(book)
@@ -2029,7 +3192,7 @@ local function open_chapters(book)
             local st = ensure_state(book.key)
             st.finished, st.finished_manual = false, false
             if not save_state() then
-                plugin.show_toast("Position history could not be saved")
+                plugin.show_toast(tr("Position history could not be saved"))
             end
             begin_seek(c.file.path, c.start, book.key, c.file.name)
             plugin.seek(c.start)
@@ -2065,7 +3228,7 @@ local function open_chapters(book)
         end, selected and { selected = selected } or nil)
     end
     if #chapters <= MAX_ROWS then
-        show_range(1, #chapters, "Chapters")
+        show_range(1, #chapters, tr("Chapters"))
         return
     end
     local parts = {}
@@ -2074,9 +3237,9 @@ local function open_chapters(book)
     end
     local labels = {}
     for i, part in ipairs(parts) do
-        labels[i] = list_row("Chapters " .. part[1] .. "-" .. part[2], ICON_CHAPTERS)
+        labels[i] = list_row(string.format(tr("Chapters %d-%d"), part[1], part[2]), ICON_CHAPTERS)
     end
-    plugin.show_list("Chapters", labels, function(i)
+    plugin.show_list(tr("Chapters"), labels, function(i)
         local part = parts[i]
         if part then
             show_range(part[1], part[2], labels[i].label)
@@ -2098,7 +3261,7 @@ local function add_bookmark(book)
     if file then
         pos = trusted_position(file.path)
         if not pos then
-            plugin.show_toast("The file is still opening; try again")
+            plugin.show_toast(tr("The file is still opening; try again"))
             return
         end
     else
@@ -2113,7 +3276,7 @@ local function add_bookmark(book)
         end
     end
     if not file then
-        plugin.show_toast("Play this book before adding a bookmark")
+        plugin.show_toast(tr("Play this book before adding a bookmark"))
         return
     end
     local s = ensure_state(book.key)
@@ -2123,7 +3286,7 @@ local function add_bookmark(book)
         table.remove(s.bookmarks, 1)
     end
     if not save_state() then
-        plugin.show_toast("Bookmark could not be saved")
+        plugin.show_toast(tr("Bookmark could not be saved"))
     end
     local new_id = bookmark_serial
     local function store(note)
@@ -2131,21 +3294,21 @@ local function add_bookmark(book)
         -- limit, and another one can share its file and position.
         local _, target = bookmark_index(book, new_id)
         if not target then
-            plugin.show_toast("That bookmark could not be kept")
+            plugin.show_toast(tr("That bookmark could not be kept"))
             return
         end
         target.note = cap(note, 120)
         if not save_state() then
-            plugin.show_toast("Bookmark note could not be saved")
+            plugin.show_toast(tr("Bookmark note could not be saved"))
         else
-            plugin.show_toast("Bookmark added")
+            plugin.show_toast(tr("Bookmark added"))
         end
     end
-    local opened = plugin.show_text_input("Bookmark note (optional)", nil, false, function(note)
+    local opened = plugin.show_text_input(tr("Bookmark note (optional)"), nil, false, function(note)
         store(note)
     end)
     if opened == false then
-        plugin.show_toast("Text input busy")
+        plugin.show_toast(tr("Text input busy"))
     end
     -- The empty bookmark is already durable if Back closes the singleton keypad.
 end
@@ -2153,7 +3316,7 @@ end
 local function open_bookmarks(book)
     local marks = ensure_state(book.key).bookmarks
     if #marks == 0 then
-        plugin.show_toast("No bookmarks")
+        plugin.show_toast(tr("No bookmarks"))
         return
     end
     local rows, ids = {}, {}
@@ -2166,16 +3329,16 @@ local function open_bookmarks(book)
         rows[#rows + 1] = list_row(((b.note ~= "" and b.note) or b.file) .. " @ " .. time_label(b.position), ICON_BOOKMARK)
         ids[#ids + 1] = b.id
     end
-    plugin.show_list("Bookmarks", rows, function(index)
+    plugin.show_list(tr("Bookmarks"), rows, function(index)
         local id = ids[index]
         if not id or not bookmark_index(book, id) then
-            plugin.show_toast("That bookmark is gone")
+            plugin.show_toast(tr("That bookmark is gone"))
             return
         end
-        plugin.show_list("Bookmark", { list_row("Play from here", ICON_PLAY), list_row("Delete", ICON_BOOKMARK) }, function(action)
+        plugin.show_list(tr("Bookmark"), { list_row(tr("Play from here"), ICON_PLAY), list_row(tr("Delete"), ICON_BOOKMARK) }, function(action)
             local at, current = bookmark_index(book, id)
             if not at then
-                plugin.show_toast("That bookmark is gone")
+                plugin.show_toast(tr("That bookmark is gone"))
                 return
             end
             if action == 1 then
@@ -2183,9 +3346,9 @@ local function open_bookmarks(book)
             else
                 table.remove(ensure_state(book.key).bookmarks, at)
                 if save_state() then
-                    plugin.show_toast("Bookmark deleted")
+                    plugin.show_toast(tr("Bookmark deleted"))
                 else
-                    plugin.show_toast("Could not save bookmark deletion")
+                    plugin.show_toast(tr("Could not save bookmark deletion"))
                 end
             end
         end)
@@ -2202,17 +3365,25 @@ local function undo_jump(book)
     if path then
         start_book(book, h.file, h.position, false)
     elseif not save_state() then
-        plugin.show_toast("Position history could not be saved")
+        plugin.show_toast(tr("Position history could not be saved"))
     end
 end
 
 local function sleep_menu(book)
-    local choices = { "15 minutes", "30 minutes", "45 minutes", "60 minutes", "90 minutes", "End of this chapter", "Off" }
+    local choices = {
+        tr("15 minutes"),
+        tr("30 minutes"),
+        tr("45 minutes"),
+        tr("60 minutes"),
+        tr("90 minutes"),
+        tr("End of this chapter"),
+        tr("Off"),
+    }
     local choice_rows = {}
     for i, label in ipairs(choices) do
         choice_rows[i] = list_row(label, i == 6 and ICON_CHAPTERS or ICON_SLEEP)
     end
-    plugin.show_list("Sleep timer", choice_rows, function(i)
+    plugin.show_list(tr("Sleep timer"), choice_rows, function(i)
         sleep_book, sleep_timer, sleep_chapter, sleep_pause = book.key, nil, nil, nil
         if i <= 5 then
             sleep_timer = { remaining = ({ 900, 1800, 2700, 3600, 5400 })[i] }
@@ -2232,7 +3403,7 @@ local function sleep_menu(book)
                     local chapters = chapter_list(book, file)
                     local position = counters_trusted(file.path) and plugin.get_position() or nil
                     if not position then
-                        plugin.show_toast("The file is still opening; try again")
+                        plugin.show_toast(tr("The file is still opening; try again"))
                         sleep_book = nil
                         return
                     end
@@ -2256,7 +3427,7 @@ local function sleep_menu(book)
                 end
             end
         end
-        plugin.show_toast("Sleep timer: " .. choices[i])
+        plugin.show_toast(string.format(tr("Sleep timer: %s"), choices[i]))
     end)
 end
 
@@ -2272,12 +3443,12 @@ open_book = function(book)
         }
     end
     local heading = book.title .. (book.author ~= "" and ("\n" .. book.author) or "")
-    add_row("Open folder in File Manager", ICON_LIBRARY, function()
+    add_row(tr("Open folder in File Manager"), ICON_LIBRARY, function()
         open_audiobooks_folder(book.dir or ROOT)
     end)
     add_row(heading, cover_for(book), function() end, true)
     if book.initial_file then
-        add_row("Play selected file", ICON_PLAY, function()
+        add_row(tr("Play selected file"), ICON_PLAY, function()
             local files = get_files(book)
             for _, file in ipairs(files) do
                 if file.name == book.initial_file then
@@ -2285,11 +3456,11 @@ open_book = function(book)
                     return
                 end
             end
-            plugin.show_toast("Selected file is no longer available")
+            plugin.show_toast(tr("Selected file is no longer available"))
         end)
     end
     local can_resume = s.file and s.file ~= "" and not s.finished
-    add_row(can_resume and "Resume listening" or "Start listening", ICON_PLAY, function()
+    add_row(can_resume and tr("Resume listening") or tr("Start listening"), ICON_PLAY, function()
         local current = ensure_state(book.key)
         if current.finished then
             local files = get_files(book)
@@ -2310,28 +3481,28 @@ open_book = function(book)
     end)
     local loaded = current_for_book(book) ~= nil and (plugin.is_playing() or plugin.is_paused())
     if loaded then
-        add_row("Play / Pause", ICON_PLAY, function()
+        add_row(tr("Play / Pause"), ICON_PLAY, function()
             if current_for_book(book) then plugin.toggle_pause() end
         end)
     end
-    add_row("Chapters", ICON_CHAPTERS, function() open_chapters(book) end)
-    add_row("Add bookmark", ICON_BOOKMARK, function() add_bookmark(book) end)
-    add_row("Bookmarks", ICON_BOOKMARKS, function() open_bookmarks(book) end)
+    add_row(tr("Chapters"), ICON_CHAPTERS, function() open_chapters(book) end)
+    add_row(tr("Add bookmark"), ICON_BOOKMARK, function() add_bookmark(book) end)
+    add_row(tr("Bookmarks"), ICON_BOOKMARKS, function() open_bookmarks(book) end)
     if #s.history > 0 then
-        add_row("Return to previous position", ICON_HISTORY, function()
+        add_row(tr("Return to previous position"), ICON_HISTORY, function()
             if #ensure_state(book.key).history > 0 then undo_jump(book) end
         end)
     end
-    add_row("Sleep timer", ICON_SLEEP, function() sleep_menu(book) end)
+    add_row(tr("Sleep timer"), ICON_SLEEP, function() sleep_menu(book) end)
     rows[#rows + 1] = {
-        type = "toggle", label = "Mark as finished", value = s.finished == true,
+        type = "toggle", label = tr("Mark as finished"), value = s.finished == true,
         icon = ICON_FINISHED, on_change = function(value)
             local now = ensure_state(book.key)
             now.finished, now.finished_manual = value == true, true
-            if not save_state() then plugin.show_toast("Finished state could not be saved") end
+            if not save_state() then plugin.show_toast(tr("Finished state could not be saved")) end
         end,
     }
-    plugin.show_settings_list("Book controls", rows)
+    plugin.show_settings_list(tr("Book controls"), rows)
 end
 
 local function service_seek()
@@ -2355,7 +3526,7 @@ local function service_seek()
             local s = ensure_state(q.book_key)
             s.file, s.position, s.duration, s.last_played = q.file, position, plugin.get_duration(), os.time()
             if not save_state() then
-                plugin.show_toast("Resume position could not be saved")
+                plugin.show_toast(tr("Resume position could not be saved"))
             end
         end
         state_dirty = true
@@ -2822,22 +3993,22 @@ plugin.set_interval(1, function()
     end
 end)
 
-plugin.register_list_item("books", "Audiobooks", open_library, { icon = ICON_BOOK })
+plugin.register_list_item("books", tr("Audiobooks"), open_library, { icon = ICON_BOOK })
 
 -- The Reading Room is registered by Audiobooks itself so its actions can use
 -- the existing book controls and persisted speed setting.
 local reading_room = {
     id = "example.audiobooks.reading_room",
-    name = "Audiobooks · Reading Room",
+    name = tr("Audiobooks · Reading Room"),
     xml = "Audiobooks/player_layouts/reading_room.xml",
 }
 local function apply_reading_room(quiet)
     local ok, err = pcall(plugin.set_player_layout, reading_room)
     if not ok then
-        if not quiet then plugin.show_toast("Could not apply Reading Room: " .. tostring(err)) end
+        if not quiet then plugin.show_toast(string.format(tr("Could not apply Reading Room: %s"), tostring(err))) end
         return false
     end
-    if not quiet then plugin.show_toast("Audiobooks Reading Room applied for this session") end
+    if not quiet then plugin.show_toast(tr("Audiobooks Reading Room applied for this session")) end
     return true
 end
 
@@ -2851,7 +4022,7 @@ local function reading_menu()
     if book then
         open_book(book)
     else
-        plugin.show_toast("Reading Room controls are for Audiobooks")
+        plugin.show_toast(tr("Reading Room controls are for Audiobooks"))
     end
 end
 

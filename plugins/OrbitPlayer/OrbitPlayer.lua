@@ -3,14 +3,56 @@
 plugin.define({
     id = "org.compas.orbit_player",
     name = "Orbit Player",
-    version = "1.0.6",
-    api_min = 17,
+    version = "1.1.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Orbit Player"] = "Orbit-Player",
+    },
+    es = {
+        ["Orbit Player"] = "Reproductor órbita",
+    },
+    fi = {
+        ["Orbit Player"] = "Kiertoratasoitin",
+    },
+    fr = {
+        ["Orbit Player"] = "Lecteur orbite",
+    },
+    it = {
+        ["Orbit Player"] = "Lettore orbita",
+    },
+    ja = {
+        ["Orbit Player"] = "オービットプレーヤー",
+    },
+    nl = {
+        ["Orbit Player"] = "Orbit-speler",
+    },
+    pt = {
+        ["Orbit Player"] = "Reprodutor órbita",
+    },
+    ru = {
+        ["Orbit Player"] = "Орбитальный плеер",
+    },
+    uk = {
+        ["Orbit Player"] = "Орбітальний плеєр",
+    },
+    vi = {
+        ["Orbit Player"] = "Trình phát quỹ đạo",
+    },
+    zh_CN = {
+        ["Orbit Player"] = "轨道播放器",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 local LAYOUT = {
     id = "plugin.orbit_player",
     xml = "OrbitPlayer/player_layouts/orbit_player.xml",
-    name = "Orbit Player",
+    name = tr("Orbit Player"),
 }
 
 local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/OrbitPlayer/player_layouts/"

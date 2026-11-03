@@ -1,9 +1,555 @@
 plugin.define({
     id = "example.lyrics_fetcher",
     name = "Lyrics Fetcher",
-    version = "1.4.0",
-    api_min = 17,
+    version = "1.5.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Lyrics Fetcher"] = "Liedtext-Abruf",
+        ["Fetching lyrics"] = "Liedtext wird abgerufen",
+        ["Looking up lyrics…"] = "Suche Liedtext…",
+        ["Track path is not supported"] = "Titelpfad wird nicht unterstützt",
+        ["Pending lyrics queue could not be read"] = "Warteschlange für Liedtexte konnte nicht gelesen werden",
+        ["Lyrics already present"] = "Liedtext bereits vorhanden",
+        ["Could not read existing lyrics"] = "Vorhandener Liedtext konnte nicht gelesen werden",
+        ["Could not update pending lyrics request"] = "Ausstehende Liedtextanfrage konnte nicht aktualisiert werden",
+        ["Pending lyrics queue is full"] = "Warteschlange für Liedtexte ist voll",
+        ["Track tags or path are not supported"] = "Tags oder Pfad des Titels werden nicht unterstützt",
+        ["Could not save pending lyrics request"] = "Ausstehende Liedtextanfrage konnte nicht gespeichert werden",
+        ["Lyrics request queued for retry"] = "Liedtextanfrage für erneuten Versuch eingereiht",
+        ["Lyrics response was too large"] = "Liedtext-Antwort war zu groß",
+        ["No synced lyrics found"] = "Kein synchronisierter Liedtext gefunden",
+        ["Lyrics fetch failed (HTTP %s)"] = "Liedtext-Abruf fehlgeschlagen (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Liedtext-Antwort war kein JSON",
+        ["Track is instrumental"] = "Titel ist instrumental",
+        ["No synced lyrics in result"] = "Kein synchronisierter Liedtext im Ergebnis",
+        ["Saved lyrics"] = "Liedtext gespeichert",
+        ["This player cannot fetch lyrics"] = "Dieser Player kann keine Liedtexte abrufen",
+        ["Play a local track with title and artist tags"] = "Spiele einen lokalen Titel mit Titel- und Künstler-Tags ab",
+        ["Lyrics request added to pending queue"] = "Liedtextanfrage zur Warteschlange hinzugefügt",
+        ["Could not update pending queue"] = "Warteschlange konnte nicht aktualisiert werden",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Liedtext-Warteschlange nicht lesbar; prüfe die Einstellungen",
+        ["About Lyrics Fetcher"] = "Über Liedtext-Abruf",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Sucht auf LRCLIB anhand von Titel, Künstler, Album und Dauer nach synchronisierten Liedtexten. Kein API-Schlüssel nötig.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Schreibt eine .lrc-Begleitdatei im selben Ordner (Audio-Endung durch .lrc ersetzt), passend zum Player.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Überspringt Dateien mit Zeitstempeln. Eine unsynchronisierte .lrc wird zuvor in .compas-backup umbenannt, damit der Player die neue Datei liest. Synchronisierte Texte werden nie ersetzt.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Eingebettete Liedtexte sind aus Lua nicht sichtbar; solche Titel erhalten ggf. trotzdem eine .lrc-Datei.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Anfragen werden vor dem Download gespeichert und bei WLAN-Verbindung fortgesetzt, auch nach einem Neustart. Unter Ausstehende Anfragen kannst du sie wiederholen oder leeren.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Der Automatikmodus ist standardmäßig aus. Nur lokale Dateien werden genutzt; Streams und remote://-Titel werden übersprungen.",
+        ["Fetch lyrics for current track"] = "Liedtext für aktuellen Titel abrufen",
+        ["Pending lyrics requests: %s"] = "Ausstehende Liedtextanfragen: %s",
+        ["unavailable"] = "nicht verfügbar",
+        ["Pending lyrics"] = "Ausstehende Liedtexte",
+        ["Retry pending downloads"] = "Ausstehende Downloads wiederholen",
+        ["Clear pending queue"] = "Warteschlange leeren",
+        ["Clear pending queue?"] = "Warteschlange leeren?",
+        ["Keep queue"] = "Warteschlange behalten",
+        ["Clear queue"] = "Warteschlange leeren",
+        ["Could not clear pending queue"] = "Warteschlange konnte nicht geleert werden",
+        ["Automatic fetch"] = "Automatischer Abruf",
+        ["How it works"] = "Funktionsweise",
+    },
+    es = {
+        ["Lyrics Fetcher"] = "Buscador de letras",
+        ["Fetching lyrics"] = "Buscando letra",
+        ["Looking up lyrics…"] = "Buscando letra…",
+        ["Track path is not supported"] = "La ruta de la pista no es compatible",
+        ["Pending lyrics queue could not be read"] = "No se pudo leer la cola de letras pendientes",
+        ["Lyrics already present"] = "La letra ya existe",
+        ["Could not read existing lyrics"] = "No se pudo leer la letra existente",
+        ["Could not update pending lyrics request"] = "No se pudo actualizar la solicitud de letra pendiente",
+        ["Pending lyrics queue is full"] = "La cola de letras pendientes está llena",
+        ["Track tags or path are not supported"] = "Las etiquetas o la ruta de la pista no son compatibles",
+        ["Could not save pending lyrics request"] = "No se pudo guardar la solicitud de letra pendiente",
+        ["Lyrics request queued for retry"] = "Solicitud de letra en cola para reintentar",
+        ["Lyrics response was too large"] = "La respuesta de la letra fue demasiado grande",
+        ["No synced lyrics found"] = "No se encontró letra sincronizada",
+        ["Lyrics fetch failed (HTTP %s)"] = "Error al obtener la letra (HTTP %s)",
+        ["Lyrics response was not JSON"] = "La respuesta de la letra no era JSON",
+        ["Track is instrumental"] = "La pista es instrumental",
+        ["No synced lyrics in result"] = "El resultado no incluye letra sincronizada",
+        ["Saved lyrics"] = "Letra guardada",
+        ["This player cannot fetch lyrics"] = "Este reproductor no puede descargar letras",
+        ["Play a local track with title and artist tags"] = "Reproduce una pista local con etiquetas de título y artista",
+        ["Lyrics request added to pending queue"] = "Solicitud de letra añadida a la cola pendiente",
+        ["Could not update pending queue"] = "No se pudo actualizar la cola pendiente",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "No se pudo leer la cola de letras pendientes; revisa los Ajustes",
+        ["About Lyrics Fetcher"] = "Acerca de Buscador de letras",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Busca letras sincronizadas en LRCLIB usando título, artista, álbum y duración. Sin clave API.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Guarda un archivo .lrc en la misma carpeta (cambiando la extensión de audio por .lrc), igual que el reproductor.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Omite archivos .lrc que ya tienen marcas de tiempo. Un .lrc sin sincronizar se renombra antes a .compas-backup para que el reproductor lea el nuevo archivo. Las letras sincronizadas nunca se reemplazan.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Las letras incrustadas en etiquetas no son visibles desde Lua, por lo que esas pistas aún pueden recibir un archivo .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Las solicitudes pendientes se guardan antes de descargar y continúan cuando vuelve el Wi-Fi, incluso tras reiniciar. Puedes reintentarlas o vaciarlas en Solicitudes de letras pendientes.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "El modo automático está desactivado hasta que lo actives. Solo se usan archivos locales; las transmisiones y pistas remote:// se omiten.",
+        ["Fetch lyrics for current track"] = "Buscar letra de la pista actual",
+        ["Pending lyrics requests: %s"] = "Solicitudes de letras pendientes: %s",
+        ["unavailable"] = "no disponible",
+        ["Pending lyrics"] = "Letras pendientes",
+        ["Retry pending downloads"] = "Reintentar descargas pendientes",
+        ["Clear pending queue"] = "Vaciar cola pendiente",
+        ["Clear pending queue?"] = "¿Vaciar cola pendiente?",
+        ["Keep queue"] = "Conservar cola",
+        ["Clear queue"] = "Vaciar cola",
+        ["Could not clear pending queue"] = "No se pudo vaciar la cola pendiente",
+        ["Automatic fetch"] = "Búsqueda automática",
+        ["How it works"] = "Cómo funciona",
+    },
+    fi = {
+        ["Lyrics Fetcher"] = "Sanoitushaku",
+        ["Fetching lyrics"] = "Haetaan sanoituksia",
+        ["Looking up lyrics…"] = "Etsitään sanoituksia…",
+        ["Track path is not supported"] = "Kappaleen polkua ei tueta",
+        ["Pending lyrics queue could not be read"] = "Odottavien sanoitusten jonoa ei voitu lukea",
+        ["Lyrics already present"] = "Sanoitukset ovat jo olemassa",
+        ["Could not read existing lyrics"] = "Olemassa olevia sanoituksia ei voitu lukea",
+        ["Could not update pending lyrics request"] = "Odottavaa sanoituspyyntöä ei voitu päivittää",
+        ["Pending lyrics queue is full"] = "Odottavien sanoitusten jono on täynnä",
+        ["Track tags or path are not supported"] = "Kappaleen tunnisteita tai polkua ei tueta",
+        ["Could not save pending lyrics request"] = "Odottavaa sanoituspyyntöä ei voitu tallentaa",
+        ["Lyrics request queued for retry"] = "Sanoituspyyntö lisättiin jonoon uudelleenyritystä varten",
+        ["Lyrics response was too large"] = "Sanoitusvastaus oli liian suuri",
+        ["No synced lyrics found"] = "Synkronoituja sanoituksia ei löytynyt",
+        ["Lyrics fetch failed (HTTP %s)"] = "Sanoitusten haku epäonnistui (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Sanoitusvastaus ei ollut JSON-muodossa",
+        ["Track is instrumental"] = "Kappale on instrumentaali",
+        ["No synced lyrics in result"] = "Tuloksessa ei ole synkronoituja sanoituksia",
+        ["Saved lyrics"] = "Sanoitukset tallennettu",
+        ["This player cannot fetch lyrics"] = "Tämä soitin ei voi hakea sanoituksia",
+        ["Play a local track with title and artist tags"] = "Toista paikallinen kappale, jossa on nimi- ja esittäjätunnisteet",
+        ["Lyrics request added to pending queue"] = "Sanoituspyyntö lisättiin odottavaan jonoon",
+        ["Could not update pending queue"] = "Odottavaa jonoa ei voitu päivittää",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Odottavien sanoitusten jonoa ei voitu lukea; tarkista asetukset",
+        ["About Lyrics Fetcher"] = "Tietoja Sanoitushausta",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Etsii ajastettuja sanoituksia LRCLIB-palvelusta kappaleen nimen, esittäjän, albumin ja keston perusteella. Ei vaadi API-avainta.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Kirjoittaa samaan kansioon .lrc-tiedoston (äänitiedoston pääte korvataan .lrc-päätteellä) soittimen tapaan.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Ohittaa .lrc-tiedoston, jossa on jo aikaleimat. Synkronoimaton .lrc nimetään ensin .compas-backup-tiedostoksi. Synkronoituja sanoituksia ei koskaan korvata.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Tunnisteisiin upotettuja sanoituksia ei näy Luasta, joten ne kappaleet voivat silti saada .lrc-tiedoston.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Puuttuvien sanoitusten pyynnöt tallennetaan ennen latausta ja jatkuvat Wi-Fi-yhteyden palatessa, myös uudelleenkäynnistyksen jälkeen. Voit yrittää niitä uudelleen tai tyhjentää jonon.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Automaattinen tila on pois päältä, kunnes otat sen käyttöön. Vain paikallisia tiedostoja käytetään; suoratoistot ja remote://-kappaleet ohitetaan.",
+        ["Fetch lyrics for current track"] = "Hae nykyisen kappaleen sanoitukset",
+        ["Pending lyrics requests: %s"] = "Odottavat sanoituspyynnöt: %s",
+        ["unavailable"] = "ei saatavilla",
+        ["Pending lyrics"] = "Odottavat sanoitukset",
+        ["Retry pending downloads"] = "Yritä odottavia latauksia uudelleen",
+        ["Clear pending queue"] = "Tyhjennä odottava jono",
+        ["Clear pending queue?"] = "Tyhjennetäänkö odottava jono?",
+        ["Keep queue"] = "Säilytä jono",
+        ["Clear queue"] = "Tyhjennä jono",
+        ["Could not clear pending queue"] = "Odottavaa jonoa ei voitu tyhjentää",
+        ["Automatic fetch"] = "Automaattinen haku",
+        ["How it works"] = "Näin se toimii",
+    },
+    fr = {
+        ["Lyrics Fetcher"] = "Chercheur de paroles",
+        ["Fetching lyrics"] = "Récupération des paroles",
+        ["Looking up lyrics…"] = "Recherche des paroles…",
+        ["Track path is not supported"] = "Chemin de piste non pris en charge",
+        ["Pending lyrics queue could not be read"] = "Impossible de lire la file d'attente des paroles",
+        ["Lyrics already present"] = "Paroles déjà présentes",
+        ["Could not read existing lyrics"] = "Impossible de lire les paroles existantes",
+        ["Could not update pending lyrics request"] = "Impossible de mettre à jour la demande en attente",
+        ["Pending lyrics queue is full"] = "La file d'attente des paroles est pleine",
+        ["Track tags or path are not supported"] = "Tags ou chemin de piste non pris en charge",
+        ["Could not save pending lyrics request"] = "Impossible d'enregistrer la demande de paroles",
+        ["Lyrics request queued for retry"] = "Demande de paroles mise en file d'attente",
+        ["Lyrics response was too large"] = "La réponse des paroles était trop volumineuse",
+        ["No synced lyrics found"] = "Aucune parole synchronisée trouvée",
+        ["Lyrics fetch failed (HTTP %s)"] = "Échec de récupération des paroles (HTTP %s)",
+        ["Lyrics response was not JSON"] = "La réponse des paroles n'était pas en JSON",
+        ["Track is instrumental"] = "La piste est instrumentale",
+        ["No synced lyrics in result"] = "Aucune parole synchronisée dans le résultat",
+        ["Saved lyrics"] = "Paroles enregistrées",
+        ["This player cannot fetch lyrics"] = "Ce lecteur ne peut pas récupérer de paroles",
+        ["Play a local track with title and artist tags"] = "Lisez une piste locale avec des tags de titre et d'artiste",
+        ["Lyrics request added to pending queue"] = "Demande ajoutée à la file d'attente",
+        ["Could not update pending queue"] = "Impossible de mettre à jour la file d'attente",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Impossible de lire la file d'attente ; vérifiez les paramètres",
+        ["About Lyrics Fetcher"] = "À propos du Chercheur de paroles",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Recherche des paroles synchronisées sur LRCLIB avec le titre, l'artiste, l'album et la durée. Sans clé API.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Écrit un fichier .lrc dans le même dossier (extension audio remplacée par .lrc), comme le lecteur.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Ignore un fichier .lrc déjà horodaté. Un .lrc non synchronisé est d'abord renommé en .compas-backup. Les paroles synchronisées ne sont jamais remplacées.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Les paroles intégrées aux tags ne sont pas visibles depuis Lua ; ces pistes peuvent donc recevoir un fichier .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Les demandes sont enregistrées avant téléchargement et reprennent au retour du Wi-Fi, même après redémarrage. Vous pouvez les relancer ou les vider.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Le mode automatique est désactivé par défaut. Seuls les fichiers locaux sont utilisés ; les flux et pistes remote:// sont ignorés.",
+        ["Fetch lyrics for current track"] = "Chercher les paroles du titre actuel",
+        ["Pending lyrics requests: %s"] = "Demandes de paroles en attente : %s",
+        ["unavailable"] = "indisponible",
+        ["Pending lyrics"] = "Paroles en attente",
+        ["Retry pending downloads"] = "Relancer les téléchargements en attente",
+        ["Clear pending queue"] = "Vider la file d'attente",
+        ["Clear pending queue?"] = "Vider la file d'attente ?",
+        ["Keep queue"] = "Garder la file",
+        ["Clear queue"] = "Vider la file",
+        ["Could not clear pending queue"] = "Impossible de vider la file d'attente",
+        ["Automatic fetch"] = "Recherche automatique",
+        ["How it works"] = "Fonctionnement",
+    },
+    it = {
+        ["Lyrics Fetcher"] = "Ricerca testi",
+        ["Fetching lyrics"] = "Recupero testo",
+        ["Looking up lyrics…"] = "Ricerca testo…",
+        ["Track path is not supported"] = "Percorso del brano non supportato",
+        ["Pending lyrics queue could not be read"] = "Impossibile leggere la coda dei testi in sospeso",
+        ["Lyrics already present"] = "Testo già presente",
+        ["Could not read existing lyrics"] = "Impossibile leggere il testo esistente",
+        ["Could not update pending lyrics request"] = "Impossibile aggiornare la richiesta di testo in sospeso",
+        ["Pending lyrics queue is full"] = "La coda dei testi in sospeso è piena",
+        ["Track tags or path are not supported"] = "Tag o percorso del brano non supportati",
+        ["Could not save pending lyrics request"] = "Impossibile salvare la richiesta di testo in sospeso",
+        ["Lyrics request queued for retry"] = "Richiesta di testo in coda per nuovo tentativo",
+        ["Lyrics response was too large"] = "La risposta del testo era troppo grande",
+        ["No synced lyrics found"] = "Nessun testo sincronizzato trovato",
+        ["Lyrics fetch failed (HTTP %s)"] = "Recupero testo non riuscito (HTTP %s)",
+        ["Lyrics response was not JSON"] = "La risposta del testo non era in formato JSON",
+        ["Track is instrumental"] = "Il brano è strumentale",
+        ["No synced lyrics in result"] = "Nessun testo sincronizzato nel risultato",
+        ["Saved lyrics"] = "Testo salvato",
+        ["This player cannot fetch lyrics"] = "Questo lettore non può scaricare i testi",
+        ["Play a local track with title and artist tags"] = "Riproduci un brano locale con tag titolo e artista",
+        ["Lyrics request added to pending queue"] = "Richiesta di testo aggiunta alla coda",
+        ["Could not update pending queue"] = "Impossibile aggiornare la coda in sospeso",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Impossibile leggere la coda dei testi; controlla le impostazioni",
+        ["About Lyrics Fetcher"] = "Informazioni su Ricerca testi",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Cerca testi sincronizzati su LRCLIB usando titolo, artista, album e durata. Nessuna chiave API richiesta.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Scrive un file .lrc nella stessa cartella (sostituendo l'estensione audio con .lrc), come fa il lettore.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Salta i file .lrc già sincronizzati. Un .lrc non sincronizzato viene prima rinominato in .compas-backup. I testi sincronizzati non vengono mai sostituiti.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "I testi incorporati nei tag non sono visibili da Lua, quindi quei brani potrebbero comunque ricevere un file .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Le richieste vengono salvate prima del download e riprendono quando torna il Wi-Fi, anche dopo il riavvio. Puoi riprovarle o svuotarle.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "La modalità automatica è disattivata finché non la attivi. Vengono usati solo file locali; flussi e brani remote:// vengono saltati.",
+        ["Fetch lyrics for current track"] = "Cerca testo per il brano attuale",
+        ["Pending lyrics requests: %s"] = "Richieste di testi in sospeso: %s",
+        ["unavailable"] = "non disponibile",
+        ["Pending lyrics"] = "Testi in sospeso",
+        ["Retry pending downloads"] = "Riprova download in sospeso",
+        ["Clear pending queue"] = "Svuota coda in sospeso",
+        ["Clear pending queue?"] = "Svuotare la coda in sospeso?",
+        ["Keep queue"] = "Mantieni coda",
+        ["Clear queue"] = "Svuota coda",
+        ["Could not clear pending queue"] = "Impossibile svuotare la coda in sospeso",
+        ["Automatic fetch"] = "Ricerca automatica",
+        ["How it works"] = "Come funziona",
+    },
+    ja = {
+        ["Lyrics Fetcher"] = "歌詞取得",
+        ["Fetching lyrics"] = "歌詞を取得中",
+        ["Looking up lyrics…"] = "歌詞を検索中…",
+        ["Track path is not supported"] = "トラックのパスがサポートされていません",
+        ["Pending lyrics queue could not be read"] = "保留中の歌詞キューを読み込めませんでした",
+        ["Lyrics already present"] = "歌詞は既に存在します",
+        ["Could not read existing lyrics"] = "既存の歌詞を読み込めませんでした",
+        ["Could not update pending lyrics request"] = "保留中の歌詞リクエストを更新できませんでした",
+        ["Pending lyrics queue is full"] = "保留中の歌詞キューがいっぱいです",
+        ["Track tags or path are not supported"] = "トラックのタグまたはパスがサポートされていません",
+        ["Could not save pending lyrics request"] = "保留中の歌詞リクエストを保存できませんでした",
+        ["Lyrics request queued for retry"] = "歌詞リクエストを再試行キューに入れました",
+        ["Lyrics response was too large"] = "歌詞の応答が大きすぎます",
+        ["No synced lyrics found"] = "同期歌詞が見つかりませんでした",
+        ["Lyrics fetch failed (HTTP %s)"] = "歌詞の取得に失敗しました (HTTP %s)",
+        ["Lyrics response was not JSON"] = "歌詞の応答が JSON ではありませんでした",
+        ["Track is instrumental"] = "インストゥルメンタル曲です",
+        ["No synced lyrics in result"] = "結果に同期歌詞がありません",
+        ["Saved lyrics"] = "歌詞を保存しました",
+        ["This player cannot fetch lyrics"] = "このプレーヤーでは歌詞を取得できません",
+        ["Play a local track with title and artist tags"] = "タイトルとアーティストタグのあるローカル曲を再生してください",
+        ["Lyrics request added to pending queue"] = "歌詞リクエストを保留キューに追加しました",
+        ["Could not update pending queue"] = "保留キューを更新できませんでした",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "保留中の歌詞キューを読み込めません。設定を確認してください",
+        ["About Lyrics Fetcher"] = "歌詞取得について",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "タイトル・アーティスト・アルバム・再生時間を使って LRCLIB から同期歌詞を検索します。API キーは不要です。",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "同じフォルダに .lrc ファイル（音声ファイルの拡張子を .lrc に置き換えたもの）を保存します。",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "タイムスタンプ付きの .lrc はスキップします。非同期の .lrc は先に .compas-backup に名前変更されます。同期歌詞は上書きされません。",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "タグに埋め込まれた歌詞は Lua から見えないため、その場合も .lrc が作成されることがあります。",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "リクエストはダウンロード前に保存され、再起動後でも Wi-Fi 接続時に再開されます。保留リストから再試行や消去が可能です。",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "自動モードは有効にするまでオフです。ローカルファイルのみが対象で、ストリームや remote:// の曲はスキップされます。",
+        ["Fetch lyrics for current track"] = "現在の曲の歌詞を取得",
+        ["Pending lyrics requests: %s"] = "保留中の歌詞リクエスト: %s",
+        ["unavailable"] = "利用できません",
+        ["Pending lyrics"] = "保留中の歌詞",
+        ["Retry pending downloads"] = "保留中のダウンロードを再試行",
+        ["Clear pending queue"] = "保留キューを消去",
+        ["Clear pending queue?"] = "保留キューを消去しますか？",
+        ["Keep queue"] = "キューを保持",
+        ["Clear queue"] = "キューを消去",
+        ["Could not clear pending queue"] = "保留キューを消去できませんでした",
+        ["Automatic fetch"] = "自動取得",
+        ["How it works"] = "仕組み",
+    },
+    nl = {
+        ["Lyrics Fetcher"] = "Songtekstzoeker",
+        ["Fetching lyrics"] = "Songtekst ophalen",
+        ["Looking up lyrics…"] = "Songtekst zoeken…",
+        ["Track path is not supported"] = "Trackpad wordt niet ondersteund",
+        ["Pending lyrics queue could not be read"] = "Wachtrij voor songteksten kon niet worden gelezen",
+        ["Lyrics already present"] = "Songtekst al aanwezig",
+        ["Could not read existing lyrics"] = "Bestaande songtekst kon niet worden gelezen",
+        ["Could not update pending lyrics request"] = "Openstaand songtekstvenzoek kon niet worden bijgewerkt",
+        ["Pending lyrics queue is full"] = "Wachtrij voor songteksten is vol",
+        ["Track tags or path are not supported"] = "Tracktags of pad worden niet ondersteund",
+        ["Could not save pending lyrics request"] = "Openstaand songtekstverzoek kon niet worden opgeslagen",
+        ["Lyrics request queued for retry"] = "Songtekstverzoek in wachtrij voor nieuwe poging",
+        ["Lyrics response was too large"] = "Songtekstantwoord was te groot",
+        ["No synced lyrics found"] = "Geen gesynchroniseerde songtekst gevonden",
+        ["Lyrics fetch failed (HTTP %s)"] = "Songtekst ophalen mislukt (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Songtekstantwoord was geen JSON",
+        ["Track is instrumental"] = "Nummer is instrumentaal",
+        ["No synced lyrics in result"] = "Geen gesynchroniseerde songtekst in resultaat",
+        ["Saved lyrics"] = "Songtekst opgeslagen",
+        ["This player cannot fetch lyrics"] = "Deze speler kan geen songteksten ophalen",
+        ["Play a local track with title and artist tags"] = "Speel een lokaal nummer met titel- en artiesttags af",
+        ["Lyrics request added to pending queue"] = "Songtekstverzoek toegevoegd aan wachtrij",
+        ["Could not update pending queue"] = "Wachtrij kon niet worden bijgewerkt",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Wachtrij niet leesbaar; controleer de instellingen van Songtekstzoeker",
+        ["About Lyrics Fetcher"] = "Over Songtekstzoeker",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Zoekt gesynchroniseerde songteksten op LRCLIB met titel, artiest, album en duur. Geen API-sleutel nodig.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Schrijft een .lrc-bestand in dezelfde map (audio-extensie vervangen door .lrc), net als de speler.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Slaat een .lrc met tijdstempels over. Een ongesynchroniseerde .lrc wordt eerst hernoemd naar .compas-backup. Gesynchroniseerde songteksten worden nooit vervangen.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Ingesloten songteksten zijn niet zichtbaar vanuit Lua, dus die nummers kunnen alsnog een .lrc-bestand krijgen.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Verzoeken worden vóór het downloaden opgeslagen en hervat zodra Wi-Fi terugkeert, zelfs na herstarten. Je kunt ze opnieuw proberen of wissen.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "De automatische modus staat uit tot je deze inschakelt. Alleen lokale bestanden worden gebruikt; streams en remote://-nummers worden overgeslagen.",
+        ["Fetch lyrics for current track"] = "Songtekst voor huidig nummer ophalen",
+        ["Pending lyrics requests: %s"] = "Openstaande songtekstverzoeken: %s",
+        ["unavailable"] = "niet beschikbaar",
+        ["Pending lyrics"] = "Openstaande songteksten",
+        ["Retry pending downloads"] = "Openstaande downloads opnieuw proberen",
+        ["Clear pending queue"] = "Wachtrij wissen",
+        ["Clear pending queue?"] = "Wachtrij wissen?",
+        ["Keep queue"] = "Wachtrij behouden",
+        ["Clear queue"] = "Wachtrij wissen",
+        ["Could not clear pending queue"] = "Wachtrij kon niet worden gewist",
+        ["Automatic fetch"] = "Automatisch ophalen",
+        ["How it works"] = "Hoe het werkt",
+    },
+    pt = {
+        ["Lyrics Fetcher"] = "Buscador de letras",
+        ["Fetching lyrics"] = "Buscando letra",
+        ["Looking up lyrics…"] = "Procurando letra…",
+        ["Track path is not supported"] = "Caminho da faixa não suportado",
+        ["Pending lyrics queue could not be read"] = "Não foi possível ler a fila de letras pendentes",
+        ["Lyrics already present"] = "A letra já existe",
+        ["Could not read existing lyrics"] = "Não foi possível ler a letra existente",
+        ["Could not update pending lyrics request"] = "Não foi possível atualizar o pedido de letra pendente",
+        ["Pending lyrics queue is full"] = "A fila de letras pendentes está cheia",
+        ["Track tags or path are not supported"] = "Tags ou caminho da faixa não suportados",
+        ["Could not save pending lyrics request"] = "Não foi possível salvar o pedido de letra pendente",
+        ["Lyrics request queued for retry"] = "Pedido de letra colocado na fila para nova tentativa",
+        ["Lyrics response was too large"] = "A resposta da letra era muito grande",
+        ["No synced lyrics found"] = "Nenhuma letra sincronizada encontrada",
+        ["Lyrics fetch failed (HTTP %s)"] = "Falha ao buscar letra (HTTP %s)",
+        ["Lyrics response was not JSON"] = "A resposta da letra não era JSON",
+        ["Track is instrumental"] = "A faixa é instrumental",
+        ["No synced lyrics in result"] = "Nenhuma letra sincronizada no resultado",
+        ["Saved lyrics"] = "Letra salva",
+        ["This player cannot fetch lyrics"] = "Este reprodutor não pode buscar letras",
+        ["Play a local track with title and artist tags"] = "Reproduza uma faixa local com tags de título e artista",
+        ["Lyrics request added to pending queue"] = "Pedido de letra adicionado à fila pendente",
+        ["Could not update pending queue"] = "Não foi possível atualizar a fila pendente",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Não foi possível ler a fila de letras; verifique as configurações",
+        ["About Lyrics Fetcher"] = "Sobre o Buscador de letras",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Busca letras sincronizadas no LRCLIB usando título, artista, álbum e duração. Sem chave de API.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Grava um arquivo .lrc na mesma pasta (trocando a extensão de áudio por .lrc), igual ao reprodutor.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Ignora arquivos .lrc que já têm marcações de tempo. Um .lrc não sincronizado é renomeado antes para .compas-backup. Letras sincronizadas nunca são substituídas.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Letras embutidas nas tags não são visíveis pelo Lua, então essas faixas ainda podem receber um arquivo .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Os pedidos são salvos antes de baixar e retomam quando o Wi-Fi volta, mesmo após reiniciar. Você pode tentar novamente ou limpar a fila.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "O modo automático fica desativado até você ativá-lo. Apenas arquivos locais são usados; streams e faixas remote:// são ignorados.",
+        ["Fetch lyrics for current track"] = "Buscar letra da faixa atual",
+        ["Pending lyrics requests: %s"] = "Pedidos de letras pendentes: %s",
+        ["unavailable"] = "indisponível",
+        ["Pending lyrics"] = "Letras pendentes",
+        ["Retry pending downloads"] = "Tentar novamente downloads pendentes",
+        ["Clear pending queue"] = "Limpar fila pendente",
+        ["Clear pending queue?"] = "Limpar fila pendente?",
+        ["Keep queue"] = "Manter fila",
+        ["Clear queue"] = "Limpar fila",
+        ["Could not clear pending queue"] = "Não foi possível limpar a fila pendente",
+        ["Automatic fetch"] = "Busca automática",
+        ["How it works"] = "Como funciona",
+    },
+    ru = {
+        ["Lyrics Fetcher"] = "Поиск текстов песен",
+        ["Fetching lyrics"] = "Загрузка текста",
+        ["Looking up lyrics…"] = "Поиск текста…",
+        ["Track path is not supported"] = "Путь к треку не поддерживается",
+        ["Pending lyrics queue could not be read"] = "Не удалось прочитать очередь ожидающих текстов",
+        ["Lyrics already present"] = "Текст уже есть",
+        ["Could not read existing lyrics"] = "Не удалось прочитать существующий текст",
+        ["Could not update pending lyrics request"] = "Не удалось обновить ожидающий запрос текста",
+        ["Pending lyrics queue is full"] = "Очередь ожидающих текстов полна",
+        ["Track tags or path are not supported"] = "Теги или путь к треку не поддерживаются",
+        ["Could not save pending lyrics request"] = "Не удалось сохранить ожидающий запрос текста",
+        ["Lyrics request queued for retry"] = "Запрос текста поставлен в очередь на повтор",
+        ["Lyrics response was too large"] = "Ответ с текстом слишком большой",
+        ["No synced lyrics found"] = "Синхронизированный текст не найден",
+        ["Lyrics fetch failed (HTTP %s)"] = "Ошибка загрузки текста (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Ответ с текстом не в формате JSON",
+        ["Track is instrumental"] = "Инструментальный трек",
+        ["No synced lyrics in result"] = "В результате нет синхронизированного текста",
+        ["Saved lyrics"] = "Текст сохранён",
+        ["This player cannot fetch lyrics"] = "Этот плеер не может загружать тексты",
+        ["Play a local track with title and artist tags"] = "Воспроизведите локальный трек с тегами названия и исполнителя",
+        ["Lyrics request added to pending queue"] = "Запрос текста добавлен в очередь",
+        ["Could not update pending queue"] = "Не удалось обновить очередь ожидания",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Не удалось прочитать очередь текстов; проверьте настройки",
+        ["About Lyrics Fetcher"] = "О поиске текстов",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Ищет синхронизированные тексты на LRCLIB по названию, исполнителю, альбому и длительности. Без API-ключа.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Записывает файл .lrc в ту же папку (заменяя расширение аудио на .lrc), как и плеер.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Пропускает .lrc с метками времени. Несинхронизированный .lrc сначала переименовывается в .compas-backup. Синхронизированные тексты не заменяются.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Встроенные в теги тексты не видны из Lua, поэтому для таких треков тоже может быть создан .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Запросы сохраняются перед загрузкой и возобновляются при появлении Wi-Fi даже после перезапуска. Их можно повторить или очистить.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Автоматический режим выключен, пока вы его не включите. Используются только локальные файлы; потоки и треки remote:// пропускаются.",
+        ["Fetch lyrics for current track"] = "Найти текст для текущего трека",
+        ["Pending lyrics requests: %s"] = "Ожидающие запросы текстов: %s",
+        ["unavailable"] = "недоступно",
+        ["Pending lyrics"] = "Ожидающие тексты",
+        ["Retry pending downloads"] = "Повторить ожидающие загрузки",
+        ["Clear pending queue"] = "Очистить очередь ожидания",
+        ["Clear pending queue?"] = "Очистить очередь ожидания?",
+        ["Keep queue"] = "Оставить очередь",
+        ["Clear queue"] = "Очистить очередь",
+        ["Could not clear pending queue"] = "Не удалось очистить очередь ожидания",
+        ["Automatic fetch"] = "Автоматический поиск",
+        ["How it works"] = "Как это работает",
+    },
+    uk = {
+        ["Lyrics Fetcher"] = "Пошук текстів пісень",
+        ["Fetching lyrics"] = "Завантаження тексту",
+        ["Looking up lyrics…"] = "Пошук тексту…",
+        ["Track path is not supported"] = "Шлях до треку не підтримується",
+        ["Pending lyrics queue could not be read"] = "Не вдалося прочитати чергу очікуваних текстів",
+        ["Lyrics already present"] = "Текст уже є",
+        ["Could not read existing lyrics"] = "Не вдалося прочитати наявний текст",
+        ["Could not update pending lyrics request"] = "Не вдалося оновити очікуваний запит тексту",
+        ["Pending lyrics queue is full"] = "Черга очікуваних текстів переповнена",
+        ["Track tags or path are not supported"] = "Теги або шлях до треку не підтримуються",
+        ["Could not save pending lyrics request"] = "Не вдалося зберегти очікуваний запит тексту",
+        ["Lyrics request queued for retry"] = "Запит тексту поставлено в чергу на повтор",
+        ["Lyrics response was too large"] = "Відповідь із текстом занадто велика",
+        ["No synced lyrics found"] = "Синхронізований текст не знайдено",
+        ["Lyrics fetch failed (HTTP %s)"] = "Помилка завантаження тексту (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Відповідь із текстом не у форматі JSON",
+        ["Track is instrumental"] = "Інструментальний трек",
+        ["No synced lyrics in result"] = "У результаті немає синхронізованого тексту",
+        ["Saved lyrics"] = "Текст збережено",
+        ["This player cannot fetch lyrics"] = "Цей плеєр не може завантажувати тексти",
+        ["Play a local track with title and artist tags"] = "Відтворіть локальний трек із тегами назви та виконавця",
+        ["Lyrics request added to pending queue"] = "Запит тексту додано до черги",
+        ["Could not update pending queue"] = "Не вдалося оновити чергу очікування",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Не вдалося прочитати чергу текстів; перевірте налаштування",
+        ["About Lyrics Fetcher"] = "Про пошук текстів",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Шукає синхронізовані тексти на LRCLIB за назвою, виконавцем, альбомом і тривалістю. Без API-ключа.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Записує файл .lrc у ту саму теку (замінюючи розширення аудіо на .lrc), як і плеєр.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Пропускає .lrc із мітками часу. Несинхронізований .lrc спочатку перейменовується на .compas-backup. Синхронізовані тексти ніколи не замінюються.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Вбудовані в теги тексти не видно з Lua, тому такі треки все одно можуть отримати файл .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Запити зберігаються перед завантаженням і відновлюються після появи Wi-Fi навіть після перезапуску. Їх можна повторити або очистити.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Автоматичний режим вимкнено, доки ви його не увімкнете. Використовуються лише локальні файли; потоки та треки remote:// пропускаються.",
+        ["Fetch lyrics for current track"] = "Знайти текст для поточного треку",
+        ["Pending lyrics requests: %s"] = "Очікувані запити текстів: %s",
+        ["unavailable"] = "недоступно",
+        ["Pending lyrics"] = "Очікувані тексти",
+        ["Retry pending downloads"] = "Повторити очікувані завантаження",
+        ["Clear pending queue"] = "Очистити чергу очікування",
+        ["Clear pending queue?"] = "Очистити чергу очікування?",
+        ["Keep queue"] = "Залишити чергу",
+        ["Clear queue"] = "Очистити чергу",
+        ["Could not clear pending queue"] = "Не вдалося очистити чергу очікування",
+        ["Automatic fetch"] = "Автоматичний пошук",
+        ["How it works"] = "Як це працює",
+    },
+    vi = {
+        ["Lyrics Fetcher"] = "Tìm lời bài hát",
+        ["Fetching lyrics"] = "Đang tải lời bài hát",
+        ["Looking up lyrics…"] = "Đang tìm lời bài hát…",
+        ["Track path is not supported"] = "Đường dẫn bài hát không được hỗ trợ",
+        ["Pending lyrics queue could not be read"] = "Không đọc được hàng đợi lời bài hát đang chờ",
+        ["Lyrics already present"] = "Đã có lời bài hát",
+        ["Could not read existing lyrics"] = "Không đọc được lời bài hát hiện có",
+        ["Could not update pending lyrics request"] = "Không cập nhật được yêu cầu lời bài hát đang chờ",
+        ["Pending lyrics queue is full"] = "Hàng đợi lời bài hát đã đầy",
+        ["Track tags or path are not supported"] = "Thẻ hoặc đường dẫn bài hát không được hỗ trợ",
+        ["Could not save pending lyrics request"] = "Không lưu được yêu cầu lời bài hát đang chờ",
+        ["Lyrics request queued for retry"] = "Đã đưa yêu cầu lời bài hát vào hàng đợi thử lại",
+        ["Lyrics response was too large"] = "Phản hồi lời bài hát quá lớn",
+        ["No synced lyrics found"] = "Không tìm thấy lời bài hát đồng bộ",
+        ["Lyrics fetch failed (HTTP %s)"] = "Tải lời bài hát thất bại (HTTP %s)",
+        ["Lyrics response was not JSON"] = "Phản hồi lời bài hát không phải JSON",
+        ["Track is instrumental"] = "Bài nhạc không lời",
+        ["No synced lyrics in result"] = "Không có lời đồng bộ trong kết quả",
+        ["Saved lyrics"] = "Đã lưu lời bài hát",
+        ["This player cannot fetch lyrics"] = "Máy nghe nhạc này không thể tải lời bài hát",
+        ["Play a local track with title and artist tags"] = "Hãy phát một bài nhạc nội bộ có thẻ tiêu đề và nghệ sĩ",
+        ["Lyrics request added to pending queue"] = "Đã thêm yêu cầu lời bài hát vào hàng đợi",
+        ["Could not update pending queue"] = "Không cập nhật được hàng đợi đang chờ",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "Không đọc được hàng đợi lời bài hát; hãy kiểm tra cài đặt",
+        ["About Lyrics Fetcher"] = "Giới thiệu Tìm lời bài hát",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "Tra cứu lời bài hát đồng bộ trên LRCLIB bằng tiêu đề, nghệ sĩ, album và thời lượng. Không cần khóa API.",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "Ghi tệp .lrc cùng thư mục (thay phần mở rộng âm thanh bằng .lrc), khớp với trình phát.",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "Bỏ qua tệp .lrc đã có mốc thời gian. Tệp .lrc chưa đồng bộ sẽ được đổi tên thành .compas-backup trước. Lời bài hát đã đồng bộ không bao giờ bị ghi đè.",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Lời bài hát nhúng trong thẻ không hiển thị với Lua, nên các bài đó vẫn có thể được tạo tệp .lrc.",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "Yêu cầu được lưu trước khi tải và tiếp tục khi có Wi-Fi trở lại, kể cả sau khi khởi động lại. Bạn có thể thử lại hoặc xóa chúng.",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "Chế độ tự động tắt cho đến khi bạn bật. Chỉ dùng tệp nội bộ; các luồng phát và bài remote:// sẽ được bỏ qua.",
+        ["Fetch lyrics for current track"] = "Tải lời cho bài đang phát",
+        ["Pending lyrics requests: %s"] = "Yêu cầu lời bài hát đang chờ: %s",
+        ["unavailable"] = "không khả dụng",
+        ["Pending lyrics"] = "Lời bài hát đang chờ",
+        ["Retry pending downloads"] = "Thử lại các lượt tải đang chờ",
+        ["Clear pending queue"] = "Xóa hàng đợi đang chờ",
+        ["Clear pending queue?"] = "Xóa hàng đợi đang chờ?",
+        ["Keep queue"] = "Giữ hàng đợi",
+        ["Clear queue"] = "Xóa hàng đợi",
+        ["Could not clear pending queue"] = "Không xóa được hàng đợi đang chờ",
+        ["Automatic fetch"] = "Tự động tải",
+        ["How it works"] = "Cách hoạt động",
+    },
+    zh_CN = {
+        ["Lyrics Fetcher"] = "歌词获取器",
+        ["Fetching lyrics"] = "正在获取歌词",
+        ["Looking up lyrics…"] = "正在查找歌词…",
+        ["Track path is not supported"] = "不支持曲目路径",
+        ["Pending lyrics queue could not be read"] = "无法读取待处理歌词队列",
+        ["Lyrics already present"] = "歌词已存在",
+        ["Could not read existing lyrics"] = "无法读取现有歌词",
+        ["Could not update pending lyrics request"] = "无法更新待处理歌词请求",
+        ["Pending lyrics queue is full"] = "待处理歌词队列已满",
+        ["Track tags or path are not supported"] = "不支持曲目标签或路径",
+        ["Could not save pending lyrics request"] = "无法保存待处理歌词请求",
+        ["Lyrics request queued for retry"] = "歌词请求已加入重试队列",
+        ["Lyrics response was too large"] = "歌词响应过大",
+        ["No synced lyrics found"] = "未找到同步歌词",
+        ["Lyrics fetch failed (HTTP %s)"] = "歌词获取失败 (HTTP %s)",
+        ["Lyrics response was not JSON"] = "歌词响应不是 JSON",
+        ["Track is instrumental"] = "曲目为纯音乐",
+        ["No synced lyrics in result"] = "结果中没有同步歌词",
+        ["Saved lyrics"] = "已保存歌词",
+        ["This player cannot fetch lyrics"] = "此播放器无法获取歌词",
+        ["Play a local track with title and artist tags"] = "请播放带有标题和艺术家标签的本地曲目",
+        ["Lyrics request added to pending queue"] = "歌词请求已添加到待处理队列",
+        ["Could not update pending queue"] = "无法更新待处理队列",
+        ["Pending lyrics queue could not be read; check Lyrics Fetcher settings"] = "无法读取待处理歌词队列；请检查歌词获取器设置",
+        ["About Lyrics Fetcher"] = "关于歌词获取器",
+        ["Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."] = "使用标题、艺术家、专辑和时长在 LRCLIB 上查找同步歌词。无需 API 密钥。",
+        ["Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."] = "在同文件夹下写入 .lrc 伴随文件（将音频扩展名替换为 .lrc），与播放器一致。",
+        ["Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."] = "跳过已有时间戳的 .lrc 文件。未同步的 .lrc 会先重命名为 .compas-backup，以便播放器读取新的同步文件。同步歌词绝不会被替换。",
+        ["Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."] = "Lua 无法读取内嵌标签歌词，因此这些曲目仍可能生成 .lrc 文件。",
+        ["Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."] = "缺失歌词请求会在下载前保存，并在 Wi-Fi 恢复时继续，即使重启后也是如此。你可以重试或清空待处理请求。",
+        ["Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."] = "自动模式默认关闭，需手动开启。仅处理本地文件，跳过流媒体和 remote:// 曲目。",
+        ["Fetch lyrics for current track"] = "获取当前曲目的歌词",
+        ["Pending lyrics requests: %s"] = "待处理歌词请求：%s",
+        ["unavailable"] = "不可用",
+        ["Pending lyrics"] = "待处理歌词",
+        ["Retry pending downloads"] = "重试待处理下载",
+        ["Clear pending queue"] = "清空待处理队列",
+        ["Clear pending queue?"] = "清空待处理队列？",
+        ["Keep queue"] = "保留队列",
+        ["Clear queue"] = "清空队列",
+        ["Could not clear pending queue"] = "无法清空待处理队列",
+        ["Automatic fetch"] = "自动获取",
+        ["How it works"] = "工作原理",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Fetches synced LRC lyrics from LRCLIB (no API key) for local tracks.
 -- Native lyrics_load_sidecar() swaps the audio filename's extension for
@@ -172,7 +718,7 @@ local function show_progress(job, message, fraction, reopen)
     if job.progress_handle then job.progress_handle = nil end
     if job.progress_attempted and not reopen then return false end
     job.progress_attempted = true
-    job.progress_handle = plugin.show_progress("Fetching lyrics", message, fraction)
+    job.progress_handle = plugin.show_progress(tr("Fetching lyrics"), message, fraction)
     return job.progress_handle ~= nil
 end
 
@@ -505,11 +1051,11 @@ local function remove_entry(entry)
 end
 local function enqueue_track(track, manual)
     track.dest = track.dest or sidecar_path(track.path)
-    if not destination_is_bounded(track.dest) then if manual then plugin.show_toast("Track path is not supported") end; return false end
-    if queue_corrupt then if manual then plugin.show_toast("Pending lyrics queue could not be read") end; return false end
+    if not destination_is_bounded(track.dest) then if manual then plugin.show_toast(tr("Track path is not supported")) end; return false end
+    if queue_corrupt then if manual then plugin.show_toast(tr("Pending lyrics queue could not be read")) end; return false end
     local snap = snapshot_sidecar(track.dest)
-    if snap.kind == "synced" then if manual then plugin.show_toast("Lyrics already present") end; return false end
-    if snap.kind == "blocked" then if manual then plugin.show_toast("Could not read existing lyrics") end; return false end
+    if snap.kind == "synced" then if manual then plugin.show_toast(tr("Lyrics already present")) end; return false end
+    if snap.kind == "blocked" then if manual then plugin.show_toast(tr("Could not read existing lyrics")) end; return false end
     for _, entry in ipairs(pending) do
         if entry.dest == track.dest then
             if manual then
@@ -518,19 +1064,19 @@ local function enqueue_track(track, manual)
                 entry.order, entry.retry_at, entry.attempts, entry.manual, entry.settled = request_order, 0, 0, true, false
                 if not persist_queue(pending) then
                     entry.order, entry.retry_at, entry.attempts, entry.manual, entry.settled = old_order, old_retry, old_attempts, old_manual, old_settled
-                    plugin.show_toast("Could not update pending lyrics request")
+                    plugin.show_toast(tr("Could not update pending lyrics request"))
                     return false
                 end
                 network_backoff_until, network_failures, next_drain_at = 0, 0, 0
                 if in_flight and in_flight.entry == entry then
                     in_flight.manual_requested = true
-                    show_progress(in_flight, in_flight.stage or "Looking up lyrics…", nil, true)
+                    show_progress(in_flight, in_flight.stage or tr("Looking up lyrics…"), nil, true)
                 end
             end
             return true
         end
     end
-    if #pending >= QUEUE_MAX_ENTRIES then if manual then plugin.show_toast("Pending lyrics queue is full") end; return false end
+    if #pending >= QUEUE_MAX_ENTRIES then if manual then plugin.show_toast(tr("Pending lyrics queue is full")) end; return false end
     request_order = request_order + 1
     local duration = math.max(0, tonumber(track.duration) or 0)
     if duration > 3600 then duration = 0 end
@@ -538,12 +1084,12 @@ local function enqueue_track(track, manual)
         field_escape(track.path), field_escape(track.title), field_escape(track.artist),
         field_escape(track.album or ""), tostring(duration), "0", "0"})
     if not e then
-        if manual then plugin.show_toast("Track tags or path are not supported") end
+        if manual then plugin.show_toast(tr("Track tags or path are not supported")) end
         return false
     end
     e.manual = manual
     local items = {}; for _, old in ipairs(pending) do items[#items + 1] = old end; items[#items + 1] = e
-    if not replace_queue(items) then if manual then plugin.show_toast("Could not save pending lyrics request") end; return false end
+    if not replace_queue(items) then if manual then plugin.show_toast(tr("Could not save pending lyrics request")) end; return false end
     return true
 end
 local function queue_count() return #pending end
@@ -624,7 +1170,7 @@ end
 
 local function queue_failure(job, headers, status, network_failure)
     local entry = job.entry
-    if entry.manual then notify_job(job, "Lyrics request queued for retry") end
+    if entry.manual then notify_job(job, tr("Lyrics request queued for retry")) end
     close_progress(job)
     clear_in_flight(job)
     defer_entry(entry, headers, status)
@@ -652,7 +1198,7 @@ start_http = function(track, entry)
     local is_auto = not entry.manual
     local job = { path=track.path, dest=track.dest, is_auto=is_auto, entry=entry, manual_requested=entry.manual == true }
     job.gen, job.track, job.snapshot = gen, track, snap
-    job.stage = "Looking up lyrics…"
+    job.stage = tr("Looking up lyrics…")
     in_flight = job
     show_progress(job, job.stage, nil, false)
     local ok, handle = pcall(plugin.http_request, {
@@ -676,7 +1222,7 @@ finish_fetch = function(track, is_auto, gen, status, body, err, headers)
     end
     local transient = err ~= nil or status == 429 or status == 408 or status == 425 or status == 401 or status == 403
         or (status and status >= 500 and status <= 599)
-    if err == "response_too_large" then close_progress(job); notify_job(job, "Lyrics response was too large"); terminal(); return end
+    if err == "response_too_large" then close_progress(job); notify_job(job, tr("Lyrics response was too large")); terminal(); return end
     if transient then queue_failure(job, headers, status, true); return end
     network_failures, network_backoff_until = 0, 0
     local snap = snapshot_sidecar(track.dest)
@@ -686,19 +1232,19 @@ finish_fetch = function(track, is_auto, gen, status, body, err, headers)
         else queue_failure(job) end
         return
     end
-    if status == 404 then close_progress(job); notify_job(job, "No synced lyrics found"); terminal(); return end
+    if status == 404 then close_progress(job); notify_job(job, tr("No synced lyrics found")); terminal(); return end
     if status ~= 200 or type(body) ~= "string" or #body > MAX_LRC_BYTES then
-        close_progress(job); notify_job(job, "Lyrics fetch failed (HTTP " .. tostring(status) .. ")"); terminal(); return
+        close_progress(job); notify_job(job, string.format(tr("Lyrics fetch failed (HTTP %s)"), tostring(status))); terminal(); return
     end
     local decoded, record = pcall(plugin.json_decode, body, { max_input_bytes=MAX_LRC_BYTES, max_nesting=8, max_entries=64 })
-    if not decoded or not record then close_progress(job); notify_job(job, "Lyrics response was not JSON"); terminal(); return end
+    if not decoded or not record then close_progress(job); notify_job(job, tr("Lyrics response was not JSON")); terminal(); return end
     local lrc, why = extract_synced(record)
-    if not lrc then close_progress(job); notify_job(job, why == "instrumental" and "Track is instrumental" or "No synced lyrics in result"); terminal(); return end
+    if not lrc then close_progress(job); notify_job(job, why == "instrumental" and tr("Track is instrumental") or tr("No synced lyrics in result")); terminal(); return end
     if not snapshot_still_valid(track.dest, job.snapshot) then close_progress(job); queue_failure(job); return end
     local ok, write_err = install_synced_lrc(track.dest, lrc, job.snapshot)
     close_progress(job)
     if ok then
-        notify_job(job, "Saved lyrics")
+        notify_job(job, tr("Saved lyrics"))
         if plugin.get_current_track_path() == track.path then refresh_current_lyrics_display(track.path) end
         terminal()
     elseif write_err == "exists" then terminal()
@@ -707,14 +1253,14 @@ end
 
 local function fetch_current(is_auto)
     if not plugin.has_capability("network.http.async") or not plugin.has_capability("data.json") then
-        if not is_auto then plugin.show_toast("This player cannot fetch lyrics") end; return
+        if not is_auto then plugin.show_toast(tr("This player cannot fetch lyrics")) end; return
     end
     local track = current_local_track()
-    if not track then notify("Play a local track with title and artist tags", is_auto); return end
+    if not track then notify(tr("Play a local track with title and artist tags"), is_auto); return end
     if not enqueue_track(track, not is_auto) then return end
     if not is_auto then
         for _, e in ipairs(pending) do if e.dest == track.dest then e.manual = true end end
-        if not is_online() then plugin.show_toast("Lyrics request added to pending queue") end
+        if not is_online() then plugin.show_toast(tr("Lyrics request added to pending queue")) end
     end
     drain_queue()
     if not is_auto then
@@ -731,7 +1277,7 @@ end
 -- it must retire after completion, even if Retry is tapped meanwhile.
 local function retry_pending()
     if queue_corrupt and not load_queue() then
-        plugin.show_toast("Pending lyrics queue could not be read")
+        plugin.show_toast(tr("Pending lyrics queue could not be read"))
         return false
     end
     local previous = {}
@@ -741,7 +1287,7 @@ local function retry_pending()
     end
     if not persist_queue(pending) then
         for i, entry in ipairs(pending) do entry.retry_at = previous[i] end
-        plugin.show_toast("Could not update pending queue")
+        plugin.show_toast(tr("Could not update pending queue"))
         return false
     end
     next_drain_at, network_backoff_until, network_failures = 0, 0, 0
@@ -772,40 +1318,40 @@ if plugin.has_capability("network.status") and type(plugin.network_status) == "f
         drain_queue()
     end)
 end
-if not load_queue() then plugin.show_toast("Pending lyrics queue could not be read; check Lyrics Fetcher settings") end
+if not load_queue() then plugin.show_toast(tr("Pending lyrics queue could not be read; check Lyrics Fetcher settings")) end
 drain_queue()
 
 local function open_about()
-    plugin.show_list("About Lyrics Fetcher", {
-        "Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key.",
-        "Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player.",
-        "Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced.",
-        "Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar.",
-        "Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them.",
-        "Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped.",
+    plugin.show_list(tr("About Lyrics Fetcher"), {
+        tr("Looks up synced lyrics on LRCLIB using title, artist, album and duration. No API key."),
+        tr("Writes a same-folder .lrc sidecar (audio extension replaced with .lrc), matching the player."),
+        tr("Skips a sidecar that already has timestamps. An unsynchronized .lrc is renamed to .compas-backup first so the player can read the new synced file. Synchronized lyrics are never replaced."),
+        tr("Embedded tag lyrics cannot be seen from Lua, so those tracks may still get a sidecar."),
+        tr("Missing-lyrics requests are saved before downloading and resume when Wi-Fi returns, even after a restart. Pending lyrics requests lets you retry or clear them."),
+        tr("Automatic mode is off until you enable it. Only absolute local files are used; streams and remote:// tracks are skipped."),
     }, function() end)
 end
 
 local function open_settings()
-    plugin.show_settings_list("Lyrics Fetcher", {
+    plugin.show_settings_list(tr("Lyrics Fetcher"), {
         {
             type = "row",
-            label = "Fetch lyrics for current track",
+            label = tr("Fetch lyrics for current track"),
             on_select = function() fetch_current(false) end,
         },
         {
             type = "row",
-            label = "Pending lyrics requests: " .. (queue_corrupt and "unavailable" or tostring(queue_count())),
+            label = string.format(tr("Pending lyrics requests: %s"), queue_corrupt and tr("unavailable") or tostring(queue_count())),
             on_select = function()
-                plugin.show_list("Pending lyrics", {
-                    "Retry pending downloads", "Clear pending queue",
+                plugin.show_list(tr("Pending lyrics"), {
+                    tr("Retry pending downloads"), tr("Clear pending queue"),
                 }, function(index)
                     if index == 1 then
                         retry_pending()
                     elseif index == 2 then
-                        plugin.show_list("Clear pending queue?", {"Keep queue", "Clear queue"}, function(choice)
+                        plugin.show_list(tr("Clear pending queue?"), {tr("Keep queue"), tr("Clear queue")}, function(choice)
                             if choice == 2 and not clear_pending() then
-                                plugin.show_toast("Could not clear pending queue")
+                                plugin.show_toast(tr("Could not clear pending queue"))
                             end
                         end)
                     end
@@ -814,7 +1360,7 @@ local function open_settings()
         },
         {
             type = "toggle",
-            label = "Automatic fetch",
+            label = tr("Automatic fetch"),
             value = state.auto,
             on_change = function(on)
                 state.auto = on
@@ -823,17 +1369,17 @@ local function open_settings()
         },
         {
             type = "row",
-            label = "How it works",
+            label = tr("How it works"),
             on_select = open_about,
         },
     })
 end
 
 load_state()
-plugin.register_list_item("music_library", "Lyrics Fetcher", open_settings)
+plugin.register_list_item("music_library", tr("Lyrics Fetcher"), open_settings)
 -- Older firmware keeps Settings > Library until it supports player menu rows.
 if plugin.has_capability("ui.player_menu") then
-    plugin.register_list_item("player", "Lyrics Fetcher", function()
+    plugin.register_list_item("player", tr("Lyrics Fetcher"), function()
         fetch_current(false)
     end)
 end

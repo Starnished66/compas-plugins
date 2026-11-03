@@ -3,14 +3,56 @@
 plugin.define({
     id = "org.compas.panorama_player",
     name = "Panorama Player",
-    version = "1.1.6",
-    api_min = 17,
+    version = "1.2.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Panorama Player"] = "Panorama-Player",
+    },
+    es = {
+        ["Panorama Player"] = "Reproductor panorámico",
+    },
+    fi = {
+        ["Panorama Player"] = "Panoraamasoitin",
+    },
+    fr = {
+        ["Panorama Player"] = "Lecteur panoramique",
+    },
+    it = {
+        ["Panorama Player"] = "Lettore panoramico",
+    },
+    ja = {
+        ["Panorama Player"] = "パノラマプレーヤー",
+    },
+    nl = {
+        ["Panorama Player"] = "Panoramaspeler",
+    },
+    pt = {
+        ["Panorama Player"] = "Reprodutor panorâmico",
+    },
+    ru = {
+        ["Panorama Player"] = "Панорамный плеер",
+    },
+    uk = {
+        ["Panorama Player"] = "Панорамний плеєр",
+    },
+    vi = {
+        ["Panorama Player"] = "Trình phát toàn cảnh",
+    },
+    zh_CN = {
+        ["Panorama Player"] = "全景播放器",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 local LAYOUT = {
     id = "plugin.panorama_player",
     xml = "PanoramaPlayer/player_layouts/panorama_player.xml",
-    name = "Panorama Player",
+    name = tr("Panorama Player"),
 }
 
 local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/PanoramaPlayer/player_layouts/"

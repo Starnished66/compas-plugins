@@ -1,4 +1,131 @@
-plugin.define({ id = "example.gain_mode", name = "Gain Mode", version = "1.0", api_min = 1 })
+plugin.define({ id = "example.gain_mode", name = "Gain Mode", version = "1.1.0", api_min = 19 })
+
+local T = {
+    de = {
+        ["Gain Mode"] = "Gain-Modus",
+        ["High Gain"] = "Hoher Gain",
+        ["Low Gain"] = "Niedriger Gain",
+        ["%s applied"] = "%s angewendet",
+        ["Gain"] = "Gain",
+        ["High"] = "Hoch",
+        ["Low"] = "Niedrig",
+        ["Gain Mode needs a newer player build"] = "Gain-Modus erfordert eine neuere Player-Version",
+    },
+    es = {
+        ["Gain Mode"] = "Modo de ganancia",
+        ["High Gain"] = "Ganancia alta",
+        ["Low Gain"] = "Ganancia baja",
+        ["%s applied"] = "%s aplicada",
+        ["Gain"] = "Ganancia",
+        ["High"] = "Alta",
+        ["Low"] = "Baja",
+        ["Gain Mode needs a newer player build"] = "El modo de ganancia requiere una versión más reciente del reproductor",
+    },
+    fi = {
+        ["Gain Mode"] = "Vahvistustila",
+        ["High Gain"] = "Korkea vahvistus",
+        ["Low Gain"] = "Matala vahvistus",
+        ["%s applied"] = "%s käytössä",
+        ["Gain"] = "Vahvistus",
+        ["High"] = "Korkea",
+        ["Low"] = "Matala",
+        ["Gain Mode needs a newer player build"] = "Vahvistustila vaatii uudemman soitinversion",
+    },
+    fr = {
+        ["Gain Mode"] = "Mode de gain",
+        ["High Gain"] = "Gain élevé",
+        ["Low Gain"] = "Gain faible",
+        ["%s applied"] = "%s appliqué",
+        ["Gain"] = "Gain",
+        ["High"] = "Élevé",
+        ["Low"] = "Faible",
+        ["Gain Mode needs a newer player build"] = "Le mode de gain nécessite une version plus récente du lecteur",
+    },
+    it = {
+        ["Gain Mode"] = "Modalità guadagno",
+        ["High Gain"] = "Guadagno alto",
+        ["Low Gain"] = "Guadagno basso",
+        ["%s applied"] = "%s applicato",
+        ["Gain"] = "Guadagno",
+        ["High"] = "Alto",
+        ["Low"] = "Basso",
+        ["Gain Mode needs a newer player build"] = "La modalità guadagno richiede una versione più recente del lettore",
+    },
+    ja = {
+        ["Gain Mode"] = "ゲインモード",
+        ["High Gain"] = "ハイゲイン",
+        ["Low Gain"] = "ローゲイン",
+        ["%s applied"] = "%sを適用しました",
+        ["Gain"] = "ゲイン",
+        ["High"] = "高",
+        ["Low"] = "低",
+        ["Gain Mode needs a newer player build"] = "ゲインモードには新しいプレイヤービルドが必要です",
+    },
+    nl = {
+        ["Gain Mode"] = "Gain-modus",
+        ["High Gain"] = "Hoge gain",
+        ["Low Gain"] = "Lage gain",
+        ["%s applied"] = "%s toegepast",
+        ["Gain"] = "Gain",
+        ["High"] = "Hoog",
+        ["Low"] = "Laag",
+        ["Gain Mode needs a newer player build"] = "Gain-modus vereist een nieuwere spelerversie",
+    },
+    pt = {
+        ["Gain Mode"] = "Modo de ganho",
+        ["High Gain"] = "Ganho alto",
+        ["Low Gain"] = "Ganho baixo",
+        ["%s applied"] = "%s aplicado",
+        ["Gain"] = "Ganho",
+        ["High"] = "Alto",
+        ["Low"] = "Baixo",
+        ["Gain Mode needs a newer player build"] = "O modo de ganho requer uma versão mais recente do reprodutor",
+    },
+    ru = {
+        ["Gain Mode"] = "Режим усиления",
+        ["High Gain"] = "Высокое усиление",
+        ["Low Gain"] = "Низкое усиление",
+        ["%s applied"] = "%s применено",
+        ["Gain"] = "Усиление",
+        ["High"] = "Выс.",
+        ["Low"] = "Низк.",
+        ["Gain Mode needs a newer player build"] = "Для режима усиления требуется более новая сборка плеера",
+    },
+    uk = {
+        ["Gain Mode"] = "Режим підсилення",
+        ["High Gain"] = "Високе підсилення",
+        ["Low Gain"] = "Низьке підсилення",
+        ["%s applied"] = "%s застосовано",
+        ["Gain"] = "Підсилення",
+        ["High"] = "Вис.",
+        ["Low"] = "Низьк.",
+        ["Gain Mode needs a newer player build"] = "Для режиму підсилення потрібна новіша збірка плеєра",
+    },
+    vi = {
+        ["Gain Mode"] = "Chế độ khuếch đại",
+        ["High Gain"] = "Khuếch đại cao",
+        ["Low Gain"] = "Khuếch đại thấp",
+        ["%s applied"] = "Đã áp dụng %s",
+        ["Gain"] = "Khuếch đại",
+        ["High"] = "Cao",
+        ["Low"] = "Thấp",
+        ["Gain Mode needs a newer player build"] = "Chế độ khuếch đại cần bản dựng trình phát mới hơn",
+    },
+    zh_CN = {
+        ["Gain Mode"] = "增益模式",
+        ["High Gain"] = "高增益",
+        ["Low Gain"] = "低增益",
+        ["%s applied"] = "已应用%s",
+        ["Gain"] = "增益",
+        ["High"] = "高",
+        ["Low"] = "低",
+        ["Gain Mode needs a newer player build"] = "增益模式需要更新的播放器版本",
+    },
+}
+
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Low/High Gain switcher, adds a "Gain Mode" row to Settings -> Music
 -- Settings -> Audio.
@@ -110,11 +237,11 @@ if plugin.has_capability("audio.hw_volume_curve") then
         local names = {}
         local selected = 0
         for i, m in ipairs(MODES) do
-            names[i] = m.name
+            names[i] = tr(m.name)
             if current_mode and m.key == current_mode.key then selected = i end
         end
 
-        plugin.show_list("Gain Mode", names, function(index)
+        plugin.show_list(tr("Gain Mode"), names, function(index)
             local mode = MODES[index]
             if current_mode and mode.key == current_mode.key then return end
             current_mode = mode
@@ -125,18 +252,18 @@ if plugin.has_capability("audio.hw_volume_curve") then
             if plugin.has_capability("ui.quick_toggle") then
                 plugin.set_quick_toggle("gain", mode.key == "high")
             end
-            plugin.show_toast(mode.name .. " applied")
+            plugin.show_toast(string.format(tr("%s applied"), tr(mode.name)))
         end, selected > 0 and { selected = selected } or nil)
     end
 
-    plugin.register_list_item("music_audio", "Gain Mode", open_settings)
+    plugin.register_list_item("music_audio", tr("Gain Mode"), open_settings)
 
     -- Quick drawer tile: High/Low only, the same two modes the list offers.
     -- Gated on the capability rather than api_min for the same reason the
     -- whole plugin is (see the header comment) -- an older player build
     -- simply doesn't get the tile.
     if plugin.has_capability("ui.quick_toggle") then
-        plugin.register_quick_toggle("gain", "Gain", function(on)
+        plugin.register_quick_toggle("gain", tr("Gain"), function(on)
             local mode = find_mode(on and "high" or "low")
             if not mode then return end
             current_mode = mode
@@ -149,11 +276,11 @@ if plugin.has_capability("audio.hw_volume_curve") then
             icon = "pull_down/gain_l.png",
             icon_selected = "pull_down/gain_h.png",
             value = current_mode ~= nil and current_mode.key == "high",
-            on_text = "High",
-            off_text = "Low",
+            on_text = tr("High"),
+            off_text = tr("Low"),
             on_hold = open_settings,
         })
     end
 else
-    plugin.show_toast("Gain Mode needs a newer player build")
+    plugin.show_toast(tr("Gain Mode needs a newer player build"))
 end

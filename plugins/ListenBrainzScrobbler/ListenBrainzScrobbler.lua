@@ -1,4 +1,298 @@
-plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = "1.0", api_min = 15 })
+plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = "1.1", api_min = 19 })
+
+local T = {
+  de = {
+    ["Could not open text entry. Try again."] = "Texteingabe konnte nicht geöffnet werden. Erneut versuchen.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz hat das Benutzertoken abgelehnt. Gespeicherte Wiedergaben bleiben erhalten.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "ListenBrainz-Warteschlange voll. Die ältesten Wiedergaben blieben erhalten.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "ListenBrainz-Wiedergabe konnte nicht gespeichert werden. Gespeicherte Wiedergaben blieben erhalten.",
+    ["Could not save the ListenBrainz token. Try again."] = "ListenBrainz-Token konnte nicht gespeichert werden. Erneut versuchen.",
+    ["Could not log out of ListenBrainz. Try again."] = "Abmeldung von ListenBrainz fehlgeschlagen. Erneut versuchen.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Dieser Player kann keine ListenBrainz-Wiedergaben senden. Gespeicherte Wiedergaben bleiben erhalten.",
+    ["This player cannot store a ListenBrainz token."] = "Dieser Player kann kein ListenBrainz-Token speichern.",
+    ["That token cannot be used."] = "Dieses Token kann nicht verwendet werden.",
+    ["This player cannot check a ListenBrainz token."] = "Dieser Player kann kein ListenBrainz-Token prüfen.",
+    ["Checking ListenBrainz token..."] = "ListenBrainz-Token wird geprüft...",
+    ["Could not reach ListenBrainz."] = "ListenBrainz nicht erreichbar.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz hat dieses Token abgelehnt.",
+    ["ListenBrainz token saved."] = "ListenBrainz-Token gespeichert.",
+    ["Set ListenBrainz user token"] = "ListenBrainz-Benutzertoken festlegen",
+    ["ListenBrainz user token"] = "ListenBrainz-Benutzertoken",
+    ["Enabled"] = "Aktiviert",
+    ["Could not save that setting. Try again."] = "Einstellung konnte nicht gespeichert werden. Erneut versuchen.",
+    ["Log out"] = "Abmelden",
+    ["Log out (%s)"] = "Abmelden (%s)",
+    ["Logged out of ListenBrainz."] = "Von ListenBrainz abgemeldet.",
+    ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+  },
+  es = {
+    ["Could not open text entry. Try again."] = "No se pudo abrir la entrada de texto. Inténtalo de nuevo.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz no aceptó el token de usuario. Se conservan las escuchas guardadas.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "La cola de ListenBrainz está llena. Se conservaron las escuchas más antiguas.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "No se pudo guardar esa escucha de ListenBrainz. Se conservaron las escuchas guardadas.",
+    ["Could not save the ListenBrainz token. Try again."] = "No se pudo guardar el token de ListenBrainz. Inténtalo de nuevo.",
+    ["Could not log out of ListenBrainz. Try again."] = "No se pudo cerrar sesión en ListenBrainz. Inténtalo de nuevo.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Este reproductor no puede enviar escuchas a ListenBrainz. Se conservan las escuchas guardadas.",
+    ["This player cannot store a ListenBrainz token."] = "Este reproductor no puede guardar un token de ListenBrainz.",
+    ["That token cannot be used."] = "Ese token no se puede usar.",
+    ["This player cannot check a ListenBrainz token."] = "Este reproductor no puede comprobar un token de ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Comprobando token de ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "No se pudo conectar con ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz no aceptó ese token.",
+    ["ListenBrainz token saved."] = "Token de ListenBrainz guardado.",
+    ["Set ListenBrainz user token"] = "Configurar token de usuario de ListenBrainz",
+    ["ListenBrainz user token"] = "Token de usuario de ListenBrainz",
+    ["Enabled"] = "Activado",
+    ["Could not save that setting. Try again."] = "No se pudo guardar ese ajuste. Inténtalo de nuevo.",
+    ["Log out"] = "Cerrar sesión",
+    ["Log out (%s)"] = "Cerrar sesión (%s)",
+    ["Logged out of ListenBrainz."] = "Sesión cerrada en ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Scrobbler de ListenBrainz",
+  },
+  fi = {
+    ["Could not open text entry. Try again."] = "Tekstinsyöttöä ei voitu avata. Yritä uudelleen.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz ei hyväksynyt käyttäjätunnistetta. Tallennetut kuuntelut säilytetään.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "ListenBrainz-jono on täynnä. Vanhimmat tallennetut kuuntelut säilytettiin.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "ListenBrainz-kuuntelua ei voitu tallentaa. Tallennetut kuuntelut säilytettiin.",
+    ["Could not save the ListenBrainz token. Try again."] = "ListenBrainz-tunnistetta ei voitu tallentaa. Yritä uudelleen.",
+    ["Could not log out of ListenBrainz. Try again."] = "Uloskirjautuminen ListenBrainzista epäonnistui. Yritä uudelleen.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Tämä soitin ei voi lähettää ListenBrainz-kuunteluita. Tallennetut kuuntelut säilytetään.",
+    ["This player cannot store a ListenBrainz token."] = "Tämä soitin ei voi tallentaa ListenBrainz-tunnistetta.",
+    ["That token cannot be used."] = "Tätä tunnistetta ei voi käyttää.",
+    ["This player cannot check a ListenBrainz token."] = "Tämä soitin ei voi tarkistaa ListenBrainz-tunnistetta.",
+    ["Checking ListenBrainz token..."] = "Tarkistetaan ListenBrainz-tunnistetta...",
+    ["Could not reach ListenBrainz."] = "ListenBrainziin ei saatu yhteyttä.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz ei hyväksynyt tätä tunnistetta.",
+    ["ListenBrainz token saved."] = "ListenBrainz-tunniste tallennettu.",
+    ["Set ListenBrainz user token"] = "Aseta ListenBrainz-käyttäjätunniste",
+    ["ListenBrainz user token"] = "ListenBrainz-käyttäjätunniste",
+    ["Enabled"] = "Käytössä",
+    ["Could not save that setting. Try again."] = "Asetusta ei voitu tallentaa. Yritä uudelleen.",
+    ["Log out"] = "Kirjaudu ulos",
+    ["Log out (%s)"] = "Kirjaudu ulos (%s)",
+    ["Logged out of ListenBrainz."] = "Kirjauduttu ulos ListenBrainzista.",
+    ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+  },
+  fr = {
+    ["Could not open text entry. Try again."] = "Impossible d'ouvrir la saisie de texte. Réessayez.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz a refusé le jeton utilisateur. Les écoutes enregistrées sont conservées.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "La file ListenBrainz est pleine. Les écoutes les plus anciennes ont été conservées.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Impossible d'enregistrer cette écoute ListenBrainz. Les écoutes enregistrées ont été conservées.",
+    ["Could not save the ListenBrainz token. Try again."] = "Impossible d'enregistrer le jeton ListenBrainz. Réessayez.",
+    ["Could not log out of ListenBrainz. Try again."] = "Impossible de se déconnecter de ListenBrainz. Réessayez.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Ce lecteur ne peut pas envoyer d'écoutes ListenBrainz. Les écoutes enregistrées sont conservées.",
+    ["This player cannot store a ListenBrainz token."] = "Ce lecteur ne peut pas stocker de jeton ListenBrainz.",
+    ["That token cannot be used."] = "Ce jeton ne peut pas être utilisé.",
+    ["This player cannot check a ListenBrainz token."] = "Ce lecteur ne peut pas vérifier un jeton ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Vérification du jeton ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Impossible de joindre ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz a refusé ce jeton.",
+    ["ListenBrainz token saved."] = "Jeton ListenBrainz enregistré.",
+    ["Set ListenBrainz user token"] = "Définir le jeton utilisateur ListenBrainz",
+    ["ListenBrainz user token"] = "Jeton utilisateur ListenBrainz",
+    ["Enabled"] = "Activé",
+    ["Could not save that setting. Try again."] = "Impossible d'enregistrer ce paramètre. Réessayez.",
+    ["Log out"] = "Se déconnecter",
+    ["Log out (%s)"] = "Se déconnecter (%s)",
+    ["Logged out of ListenBrainz."] = "Déconnecté de ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Scrobbler ListenBrainz",
+  },
+  it = {
+    ["Could not open text entry. Try again."] = "Impossibile aprire l'inserimento testo. Riprova.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz non ha accettato il token utente. Gli ascolti salvati vengono mantenuti.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "La coda di ListenBrainz è piena. Gli ascolti salvati più vecchi sono stati mantenuti.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Impossibile salvare questo ascolto ListenBrainz. Gli ascolti salvati sono stati mantenuti.",
+    ["Could not save the ListenBrainz token. Try again."] = "Impossibile salvare il token ListenBrainz. Riprova.",
+    ["Could not log out of ListenBrainz. Try again."] = "Impossibile disconnettersi da ListenBrainz. Riprova.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Questo lettore non può inviare ascolti ListenBrainz. Gli ascolti salvati vengono mantenuti.",
+    ["This player cannot store a ListenBrainz token."] = "Questo lettore non può memorizzare un token ListenBrainz.",
+    ["That token cannot be used."] = "Questo token non può essere usato.",
+    ["This player cannot check a ListenBrainz token."] = "Questo lettore non può verificare un token ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Verifica del token ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Impossibile raggiungere ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz non ha accettato questo token.",
+    ["ListenBrainz token saved."] = "Token ListenBrainz salvato.",
+    ["Set ListenBrainz user token"] = "Imposta token utente ListenBrainz",
+    ["ListenBrainz user token"] = "Token utente ListenBrainz",
+    ["Enabled"] = "Attivato",
+    ["Could not save that setting. Try again."] = "Impossibile salvare l'impostazione. Riprova.",
+    ["Log out"] = "Esci",
+    ["Log out (%s)"] = "Esci (%s)",
+    ["Logged out of ListenBrainz."] = "Disconnesso da ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Scrobbler ListenBrainz",
+  },
+  ja = {
+    ["Could not open text entry. Try again."] = "テキスト入力を開けませんでした。もう一度お試しください。",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz がユーザートークンを拒否しました。保存済みの再生履歴は保持されます。",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "ListenBrainz のキューが満杯です。最も古い再生履歴を保持しました。",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "ListenBrainz の再生履歴を保存できませんでした。保存済みの履歴は保持されました。",
+    ["Could not save the ListenBrainz token. Try again."] = "ListenBrainz トークンを保存できませんでした。もう一度お試しください。",
+    ["Could not log out of ListenBrainz. Try again."] = "ListenBrainz からログアウトできませんでした。もう一度お試しください。",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "このプレーヤーは ListenBrainz の再生履歴を送信できません。保存済みの履歴は保持されます。",
+    ["This player cannot store a ListenBrainz token."] = "このプレーヤーは ListenBrainz トークンを保存できません。",
+    ["That token cannot be used."] = "そのトークンは使用できません。",
+    ["This player cannot check a ListenBrainz token."] = "このプレーヤーは ListenBrainz トークンを確認できません。",
+    ["Checking ListenBrainz token..."] = "ListenBrainz トークンを確認中...",
+    ["Could not reach ListenBrainz."] = "ListenBrainz に接続できませんでした。",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz がそのトークンを拒否しました。",
+    ["ListenBrainz token saved."] = "ListenBrainz トークンを保存しました。",
+    ["Set ListenBrainz user token"] = "ListenBrainz ユーザートークンを設定",
+    ["ListenBrainz user token"] = "ListenBrainz ユーザートークン",
+    ["Enabled"] = "有効",
+    ["Could not save that setting. Try again."] = "設定を保存できませんでした。もう一度お試しください。",
+    ["Log out"] = "ログアウト",
+    ["Log out (%s)"] = "ログアウト (%s)",
+    ["Logged out of ListenBrainz."] = "ListenBrainz からログアウトしました。",
+    ["ListenBrainz Scrobbler"] = "ListenBrainz スクブラー",
+  },
+  nl = {
+    ["Could not open text entry. Try again."] = "Tekstinvoer kon niet worden geopend. Probeer opnieuw.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz heeft de gebruikerstoken geweigerd. Opgeslagen luisterbeurten blijven behouden.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "ListenBrainz-wachtrij is vol. De oudste opgeslagen luisterbeurten zijn behouden.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Kon die ListenBrainz-luisterbeurt niet opslaan. Opgeslagen luisterbeurten zijn behouden.",
+    ["Could not save the ListenBrainz token. Try again."] = "Kon de ListenBrainz-token niet opslaan. Probeer opnieuw.",
+    ["Could not log out of ListenBrainz. Try again."] = "Kon niet uitloggen bij ListenBrainz. Probeer opnieuw.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Deze speler kan geen ListenBrainz-luisterbeurten verzenden. Opgeslagen luisterbeurten blijven behouden.",
+    ["This player cannot store a ListenBrainz token."] = "Deze speler kan geen ListenBrainz-token opslaan.",
+    ["That token cannot be used."] = "Die token kan niet worden gebruikt.",
+    ["This player cannot check a ListenBrainz token."] = "Deze speler kan geen ListenBrainz-token controleren.",
+    ["Checking ListenBrainz token..."] = "ListenBrainz-token controleren...",
+    ["Could not reach ListenBrainz."] = "Kon ListenBrainz niet bereiken.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz heeft die token geweigerd.",
+    ["ListenBrainz token saved."] = "ListenBrainz-token opgeslagen.",
+    ["Set ListenBrainz user token"] = "ListenBrainz-gebruikerstoken instellen",
+    ["ListenBrainz user token"] = "ListenBrainz-gebruikerstoken",
+    ["Enabled"] = "Ingeschakeld",
+    ["Could not save that setting. Try again."] = "Kon die instelling niet opslaan. Probeer opnieuw.",
+    ["Log out"] = "Uitloggen",
+    ["Log out (%s)"] = "Uitloggen (%s)",
+    ["Logged out of ListenBrainz."] = "Uitgelogd bij ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+  },
+  pt = {
+    ["Could not open text entry. Try again."] = "Não foi possível abrir a entrada de texto. Tente novamente.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "O ListenBrainz não aceitou o token de usuário. As reproduções salvas foram mantidas.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "A fila do ListenBrainz está cheia. As reproduções salvas mais antigas foram mantidas.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Não foi possível salvar essa reprodução do ListenBrainz. As reproduções salvas foram mantidas.",
+    ["Could not save the ListenBrainz token. Try again."] = "Não foi possível salvar o token do ListenBrainz. Tente novamente.",
+    ["Could not log out of ListenBrainz. Try again."] = "Não foi possível sair do ListenBrainz. Tente novamente.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Este reprodutor não pode enviar reproduções ao ListenBrainz. As reproduções salvas foram mantidas.",
+    ["This player cannot store a ListenBrainz token."] = "Este reprodutor não pode armazenar um token do ListenBrainz.",
+    ["That token cannot be used."] = "Esse token não pode ser usado.",
+    ["This player cannot check a ListenBrainz token."] = "Este reprodutor não pode verificar um token do ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Verificando token do ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Não foi possível conectar ao ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "O ListenBrainz não aceitou esse token.",
+    ["ListenBrainz token saved."] = "Token do ListenBrainz salvo.",
+    ["Set ListenBrainz user token"] = "Definir token de usuário do ListenBrainz",
+    ["ListenBrainz user token"] = "Token de usuário do ListenBrainz",
+    ["Enabled"] = "Ativado",
+    ["Could not save that setting. Try again."] = "Não foi possível salvar essa configuração. Tente novamente.",
+    ["Log out"] = "Sair",
+    ["Log out (%s)"] = "Sair (%s)",
+    ["Logged out of ListenBrainz."] = "Desconectado do ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Scrobbler do ListenBrainz",
+  },
+  ru = {
+    ["Could not open text entry. Try again."] = "Не удалось открыть ввод текста. Повторите попытку.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz не принял токен пользователя. Сохранённые прослушивания оставлены.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "Очередь ListenBrainz заполнена. Самые старые прослушивания сохранены.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Не удалось сохранить прослушивание ListenBrainz. Сохранённые прослушивания оставлены.",
+    ["Could not save the ListenBrainz token. Try again."] = "Не удалось сохранить токен ListenBrainz. Повторите попытку.",
+    ["Could not log out of ListenBrainz. Try again."] = "Не удалось выйти из ListenBrainz. Повторите попытку.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Этот плеер не может отправлять прослушивания ListenBrainz. Сохранённые прослушивания оставлены.",
+    ["This player cannot store a ListenBrainz token."] = "Этот плеер не может сохранить токен ListenBrainz.",
+    ["That token cannot be used."] = "Этот токен нельзя использовать.",
+    ["This player cannot check a ListenBrainz token."] = "Этот плеер не может проверить токен ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Проверка токена ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Не удалось связаться с ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz не принял этот токен.",
+    ["ListenBrainz token saved."] = "Токен ListenBrainz сохранён.",
+    ["Set ListenBrainz user token"] = "Задать токен пользователя ListenBrainz",
+    ["ListenBrainz user token"] = "Токен пользователя ListenBrainz",
+    ["Enabled"] = "Включено",
+    ["Could not save that setting. Try again."] = "Не удалось сохранить настройку. Повторите попытку.",
+    ["Log out"] = "Выйти",
+    ["Log out (%s)"] = "Выйти (%s)",
+    ["Logged out of ListenBrainz."] = "Вы вышли из ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Скробблер ListenBrainz",
+  },
+  uk = {
+    ["Could not open text entry. Try again."] = "Не вдалося відкрити введення тексту. Спробуйте ще раз.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz не прийняв токен користувача. Збережені прослуховування залишено.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "Черга ListenBrainz заповнена. Найстаріші прослуховування збережено.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Не вдалося зберегти прослуховування ListenBrainz. Збережені прослуховування залишено.",
+    ["Could not save the ListenBrainz token. Try again."] = "Не вдалося зберегти токен ListenBrainz. Спробуйте ще раз.",
+    ["Could not log out of ListenBrainz. Try again."] = "Не вдалося вийти з ListenBrainz. Спробуйте ще раз.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Цей плеєр не може надсилати прослуховування ListenBrainz. Збережені прослуховування залишено.",
+    ["This player cannot store a ListenBrainz token."] = "Цей плеєр не може зберегти токен ListenBrainz.",
+    ["That token cannot be used."] = "Цей токен не можна використати.",
+    ["This player cannot check a ListenBrainz token."] = "Цей плеєр не може перевірити токен ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Перевірка токена ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Не вдалося з'єднатися з ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz не прийняв цей токен.",
+    ["ListenBrainz token saved."] = "Токен ListenBrainz збережено.",
+    ["Set ListenBrainz user token"] = "Встановити токен користувача ListenBrainz",
+    ["ListenBrainz user token"] = "Токен користувача ListenBrainz",
+    ["Enabled"] = "Увімкнено",
+    ["Could not save that setting. Try again."] = "Не вдалося зберегти це налаштування. Спробуйте ще раз.",
+    ["Log out"] = "Вийти",
+    ["Log out (%s)"] = "Вийти (%s)",
+    ["Logged out of ListenBrainz."] = "Ви вийшли з ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Скроблер ListenBrainz",
+  },
+  vi = {
+    ["Could not open text entry. Try again."] = "Không thể mở mục nhập văn bản. Hãy thử lại.",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz không chấp nhận mã người dùng. Các lượt nghe đã lưu vẫn được giữ.",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "Hàng đợi ListenBrainz đã đầy. Các lượt nghe cũ nhất vẫn được giữ.",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "Không thể lưu lượt nghe ListenBrainz đó. Các lượt nghe đã lưu vẫn được giữ.",
+    ["Could not save the ListenBrainz token. Try again."] = "Không thể lưu mã ListenBrainz. Hãy thử lại.",
+    ["Could not log out of ListenBrainz. Try again."] = "Không thể đăng xuất khỏi ListenBrainz. Hãy thử lại.",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "Máy nghe nhạc này không thể gửi lượt nghe ListenBrainz. Các lượt nghe đã lưu vẫn được giữ.",
+    ["This player cannot store a ListenBrainz token."] = "Máy nghe nhạc này không thể lưu mã ListenBrainz.",
+    ["That token cannot be used."] = "Không thể dùng mã đó.",
+    ["This player cannot check a ListenBrainz token."] = "Máy nghe nhạc này không thể kiểm tra mã ListenBrainz.",
+    ["Checking ListenBrainz token..."] = "Đang kiểm tra mã ListenBrainz...",
+    ["Could not reach ListenBrainz."] = "Không thể kết nối tới ListenBrainz.",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz không chấp nhận mã đó.",
+    ["ListenBrainz token saved."] = "Đã lưu mã ListenBrainz.",
+    ["Set ListenBrainz user token"] = "Đặt mã người dùng ListenBrainz",
+    ["ListenBrainz user token"] = "Mã người dùng ListenBrainz",
+    ["Enabled"] = "Đã bật",
+    ["Could not save that setting. Try again."] = "Không thể lưu cài đặt đó. Hãy thử lại.",
+    ["Log out"] = "Đăng xuất",
+    ["Log out (%s)"] = "Đăng xuất (%s)",
+    ["Logged out of ListenBrainz."] = "Đã đăng xuất khỏi ListenBrainz.",
+    ["ListenBrainz Scrobbler"] = "Trình scrobble ListenBrainz",
+  },
+  zh_CN = {
+    ["Could not open text entry. Try again."] = "无法打开文本输入。请重试。",
+    ["ListenBrainz did not accept the user token. Saved listens are kept."] = "ListenBrainz 未接受该用户令牌。已保存的收听记录已保留。",
+    ["ListenBrainz queue is full. The oldest saved listens were kept."] = "ListenBrainz 队列已满。最早保存的收听记录已保留。",
+    ["Could not save that ListenBrainz listen. Saved listens were kept."] = "无法保存该 ListenBrainz 收听记录。已保存的记录已保留。",
+    ["Could not save the ListenBrainz token. Try again."] = "无法保存 ListenBrainz 令牌。请重试。",
+    ["Could not log out of ListenBrainz. Try again."] = "无法退出 ListenBrainz。请重试。",
+    ["This player cannot send ListenBrainz listens. Saved listens are kept."] = "此播放器无法发送 ListenBrainz 收听记录。已保存的记录已保留。",
+    ["This player cannot store a ListenBrainz token."] = "此播放器无法存储 ListenBrainz 令牌。",
+    ["That token cannot be used."] = "该令牌无法使用。",
+    ["This player cannot check a ListenBrainz token."] = "此播放器无法检查 ListenBrainz 令牌。",
+    ["Checking ListenBrainz token..."] = "正在检查 ListenBrainz 令牌...",
+    ["Could not reach ListenBrainz."] = "无法连接到 ListenBrainz。",
+    ["ListenBrainz did not accept that token."] = "ListenBrainz 未接受该令牌。",
+    ["ListenBrainz token saved."] = "ListenBrainz 令牌已保存。",
+    ["Set ListenBrainz user token"] = "设置 ListenBrainz 用户令牌",
+    ["ListenBrainz user token"] = "ListenBrainz 用户令牌",
+    ["Enabled"] = "已启用",
+    ["Could not save that setting. Try again."] = "无法保存该设置。请重试。",
+    ["Log out"] = "退出登录",
+    ["Log out (%s)"] = "退出登录 (%s)",
+    ["Logged out of ListenBrainz."] = "已退出 ListenBrainz。",
+    ["ListenBrainz Scrobbler"] = "ListenBrainz 听歌记录器",
+  },
+}
+local function tr(s)
+  return plugin.tr(s, T)
+end
 
 -- ListenBrainz scrobbler. The user token lives only in plugin.secrets.
 -- Playback state and the offline queue live in plugin.storage.
@@ -86,7 +380,7 @@ end
 
 local function show_input(title, callback)
   local ok = plugin.show_text_input(title, nil, true, callback)
-  if not ok then plugin.show_toast("Could not open text entry. Try again.") end
+  if not ok then plugin.show_toast(tr("Could not open text entry. Try again.")) end
   return ok
 end
 
@@ -209,7 +503,7 @@ local function hold_auth()
   if auth_hold then return end
   auth_hold = true
   plugin.storage.set("auth_hold", "1")
-  plugin.show_toast("ListenBrainz did not accept the user token. Saved listens are kept.")
+  plugin.show_toast(tr("ListenBrainz did not accept the user token. Saved listens are kept."))
 end
 
 local function header_value(headers, name)
@@ -255,13 +549,13 @@ end
 local function tell_queue_full()
   if queue_full_told then return end
   queue_full_told = true
-  plugin.show_toast("ListenBrainz queue is full. The oldest saved listens were kept.")
+  plugin.show_toast(tr("ListenBrainz queue is full. The oldest saved listens were kept."))
 end
 
 local function tell_queue_write()
   if queue_write_told then return end
   queue_write_told = true
-  plugin.show_toast("Could not save that ListenBrainz listen. Saved listens were kept.")
+  plugin.show_toast(tr("Could not save that ListenBrainz listen. Saved listens were kept."))
 end
 
 local function payload_for(item, kind)
@@ -306,12 +600,12 @@ local function switch_account(new_token, user_name)
   end
   if new_token then
     if not plugin.secrets.set("user_token", new_token) then
-      plugin.show_toast("Could not save the ListenBrainz token. Try again.")
+      plugin.show_toast(tr("Could not save the ListenBrainz token. Try again."))
       return false
     end
   elseif can_secrets then
     if not plugin.secrets.delete("user_token") then
-      plugin.show_toast("Could not log out of ListenBrainz. Try again.")
+      plugin.show_toast(tr("Could not log out of ListenBrainz. Try again."))
       return false
     end
   end
@@ -389,7 +683,7 @@ sync_queue = function()
   if not can_http or not can_json then
     if not missing_api_told then
       missing_api_told = true
-      plugin.show_toast("This player cannot send ListenBrainz listens. Saved listens are kept.")
+      plugin.show_toast(tr("This player cannot send ListenBrainz listens. Saved listens are kept."))
     end
     return
   end
@@ -621,31 +915,31 @@ end)
 
 local function validate_token(token)
   if not can_secrets then
-    plugin.show_toast("This player cannot store a ListenBrainz token.")
+    plugin.show_toast(tr("This player cannot store a ListenBrainz token."))
     return
   end
   if not token_shape_ok(token) then
-    plugin.show_toast("That token cannot be used.")
+    plugin.show_toast(tr("That token cannot be used."))
     return
   end
   if not can_http or not can_json then
-    plugin.show_toast("This player cannot check a ListenBrainz token.")
+    plugin.show_toast(tr("This player cannot check a ListenBrainz token."))
     return
   end
   validation_generation = validation_generation + 1
   local validation_id = validation_generation
   local generation = account_generation
-  plugin.show_toast("Checking ListenBrainz token...")
+  plugin.show_toast(tr("Checking ListenBrainz token..."))
   local handle = request("GET", VALIDATE_URL, token, nil, function(status, body, err)
     if validation_id ~= validation_generation or generation ~= account_generation then return end
     if err or status ~= 200 or type(body) ~= "string" then
-      plugin.show_toast("Could not reach ListenBrainz.")
+      plugin.show_toast(tr("Could not reach ListenBrainz."))
       return
     end
     local data = decode_json(body)
     -- Invalid tokens are often HTTP 200 with valid=false.
     if type(data) ~= "table" or data.valid ~= true then
-      plugin.show_toast("ListenBrainz did not accept that token.")
+      plugin.show_toast(tr("ListenBrainz did not accept that token."))
       return
     end
     local user_name = nil
@@ -654,20 +948,20 @@ local function validate_token(token)
       if user_name == token or user_name:find("%c") then user_name = nil end
     end
     if switch_account(token, user_name) then
-      plugin.show_toast("ListenBrainz token saved.")
+      plugin.show_toast(tr("ListenBrainz token saved."))
       sync_queue()
     end
   end)
-  if not handle then plugin.show_toast("Could not reach ListenBrainz.") end
+  if not handle then plugin.show_toast(tr("Could not reach ListenBrainz.")) end
 end
 
 local function open_menu()
   local rows = {
     {
       type = "row",
-      label = "Set ListenBrainz user token",
+      label = tr("Set ListenBrainz user token"),
       on_select = function()
-        show_input("ListenBrainz user token", function(value)
+        show_input(tr("ListenBrainz user token"), function(value)
           if value == nil or trim(value) == "" then return end
           validate_token(trim(value))
         end)
@@ -675,14 +969,14 @@ local function open_menu()
     },
     {
       type = "toggle",
-      label = "Enabled",
+      label = tr("Enabled"),
       value = state.enabled,
       on_change = function(value)
         if value then
           state.enabled = true
           if not save_enabled() then
             state.enabled = false
-            plugin.show_toast("Could not save that setting. Try again.")
+            plugin.show_toast(tr("Could not save that setting. Try again."))
             return
           end
           if current then
@@ -700,31 +994,31 @@ local function open_menu()
           end
           state.enabled = false
           if not save_enabled() then
-            plugin.show_toast("Could not save that setting. Try again.")
+            plugin.show_toast(tr("Could not save that setting. Try again."))
           end
         end
       end,
     },
   }
   if current_token() then
-    local label = "Log out"
+    local label = tr("Log out")
     if state.user_name and state.user_name ~= "" then
-      label = "Log out (" .. state.user_name .. ")"
+      label = string.format(tr("Log out (%s)"), state.user_name)
     end
     rows[#rows + 1] = {
       type = "row",
       label = label,
       on_select = function()
         if switch_account(nil, nil) then
-          plugin.show_toast("Logged out of ListenBrainz.")
+          plugin.show_toast(tr("Logged out of ListenBrainz."))
         end
       end,
     }
   end
-  plugin.show_settings_list("ListenBrainz Scrobbler", rows)
+  plugin.show_settings_list(tr("ListenBrainz Scrobbler"), rows)
 end
 
-plugin.register_list_item("playback", "ListenBrainz Scrobbler", open_menu)
+plugin.register_list_item("playback", tr("ListenBrainz Scrobbler"), open_menu)
 
 if not auth_hold then sync_queue() end
 

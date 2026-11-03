@@ -3,14 +3,56 @@
 plugin.define({
     id = "org.compas.vinyl_player",
     name = "Vinyl Player",
-    version = "1.0.5",
-    api_min = 17,
+    version = "1.1.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Vinyl Player"] = "Plattenspieler",
+    },
+    es = {
+        ["Vinyl Player"] = "Tocadiscos",
+    },
+    fi = {
+        ["Vinyl Player"] = "Levysoitin",
+    },
+    fr = {
+        ["Vinyl Player"] = "Platine vinyle",
+    },
+    it = {
+        ["Vinyl Player"] = "Giradischi",
+    },
+    ja = {
+        ["Vinyl Player"] = "レコードプレーヤー",
+    },
+    nl = {
+        ["Vinyl Player"] = "Platenspeler",
+    },
+    pt = {
+        ["Vinyl Player"] = "Toca-discos",
+    },
+    ru = {
+        ["Vinyl Player"] = "Виниловый проигрыватель",
+    },
+    uk = {
+        ["Vinyl Player"] = "Вініловий програвач",
+    },
+    vi = {
+        ["Vinyl Player"] = "Đầu đĩa than",
+    },
+    zh_CN = {
+        ["Vinyl Player"] = "黑胶唱片机",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 local LAYOUT = {
     id = "plugin.vinyl_player",
     xml = "VinylPlayer/player_layouts/vinyl_player.xml",
-    name = "Vinyl Player",
+    name = tr("Vinyl Player"),
 }
 
 local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/VinylPlayer/player_layouts/"

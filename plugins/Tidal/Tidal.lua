@@ -31,12 +31,534 @@ restart.
 plugin.define({
     id = "community.tidal",
     name = "Tidal",
-    version = "1.3.7",
-    api_min = 17,
+    version = "1.4.0",
+    api_min = 19,
 })
 
+local T = {
+    de = {
+        ["Tidal needs a player build with remote playback"] = "Tidal benötigt eine Player-Version mit Remote-Wiedergabe",
+        ["Lossless FLAC (CD)"] = "Verlustfrei FLAC (CD)",
+        ["High (AAC 320)"] = "Hoch (AAC 320)",
+        ["Low (AAC 96)"] = "Niedrig (AAC 96)",
+        ["Logged out of Tidal"] = "Von Tidal abgemeldet",
+        ["Nothing in this list can be streamed"] = "Nichts in dieser Liste kann gestreamt werden",
+        ["No tracks"] = "Keine Titel",
+        ["No albums"] = "Keine Alben",
+        ["No artists"] = "Keine Künstler",
+        ["No playlists"] = "Keine Wiedergabelisten",
+        ["No results"] = "Keine Ergebnisse",
+        ["Not available to stream"] = "Nicht zum Streamen verfügbar",
+        ["No stream link"] = "Kein Stream-Link",
+        ["Still waiting for the phone"] = "Warte weiterhin auf das Telefon",
+        ["Quality updated"] = "Qualität aktualisiert",
+        ["This quality is unavailable. Choose Lossless."] = "Diese Qualität ist nicht verfügbar. Wähle Verlustfrei.",
+        ["Sign-in expired. Open the tile to try again."] = "Anmeldung abgelaufen. Öffne die Kachel erneut.",
+        ["Code: %s"] = "Code: %s",
+        ["Signed in to Tidal"] = "Bei Tidal angemeldet",
+        ["Preparing playback"] = "Wiedergabe wird vorbereitet",
+        ["Could not complete the request. Try again."] = "Anfrage fehlgeschlagen. Versuche es erneut.",
+        ["Unknown album"] = "Unbekanntes Album",
+        ["Unknown title"] = "Unbekannter Titel",
+        ["Unknown artist"] = "Unbekannter Künstler",
+        ["Playlist"] = "Wiedergabeliste",
+        ["Could not load"] = "Laden fehlgeschlagen",
+        ["Retry"] = "Wiederholen",
+        ["Play these"] = "Diese abspielen",
+        ["Favorite tracks"] = "Lieblingstitel",
+        ["Favorite albums"] = "Lieblingsalben",
+        ["Playlists"] = "Wiedergabelisten",
+        ["Quality"] = "Qualität",
+        ["Sign in to Tidal"] = "Bei Tidal anmelden",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Code: %s\n\nÖffne %s auf einem Telefon und gib diesen Code ein.\n\nWarte auf das Telefon.",
+        ["Search tracks"] = "Titel suchen",
+        ["Search albums"] = "Alben suchen",
+        ["Search artists"] = "Künstler suchen",
+        ["Sign in or log out"] = "An- oder abmelden",
+        ["Tracks"] = "Titel",
+        ["Albums"] = "Alben",
+        ["Artists"] = "Künstler",
+    },
+    es = {
+        ["Tidal needs a player build with remote playback"] = "Tidal necesita una versión del reproductor con reproducción remota",
+        ["Lossless FLAC (CD)"] = "FLAC sin pérdida (CD)",
+        ["High (AAC 320)"] = "Alta (AAC 320)",
+        ["Low (AAC 96)"] = "Baja (AAC 96)",
+        ["Logged out of Tidal"] = "Sesión cerrada en Tidal",
+        ["Nothing in this list can be streamed"] = "Nada de esta lista se puede reproducir",
+        ["No tracks"] = "Sin pistas",
+        ["No albums"] = "Sin álbumes",
+        ["No artists"] = "Sin artistas",
+        ["No playlists"] = "Sin listas de reproducción",
+        ["No results"] = "Sin resultados",
+        ["Not available to stream"] = "No disponible para transmitir",
+        ["No stream link"] = "Sin enlace de transmisión",
+        ["Still waiting for the phone"] = "Aún esperando al teléfono",
+        ["Quality updated"] = "Calidad actualizada",
+        ["This quality is unavailable. Choose Lossless."] = "Esta calidad no está disponible. Elige Sin pérdida.",
+        ["Sign-in expired. Open the tile to try again."] = "El inicio de sesión expiró. Abre el mosaico para intentarlo de nuevo.",
+        ["Code: %s"] = "Código: %s",
+        ["Signed in to Tidal"] = "Sesión iniciada en Tidal",
+        ["Preparing playback"] = "Preparando reproducción",
+        ["Could not complete the request. Try again."] = "No se pudo completar la solicitud. Inténtalo de nuevo.",
+        ["Unknown album"] = "Álbum desconocido",
+        ["Unknown title"] = "Título desconocido",
+        ["Unknown artist"] = "Artista desconocido",
+        ["Playlist"] = "Lista de reproducción",
+        ["Could not load"] = "No se pudo cargar",
+        ["Retry"] = "Reintentar",
+        ["Play these"] = "Reproducir todo",
+        ["Favorite tracks"] = "Pistas favoritas",
+        ["Favorite albums"] = "Álbumes favoritos",
+        ["Playlists"] = "Listas de reproducción",
+        ["Quality"] = "Calidad",
+        ["Sign in to Tidal"] = "Iniciar sesión en Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Código: %s\n\nEn un teléfono, abre %s e introduce este código.\n\nEsperando al teléfono.",
+        ["Search tracks"] = "Buscar pistas",
+        ["Search albums"] = "Buscar álbumes",
+        ["Search artists"] = "Buscar artistas",
+        ["Sign in or log out"] = "Iniciar o cerrar sesión",
+        ["Tracks"] = "Pistas",
+        ["Albums"] = "Álbumes",
+        ["Artists"] = "Artistas",
+    },
+    fi = {
+        ["Tidal needs a player build with remote playback"] = "Tidal vaatii soitinversion, jossa on etätoisto",
+        ["Lossless FLAC (CD)"] = "Häviötön FLAC (CD)",
+        ["High (AAC 320)"] = "Korkea (AAC 320)",
+        ["Low (AAC 96)"] = "Matala (AAC 96)",
+        ["Logged out of Tidal"] = "Kirjauduttu ulos Tidalista",
+        ["Nothing in this list can be streamed"] = "Mitään tällä listalla ei voi suoratoistaa",
+        ["No tracks"] = "Ei kappaleita",
+        ["No albums"] = "Ei albumeita",
+        ["No artists"] = "Ei esittäjiä",
+        ["No playlists"] = "Ei soittolistoja",
+        ["No results"] = "Ei tuloksia",
+        ["Not available to stream"] = "Ei saatavilla suoratoistoon",
+        ["No stream link"] = "Ei suoratoistolinkkiä",
+        ["Still waiting for the phone"] = "Odotetaan yhä puhelinta",
+        ["Quality updated"] = "Laatu päivitetty",
+        ["This quality is unavailable. Choose Lossless."] = "Tämä laatu ei ole saatavilla. Valitse Häviötön.",
+        ["Sign-in expired. Open the tile to try again."] = "Kirjautuminen vanheni. Yritä uudelleen avaamalla kuvake.",
+        ["Code: %s"] = "Koodi: %s",
+        ["Signed in to Tidal"] = "Kirjauduttu Tidaliin",
+        ["Preparing playback"] = "Valmistellaan toistoa",
+        ["Could not complete the request. Try again."] = "Pyyntöä ei voitu suorittaa. Yritä uudelleen.",
+        ["Unknown album"] = "Tuntematon albumi",
+        ["Unknown title"] = "Tuntematon kappale",
+        ["Unknown artist"] = "Tuntematon esittäjä",
+        ["Playlist"] = "Soittolista",
+        ["Could not load"] = "Lataus epäonnistui",
+        ["Retry"] = "Yritä uudelleen",
+        ["Play these"] = "Toista nämä",
+        ["Favorite tracks"] = "Suosikkikappaleet",
+        ["Favorite albums"] = "Suosikkialbumit",
+        ["Playlists"] = "Soittolistat",
+        ["Quality"] = "Laatu",
+        ["Sign in to Tidal"] = "Kirjaudu Tidaliin",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Koodi: %s\n\nAvaa puhelimella %s ja syötä tämä koodi.\n\nOdotetaan puhelinta.",
+        ["Search tracks"] = "Etsi kappaleita",
+        ["Search albums"] = "Etsi albumeita",
+        ["Search artists"] = "Etsi esittäjiä",
+        ["Sign in or log out"] = "Kirjaudu sisään tai ulos",
+        ["Tracks"] = "Kappaleet",
+        ["Albums"] = "Albumit",
+        ["Artists"] = "Esittäjät",
+    },
+    fr = {
+        ["Tidal needs a player build with remote playback"] = "Tidal nécessite une version du lecteur avec lecture à distance",
+        ["Lossless FLAC (CD)"] = "FLAC sans perte (CD)",
+        ["High (AAC 320)"] = "Haute (AAC 320)",
+        ["Low (AAC 96)"] = "Basse (AAC 96)",
+        ["Logged out of Tidal"] = "Déconnecté de Tidal",
+        ["Nothing in this list can be streamed"] = "Rien dans cette liste ne peut être diffusé",
+        ["No tracks"] = "Aucun titre",
+        ["No albums"] = "Aucun album",
+        ["No artists"] = "Aucun artiste",
+        ["No playlists"] = "Aucune playlist",
+        ["No results"] = "Aucun résultat",
+        ["Not available to stream"] = "Indisponible en streaming",
+        ["No stream link"] = "Aucun lien de flux",
+        ["Still waiting for the phone"] = "Toujours en attente du téléphone",
+        ["Quality updated"] = "Qualité mise à jour",
+        ["This quality is unavailable. Choose Lossless."] = "Cette qualité est indisponible. Choisissez Sans perte.",
+        ["Sign-in expired. Open the tile to try again."] = "Connexion expirée. Ouvrez la tuile pour réessayer.",
+        ["Code: %s"] = "Code : %s",
+        ["Signed in to Tidal"] = "Connecté à Tidal",
+        ["Preparing playback"] = "Préparation de la lecture",
+        ["Could not complete the request. Try again."] = "Impossible de terminer la requête. Réessayez.",
+        ["Unknown album"] = "Album inconnu",
+        ["Unknown title"] = "Titre inconnu",
+        ["Unknown artist"] = "Artiste inconnu",
+        ["Playlist"] = "Playlist",
+        ["Could not load"] = "Chargement impossible",
+        ["Retry"] = "Réessayer",
+        ["Play these"] = "Lire ces titres",
+        ["Favorite tracks"] = "Titres favoris",
+        ["Favorite albums"] = "Albums favoris",
+        ["Playlists"] = "Playlists",
+        ["Quality"] = "Qualité",
+        ["Sign in to Tidal"] = "Se connecter à Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Code : %s\n\nSur un téléphone, ouvrez %s et saisissez ce code.\n\nEn attente du téléphone.",
+        ["Search tracks"] = "Rechercher des titres",
+        ["Search albums"] = "Rechercher des albums",
+        ["Search artists"] = "Rechercher des artistes",
+        ["Sign in or log out"] = "Connexion ou déconnexion",
+        ["Tracks"] = "Titres",
+        ["Albums"] = "Albums",
+        ["Artists"] = "Artistes",
+    },
+    it = {
+        ["Tidal needs a player build with remote playback"] = "Tidal richiede una versione del lettore con riproduzione remota",
+        ["Lossless FLAC (CD)"] = "FLAC senza perdita (CD)",
+        ["High (AAC 320)"] = "Alta (AAC 320)",
+        ["Low (AAC 96)"] = "Bassa (AAC 96)",
+        ["Logged out of Tidal"] = "Disconnesso da Tidal",
+        ["Nothing in this list can be streamed"] = "Nulla in questo elenco può essere riprodotto",
+        ["No tracks"] = "Nessun brano",
+        ["No albums"] = "Nessun album",
+        ["No artists"] = "Nessun artista",
+        ["No playlists"] = "Nessuna playlist",
+        ["No results"] = "Nessun risultato",
+        ["Not available to stream"] = "Non disponibile per lo streaming",
+        ["No stream link"] = "Nessun link di streaming",
+        ["Still waiting for the phone"] = "Ancora in attesa del telefono",
+        ["Quality updated"] = "Qualità aggiornata",
+        ["This quality is unavailable. Choose Lossless."] = "Questa qualità non è disponibile. Scegli Senza perdita.",
+        ["Sign-in expired. Open the tile to try again."] = "Accesso scaduto. Apri il riquadro per riprovare.",
+        ["Code: %s"] = "Codice: %s",
+        ["Signed in to Tidal"] = "Accesso a Tidal effettuato",
+        ["Preparing playback"] = "Preparazione della riproduzione",
+        ["Could not complete the request. Try again."] = "Impossibile completare la richiesta. Riprova.",
+        ["Unknown album"] = "Album sconosciuto",
+        ["Unknown title"] = "Titolo sconosciuto",
+        ["Unknown artist"] = "Artista sconosciuto",
+        ["Playlist"] = "Playlist",
+        ["Could not load"] = "Impossibile caricare",
+        ["Retry"] = "Riprova",
+        ["Play these"] = "Riproduci questi",
+        ["Favorite tracks"] = "Brani preferiti",
+        ["Favorite albums"] = "Album preferiti",
+        ["Playlists"] = "Playlist",
+        ["Quality"] = "Qualità",
+        ["Sign in to Tidal"] = "Accedi a Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Codice: %s\n\nSu un telefono, apri %s e inserisci questo codice.\n\nIn attesa del telefono.",
+        ["Search tracks"] = "Cerca brani",
+        ["Search albums"] = "Cerca album",
+        ["Search artists"] = "Cerca artisti",
+        ["Sign in or log out"] = "Accedi o esci",
+        ["Tracks"] = "Brani",
+        ["Albums"] = "Album",
+        ["Artists"] = "Artisti",
+    },
+    ja = {
+        ["Tidal needs a player build with remote playback"] = "Tidal にはリモート再生対応のプレーヤーが必要です",
+        ["Lossless FLAC (CD)"] = "ロスレス FLAC (CD)",
+        ["High (AAC 320)"] = "高音質 (AAC 320)",
+        ["Low (AAC 96)"] = "低音質 (AAC 96)",
+        ["Logged out of Tidal"] = "Tidal からログアウトしました",
+        ["Nothing in this list can be streamed"] = "このリストには再生できる曲がありません",
+        ["No tracks"] = "曲がありません",
+        ["No albums"] = "アルバムがありません",
+        ["No artists"] = "アーティストがいません",
+        ["No playlists"] = "プレイリストがありません",
+        ["No results"] = "結果がありません",
+        ["Not available to stream"] = "ストリーミングできません",
+        ["No stream link"] = "ストリームリンクがありません",
+        ["Still waiting for the phone"] = "スマートフォンの入力を待っています",
+        ["Quality updated"] = "音質を更新しました",
+        ["This quality is unavailable. Choose Lossless."] = "この音質は利用できません。ロスレスを選択してください。",
+        ["Sign-in expired. Open the tile to try again."] = "ログインの有効期限が切れました。タイルを開いて再試行してください。",
+        ["Code: %s"] = "コード: %s",
+        ["Signed in to Tidal"] = "Tidal にログインしました",
+        ["Preparing playback"] = "再生を準備中",
+        ["Could not complete the request. Try again."] = "リクエストを完了できませんでした。再試行してください。",
+        ["Unknown album"] = "不明なアルバム",
+        ["Unknown title"] = "不明なタイトル",
+        ["Unknown artist"] = "不明なアーティスト",
+        ["Playlist"] = "プレイリスト",
+        ["Could not load"] = "読み込めませんでした",
+        ["Retry"] = "再試行",
+        ["Play these"] = "これらを再生",
+        ["Favorite tracks"] = "お気に入りの曲",
+        ["Favorite albums"] = "お気に入りのアルバム",
+        ["Playlists"] = "プレイリスト",
+        ["Quality"] = "音質",
+        ["Sign in to Tidal"] = "Tidal にログイン",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "コード: %s\n\nスマートフォンで %s を開き、このコードを入力してください。\n\n入力を待っています。",
+        ["Search tracks"] = "曲を検索",
+        ["Search albums"] = "アルバムを検索",
+        ["Search artists"] = "アーティストを検索",
+        ["Sign in or log out"] = "ログイン / ログアウト",
+        ["Tracks"] = "曲",
+        ["Albums"] = "アルバム",
+        ["Artists"] = "アーティスト",
+    },
+    nl = {
+        ["Tidal needs a player build with remote playback"] = "Tidal vereist een spelerversie met afspelen op afstand",
+        ["Lossless FLAC (CD)"] = "Lossless FLAC (CD)",
+        ["High (AAC 320)"] = "Hoog (AAC 320)",
+        ["Low (AAC 96)"] = "Laag (AAC 96)",
+        ["Logged out of Tidal"] = "Uitgelogd bij Tidal",
+        ["Nothing in this list can be streamed"] = "Niets in deze lijst kan worden gestreamd",
+        ["No tracks"] = "Geen nummers",
+        ["No albums"] = "Geen albums",
+        ["No artists"] = "Geen artiesten",
+        ["No playlists"] = "Geen afspeellijsten",
+        ["No results"] = "Geen resultaten",
+        ["Not available to stream"] = "Niet beschikbaar om te streamen",
+        ["No stream link"] = "Geen streamlink",
+        ["Still waiting for the phone"] = "Nog steeds wachten op de telefoon",
+        ["Quality updated"] = "Kwaliteit bijgewerkt",
+        ["This quality is unavailable. Choose Lossless."] = "Deze kwaliteit is niet beschikbaar. Kies Lossless.",
+        ["Sign-in expired. Open the tile to try again."] = "Aanmelding verlopen. Open de tegel om opnieuw te proberen.",
+        ["Code: %s"] = "Code: %s",
+        ["Signed in to Tidal"] = "Aangemeld bij Tidal",
+        ["Preparing playback"] = "Afspelen voorbereiden",
+        ["Could not complete the request. Try again."] = "Verzoek mislukt. Probeer het opnieuw.",
+        ["Unknown album"] = "Onbekend album",
+        ["Unknown title"] = "Onbekende titel",
+        ["Unknown artist"] = "Onbekende artiest",
+        ["Playlist"] = "Afspeellijst",
+        ["Could not load"] = "Laden mislukt",
+        ["Retry"] = "Opnieuw proberen",
+        ["Play these"] = "Deze afspelen",
+        ["Favorite tracks"] = "Favoriete nummers",
+        ["Favorite albums"] = "Favoriete albums",
+        ["Playlists"] = "Afspeellijsten",
+        ["Quality"] = "Kwaliteit",
+        ["Sign in to Tidal"] = "Aanmelden bij Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Code: %s\n\nOpen %s op een telefoon en voer deze code in.\n\nWachten op de telefoon.",
+        ["Search tracks"] = "Nummers zoeken",
+        ["Search albums"] = "Albums zoeken",
+        ["Search artists"] = "Artiesten zoeken",
+        ["Sign in or log out"] = "In- of uitloggen",
+        ["Tracks"] = "Nummers",
+        ["Albums"] = "Albums",
+        ["Artists"] = "Artiesten",
+    },
+    pt = {
+        ["Tidal needs a player build with remote playback"] = "O Tidal precisa de uma versão do reprodutor com reprodução remota",
+        ["Lossless FLAC (CD)"] = "FLAC sem perdas (CD)",
+        ["High (AAC 320)"] = "Alta (AAC 320)",
+        ["Low (AAC 96)"] = "Baixa (AAC 96)",
+        ["Logged out of Tidal"] = "Sessão encerrada no Tidal",
+        ["Nothing in this list can be streamed"] = "Nada nesta lista pode ser reproduzido",
+        ["No tracks"] = "Sem faixas",
+        ["No albums"] = "Sem álbuns",
+        ["No artists"] = "Sem artistas",
+        ["No playlists"] = "Sem playlists",
+        ["No results"] = "Sem resultados",
+        ["Not available to stream"] = "Indisponível para streaming",
+        ["No stream link"] = "Sem link de streaming",
+        ["Still waiting for the phone"] = "Ainda aguardando o telefone",
+        ["Quality updated"] = "Qualidade atualizada",
+        ["This quality is unavailable. Choose Lossless."] = "Esta qualidade não está disponível. Escolha Sem perdas.",
+        ["Sign-in expired. Open the tile to try again."] = "O login expirou. Abra o bloco para tentar novamente.",
+        ["Code: %s"] = "Código: %s",
+        ["Signed in to Tidal"] = "Conectado ao Tidal",
+        ["Preparing playback"] = "Preparando reprodução",
+        ["Could not complete the request. Try again."] = "Não foi possível concluir o pedido. Tente novamente.",
+        ["Unknown album"] = "Álbum desconhecido",
+        ["Unknown title"] = "Título desconhecido",
+        ["Unknown artist"] = "Artista desconhecido",
+        ["Playlist"] = "Playlist",
+        ["Could not load"] = "Não foi possível carregar",
+        ["Retry"] = "Tentar novamente",
+        ["Play these"] = "Reproduzir estes",
+        ["Favorite tracks"] = "Faixas favoritas",
+        ["Favorite albums"] = "Álbuns favoritos",
+        ["Playlists"] = "Playlists",
+        ["Quality"] = "Qualidade",
+        ["Sign in to Tidal"] = "Entrar no Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Código: %s\n\nEm um telefone, abra %s e digite este código.\n\nAguardando o telefone.",
+        ["Search tracks"] = "Buscar faixas",
+        ["Search albums"] = "Buscar álbuns",
+        ["Search artists"] = "Buscar artistas",
+        ["Sign in or log out"] = "Entrar ou sair",
+        ["Tracks"] = "Faixas",
+        ["Albums"] = "Álbuns",
+        ["Artists"] = "Artistas",
+    },
+    ru = {
+        ["Tidal needs a player build with remote playback"] = "Для Tidal требуется сборка плеера с удалённым воспроизведением",
+        ["Lossless FLAC (CD)"] = "FLAC без потерь (CD)",
+        ["High (AAC 320)"] = "Высокое (AAC 320)",
+        ["Low (AAC 96)"] = "Низкое (AAC 96)",
+        ["Logged out of Tidal"] = "Вы вышли из Tidal",
+        ["Nothing in this list can be streamed"] = "Ничего из этого списка нельзя воспроизвести",
+        ["No tracks"] = "Нет треков",
+        ["No albums"] = "Нет альбомов",
+        ["No artists"] = "Нет исполнителей",
+        ["No playlists"] = "Нет плейлистов",
+        ["No results"] = "Нет результатов",
+        ["Not available to stream"] = "Недоступно для потокового воспроизведения",
+        ["No stream link"] = "Нет ссылки на поток",
+        ["Still waiting for the phone"] = "Ожидание подтверждения с телефона",
+        ["Quality updated"] = "Качество обновлено",
+        ["This quality is unavailable. Choose Lossless."] = "Это качество недоступно. Выберите Без потерь.",
+        ["Sign-in expired. Open the tile to try again."] = "Время входа истекло. Откройте плитку, чтобы повторить.",
+        ["Code: %s"] = "Код: %s",
+        ["Signed in to Tidal"] = "Вход в Tidal выполнен",
+        ["Preparing playback"] = "Подготовка воспроизведения",
+        ["Could not complete the request. Try again."] = "Не удалось выполнить запрос. Повторите попытку.",
+        ["Unknown album"] = "Неизвестный альбом",
+        ["Unknown title"] = "Неизвестное название",
+        ["Unknown artist"] = "Неизвестный исполнитель",
+        ["Playlist"] = "Плейлист",
+        ["Could not load"] = "Не удалось загрузить",
+        ["Retry"] = "Повторить",
+        ["Play these"] = "Воспроизвести это",
+        ["Favorite tracks"] = "Любимые треки",
+        ["Favorite albums"] = "Любимые альбомы",
+        ["Playlists"] = "Плейлисты",
+        ["Quality"] = "Качество",
+        ["Sign in to Tidal"] = "Войти в Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Код: %s\n\nОткройте %s на телефоне и введите этот код.\n\nОжидание телефона.",
+        ["Search tracks"] = "Поиск треков",
+        ["Search albums"] = "Поиск альбомов",
+        ["Search artists"] = "Поиск исполнителей",
+        ["Sign in or log out"] = "Войти или выйти",
+        ["Tracks"] = "Треки",
+        ["Albums"] = "Альбомы",
+        ["Artists"] = "Исполнители",
+    },
+    uk = {
+        ["Tidal needs a player build with remote playback"] = "Для Tidal потрібна збірка плеєра з віддаленим відтворенням",
+        ["Lossless FLAC (CD)"] = "FLAC без втрат (CD)",
+        ["High (AAC 320)"] = "Висока (AAC 320)",
+        ["Low (AAC 96)"] = "Низька (AAC 96)",
+        ["Logged out of Tidal"] = "Ви вийшли з Tidal",
+        ["Nothing in this list can be streamed"] = "Нічого з цього списку не можна відтворити",
+        ["No tracks"] = "Немає треків",
+        ["No albums"] = "Немає альбомів",
+        ["No artists"] = "Немає виконавців",
+        ["No playlists"] = "Немає списків відтворення",
+        ["No results"] = "Немає результатів",
+        ["Not available to stream"] = "Недоступно для потокового відтворення",
+        ["No stream link"] = "Немає посилання на потік",
+        ["Still waiting for the phone"] = "Очікування підтвердження з телефона",
+        ["Quality updated"] = "Якість оновлено",
+        ["This quality is unavailable. Choose Lossless."] = "Ця якість недоступна. Оберіть Без втрат.",
+        ["Sign-in expired. Open the tile to try again."] = "Час входу минув. Відкрийте плитку, щоб повторити.",
+        ["Code: %s"] = "Код: %s",
+        ["Signed in to Tidal"] = "Вхід у Tidal виконано",
+        ["Preparing playback"] = "Підготовка відтворення",
+        ["Could not complete the request. Try again."] = "Не вдалося виконати запит. Спробуйте ще раз.",
+        ["Unknown album"] = "Невідомий альбом",
+        ["Unknown title"] = "Невідома назва",
+        ["Unknown artist"] = "Невідомий виконавець",
+        ["Playlist"] = "Список відтворення",
+        ["Could not load"] = "Не вдалося завантажити",
+        ["Retry"] = "Повторити",
+        ["Play these"] = "Відтворити це",
+        ["Favorite tracks"] = "Улюблені треки",
+        ["Favorite albums"] = "Улюблені альбоми",
+        ["Playlists"] = "Списки відтворення",
+        ["Quality"] = "Якість",
+        ["Sign in to Tidal"] = "Увійти в Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Код: %s\n\nВідкрийте %s на телефоні та введіть цей код.\n\nОчікування телефона.",
+        ["Search tracks"] = "Пошук треків",
+        ["Search albums"] = "Пошук альбомів",
+        ["Search artists"] = "Пошук виконавців",
+        ["Sign in or log out"] = "Увійти або вийти",
+        ["Tracks"] = "Треки",
+        ["Albums"] = "Альбоми",
+        ["Artists"] = "Виконавці",
+    },
+    vi = {
+        ["Tidal needs a player build with remote playback"] = "Tidal cần bản dựng trình phát hỗ trợ phát từ xa",
+        ["Lossless FLAC (CD)"] = "FLAC không nén (CD)",
+        ["High (AAC 320)"] = "Cao (AAC 320)",
+        ["Low (AAC 96)"] = "Thấp (AAC 96)",
+        ["Logged out of Tidal"] = "Đã đăng xuất khỏi Tidal",
+        ["Nothing in this list can be streamed"] = "Không thể phát mục nào trong danh sách này",
+        ["No tracks"] = "Không có bài hát",
+        ["No albums"] = "Không có album",
+        ["No artists"] = "Không có nghệ sĩ",
+        ["No playlists"] = "Không có danh sách phát",
+        ["No results"] = "Không có kết quả",
+        ["Not available to stream"] = "Không khả dụng để phát trực tuyến",
+        ["No stream link"] = "Không có liên kết phát",
+        ["Still waiting for the phone"] = "Vẫn đang chờ điện thoại",
+        ["Quality updated"] = "Đã cập nhật chất lượng",
+        ["This quality is unavailable. Choose Lossless."] = "Chất lượng này không khả dụng. Hãy chọn Không nén.",
+        ["Sign-in expired. Open the tile to try again."] = "Đăng nhập đã hết hạn. Mở lại ô để thử lại.",
+        ["Code: %s"] = "Mã: %s",
+        ["Signed in to Tidal"] = "Đã đăng nhập vào Tidal",
+        ["Preparing playback"] = "Đang chuẩn bị phát",
+        ["Could not complete the request. Try again."] = "Không thể hoàn tất yêu cầu. Hãy thử lại.",
+        ["Unknown album"] = "Album không rõ",
+        ["Unknown title"] = "Tiêu đề không rõ",
+        ["Unknown artist"] = "Nghệ sĩ không rõ",
+        ["Playlist"] = "Danh sách phát",
+        ["Could not load"] = "Không thể tải",
+        ["Retry"] = "Thử lại",
+        ["Play these"] = "Phát danh sách này",
+        ["Favorite tracks"] = "Bài hát yêu thích",
+        ["Favorite albums"] = "Album yêu thích",
+        ["Playlists"] = "Danh sách phát",
+        ["Quality"] = "Chất lượng",
+        ["Sign in to Tidal"] = "Đăng nhập vào Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "Mã: %s\n\nTrên điện thoại, hãy mở %s và nhập mã này.\n\nĐang chờ điện thoại.",
+        ["Search tracks"] = "Tìm bài hát",
+        ["Search albums"] = "Tìm album",
+        ["Search artists"] = "Tìm nghệ sĩ",
+        ["Sign in or log out"] = "Đăng nhập hoặc đăng xuất",
+        ["Tracks"] = "Bài hát",
+        ["Albums"] = "Album",
+        ["Artists"] = "Nghệ sĩ",
+    },
+    zh_CN = {
+        ["Tidal needs a player build with remote playback"] = "Tidal 需要支持远程播放的播放器版本",
+        ["Lossless FLAC (CD)"] = "无损 FLAC (CD)",
+        ["High (AAC 320)"] = "高音质 (AAC 320)",
+        ["Low (AAC 96)"] = "低音质 (AAC 96)",
+        ["Logged out of Tidal"] = "已退出 Tidal",
+        ["Nothing in this list can be streamed"] = "此列表中没有可播放的内容",
+        ["No tracks"] = "没有曲目",
+        ["No albums"] = "没有专辑",
+        ["No artists"] = "没有艺术家",
+        ["No playlists"] = "没有播放列表",
+        ["No results"] = "没有结果",
+        ["Not available to stream"] = "无法流式播放",
+        ["No stream link"] = "没有流媒体链接",
+        ["Still waiting for the phone"] = "仍在等待手机确认",
+        ["Quality updated"] = "音质已更新",
+        ["This quality is unavailable. Choose Lossless."] = "此音质不可用。请选择无损。",
+        ["Sign-in expired. Open the tile to try again."] = "登录已过期。请重新打开磁贴重试。",
+        ["Code: %s"] = "代码：%s",
+        ["Signed in to Tidal"] = "已登录 Tidal",
+        ["Preparing playback"] = "正在准备播放",
+        ["Could not complete the request. Try again."] = "无法完成请求。请重试。",
+        ["Unknown album"] = "未知专辑",
+        ["Unknown title"] = "未知标题",
+        ["Unknown artist"] = "未知艺术家",
+        ["Playlist"] = "播放列表",
+        ["Could not load"] = "无法加载",
+        ["Retry"] = "重试",
+        ["Play these"] = "播放这些",
+        ["Favorite tracks"] = "喜爱的曲目",
+        ["Favorite albums"] = "喜爱的专辑",
+        ["Playlists"] = "播放列表",
+        ["Quality"] = "音质",
+        ["Sign in to Tidal"] = "登录 Tidal",
+        ["Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."] = "代码：%s\n\n请在手机上打开 %s 并输入此代码。\n\n正在等待手机。",
+        ["Search tracks"] = "搜索曲目",
+        ["Search albums"] = "搜索专辑",
+        ["Search artists"] = "搜索艺术家",
+        ["Sign in or log out"] = "登录或退出",
+        ["Tracks"] = "曲目",
+        ["Albums"] = "专辑",
+        ["Artists"] = "艺术家",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
+
 if not plugin.has_capability("playback.remote") then
-    plugin.show_toast("Tidal needs a player build with remote playback")
+    plugin.show_toast(tr("Tidal needs a player build with remote playback"))
     return
 end
 
@@ -81,15 +603,15 @@ local function toast(message)
         or message == "Still waiting for the phone"
         or message == "Quality updated" or message == "This quality is unavailable. Choose Lossless."
         or message == "Sign-in expired. Open the tile to try again." then
-        plugin.show_toast(message)
+        plugin.show_toast(tr(message))
     elseif message:match("^Code: ") then
-        plugin.show_toast(message)
+        plugin.show_toast(string.format(tr("Code: %s"), message:sub(7)))
     elseif message:match("^Logged in as ") then
-        plugin.show_toast("Signed in to Tidal")
+        plugin.show_toast(tr("Signed in to Tidal"))
     elseif message == "Preparing playback" then
-        plugin.show_toast(message)
+        plugin.show_toast(tr(message))
     else
-        plugin.show_toast("Could not complete the request. Try again.")
+        plugin.show_toast(tr("Could not complete the request. Try again."))
     end
 end
 
@@ -372,7 +894,7 @@ local function album_from(obj)
     if type(obj) ~= "table" or obj.id == nil then return nil end
     return {
         id = id_string(obj.id),
-        title = obj.title or "Unknown album",
+        title = obj.title or tr("Unknown album"),
         artist = person_name(obj),
         cover = image_url(obj.cover, 320),
         count = tonumber(obj.numberOfTracks) or 0,
@@ -402,8 +924,8 @@ local function track_from(obj, album_hint)
     if obj.allowStreaming == false or obj.streamReady == false then streamable = false end
     return {
         id = id_string(obj.id),
-        title = obj.title or "Unknown title",
-        artist = person_name(obj) ~= "" and person_name(obj) or (hint.artist or "Unknown artist"),
+        title = obj.title or tr("Unknown title"),
+        artist = person_name(obj) ~= "" and person_name(obj) or (hint.artist or tr("Unknown artist")),
         album = (album and album.title) or hint.title or "",
         album_id = album_id,
         cover = cover,
@@ -425,7 +947,7 @@ local function playlist_from(obj)
     if type(obj.squareImage) == "string" then cover = image_url(obj.squareImage, 320) end
     return {
         id = tostring(obj.uuid),
-        name = obj.title or "Playlist",
+        name = obj.title or tr("Playlist"),
         count = tonumber(obj.numberOfTracks) or 0,
         cover = cover,
     }
@@ -450,7 +972,7 @@ end
 local function show_browse_retry(parent, retry)
     if not parent_showing(parent) then return end
     local handle
-    handle = plugin.show_list("Could not load", { "Retry" }, function(index)
+    handle = plugin.show_list(tr("Could not load"), { tr("Retry") }, function(index)
         if index == 1 then retry(handle) end
     end)
     return handle
@@ -650,7 +1172,7 @@ end
 
 local function show_tracks(title, rows)
     if #rows == 0 then toast("No tracks") return end
-    local shown = { { label = "Play these", play_all = true } }
+    local shown = { { label = tr("Play these"), play_all = true } }
     for i = 1, math.min(#rows, BROWSE_CAP) do shown[#shown + 1] = rows[i] end
     show_rows(title, shown, function(row)
         if row.play_all then
@@ -782,7 +1304,7 @@ end
 local function favorite_tracks(depth, parent)
     if not stored("user_id") then toast("This account has no user id"); return end
     fetch_pages(favorites_path("tracks"), items_of, 0, BROWSE_CAP, parent, function(list)
-        show_tracks("Favorite tracks", track_rows(list))
+        show_tracks(tr("Favorite tracks"), track_rows(list))
     end)
 end
 
@@ -794,7 +1316,7 @@ local function favorite_albums(depth, parent)
             local album = album_from(obj)
             if album then albums[#albums + 1] = album end
         end
-        show_albums("Favorite albums", albums, depth)
+        show_albums(tr("Favorite albums"), albums, depth)
     end)
 end
 
@@ -811,7 +1333,7 @@ local function show_playlists(depth, parent)
             if playlist then playlist.label = playlist.name; rows[#rows + 1] = playlist end
         end
         if #rows == 0 then toast("No playlists"); return end
-        show_rows("Playlists", rows, function(playlist, handle)
+        show_rows(tr("Playlists"), rows, function(playlist, handle)
             if depth < 4 then open_playlist(playlist, 0, depth + 1, handle) end
         end)
     end)
@@ -844,8 +1366,8 @@ end
 local function choose_quality(parent)
     if not parent_showing(parent) then return end
     local labels = {}
-    for i, item in ipairs(QUALITIES) do labels[i] = item.label end
-    show_list("Quality", labels, function(index)
+    for i, item in ipairs(QUALITIES) do labels[i] = tr(item.label) end
+    show_list(tr("Quality"), labels, function(index)
         plugin.storage.set("quality", QUALITIES[index].id)
         toast("Quality updated")
     end, { selected = quality_index() })
@@ -934,9 +1456,9 @@ local function begin_login()
             device_code = data.deviceCode,
             deadline = os.time() + (tonumber(data.expiresIn) or 300),
         }
-        local shown = plugin.show_text_view("Sign in to Tidal",
-            "Code: " .. tostring(data.userCode) .. "\n\nOn a phone, open " .. where
-                .. " and enter this code.\n\nWaiting for the phone.")
+        local shown = plugin.show_text_view(tr("Sign in to Tidal"),
+            string.format(tr("Code: %s\n\nOn a phone, open %s and enter this code.\n\nWaiting for the phone."),
+                tostring(data.userCode), where))
         if shown == false then
             stop_login("Could not show sign-in instructions. Try again.")
             return
@@ -946,26 +1468,26 @@ local function begin_login()
 end
 
 show_home = function()
-    show_list("Tidal", {
-        "Search tracks",
-        "Search albums",
-        "Search artists",
-        "Favorite tracks",
-        "Favorite albums",
-        "Playlists",
-        "Quality",
-        "Sign in or log out",
+    show_list(tr("Tidal"), {
+        tr("Search tracks"),
+        tr("Search albums"),
+        tr("Search artists"),
+        tr("Favorite tracks"),
+        tr("Favorite albums"),
+        tr("Playlists"),
+        tr("Quality"),
+        tr("Sign in or log out"),
     }, function(index, handle)
         if index >= 1 and index <= 6 and not stored("refresh_token") then
             begin_login()
             return
         end
         if index == 1 then
-            ask_query("Search tracks", function(query, offset, parent)
-                search_kind("tracks", query, offset, function(list) return track_rows(list) end, "Tracks", nil, 2, parent)
+            ask_query(tr("Search tracks"), function(query, offset, parent)
+                search_kind("tracks", query, offset, function(list) return track_rows(list) end, tr("Tracks"), nil, 2, parent)
             end, handle)
         elseif index == 2 then
-            ask_query("Search albums", function(query, offset, parent)
+            ask_query(tr("Search albums"), function(query, offset, parent)
                 search_kind("albums", query, offset, function(list)
                     local rows = {}
                     for _, obj in ipairs(list) do
@@ -976,23 +1498,23 @@ show_home = function()
                         end
                     end
                     return rows
-                end, "Albums", function(album, depth, list_handle) open_album(album, 0, depth, list_handle) end, 2, parent)
+                end, tr("Albums"), function(album, depth, list_handle) open_album(album, 0, depth, list_handle) end, 2, parent)
             end, handle)
         elseif index == 3 then
-            ask_query("Search artists", function(query, offset, parent)
+            ask_query(tr("Search artists"), function(query, offset, parent)
                 search_kind("artists", query, offset, function(list)
                     local rows = {}
                     for _, obj in ipairs(list) do
                         if type(obj) == "table" and obj.id ~= nil then
                             rows[#rows + 1] = {
                                 id = id_string(obj.id),
-                                name = obj.name or "Unknown artist",
-                                label = obj.name or "Unknown artist",
+                                name = obj.name or tr("Unknown artist"),
+                                label = obj.name or tr("Unknown artist"),
                             }
                         end
                     end
                     return rows
-                end, "Artists", function(artist, depth, list_handle) open_artist(artist, 0, depth, list_handle) end, 2, parent)
+                end, tr("Artists"), function(artist, depth, list_handle) open_artist(artist, 0, depth, list_handle) end, 2, parent)
             end, handle)
         elseif index == 4 then favorite_tracks(2, handle)
         elseif index == 5 then favorite_albums(2, handle)
@@ -1025,4 +1547,4 @@ local function open_tidal()
     show_home()
 end
 
-plugin.register_stream_media_tile("Tidal", open_tidal, "stream_media/tidal_row.png")
+plugin.register_stream_media_tile(tr("Tidal"), open_tidal, "stream_media/tidal_row.png")

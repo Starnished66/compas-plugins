@@ -1,4 +1,58 @@
-plugin.define({ id = "example.themes", name = "Themes", version = "3.16.3", api_min = 9 })
+plugin.define({ id = "example.themes", name = "Themes", version = "3.17.0", api_min = 19 })
+
+local T = {
+    de = {
+        ["Theme"] = "Design",
+        ["Theme applied"] = "Design angewendet",
+    },
+    es = {
+        ["Theme"] = "Tema",
+        ["Theme applied"] = "Tema aplicado",
+    },
+    fi = {
+        ["Theme"] = "Teema",
+        ["Theme applied"] = "Teema otettu käyttöön",
+    },
+    fr = {
+        ["Theme"] = "Thème",
+        ["Theme applied"] = "Thème appliqué",
+    },
+    it = {
+        ["Theme"] = "Tema",
+        ["Theme applied"] = "Tema applicato",
+    },
+    ja = {
+        ["Theme"] = "テーマ",
+        ["Theme applied"] = "テーマを適用しました",
+    },
+    nl = {
+        ["Theme"] = "Thema",
+        ["Theme applied"] = "Thema toegepast",
+    },
+    pt = {
+        ["Theme"] = "Tema",
+        ["Theme applied"] = "Tema aplicado",
+    },
+    ru = {
+        ["Theme"] = "Тема",
+        ["Theme applied"] = "Тема применена",
+    },
+    uk = {
+        ["Theme"] = "Тема",
+        ["Theme applied"] = "Тему застосовано",
+    },
+    vi = {
+        ["Theme"] = "Giao diện",
+        ["Theme applied"] = "Đã áp dụng giao diện",
+    },
+    zh_CN = {
+        ["Theme"] = "主题",
+        ["Theme applied"] = "已应用主题",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 -- Loader/switcher for theme DEFINITION FILES, not a hardcoded theme list --
 -- every *.theme file under SD/Themes/ becomes its own selectable entry,
@@ -612,7 +666,7 @@ for _, t in ipairs(startup_themes) do
     end
 end
 
-plugin.register_list_item("display", "Theme", function()
+plugin.register_list_item("display", tr("Theme"), function()
     -- Fresh scan on every open -- see startup_themes' own comment above for
     -- why this can't just reuse that one.
     local themes = scan_themes()
@@ -627,7 +681,7 @@ plugin.register_list_item("display", "Theme", function()
         if t.filename == selected_filename then selected_index = i + 1 break end
     end
 
-    plugin.show_list("Theme", labels, function(index)
+    plugin.show_list(tr("Theme"), labels, function(index)
         local new_filename = (index == 1) and "" or themes[index - 1].filename
         local new_def = (index == 1) and DEFAULT_THEME or themes[index - 1].def
         if new_filename ~= selected_filename then
@@ -635,7 +689,7 @@ plugin.register_list_item("display", "Theme", function()
             write_state(new_filename)
         end
         apply_theme(new_def)
-        plugin.show_toast("Theme applied", 1000)
+        plugin.show_toast(tr("Theme applied"), 1000)
         plugin.refresh_theme()
     end, { selected = selected_index })
 end, { group = "appearance" })

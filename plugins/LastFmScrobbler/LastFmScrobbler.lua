@@ -1,4 +1,286 @@
-plugin.define({ id = "example.lastfm_scrobbler", name = "LastFM Scrobbler Legacy", version = "1.7", api_min = 2 })
+plugin.define({ id = "example.lastfm_scrobbler", name = "LastFM Scrobbler Legacy", version = "1.8", api_min = 19 })
+
+local T = {
+  de = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Eine alte Last.fm-Datei auf der SD-Karte konnte nicht gelöscht werden",
+    ["Could not open text entry. Try again."] = "Texteingabe konnte nicht geöffnet werden. Erneut versuchen.",
+    ["Logging in to Last.fm..."] = "Anmeldung bei Last.fm...",
+    ["Logged in to Last.fm"] = "Bei Last.fm angemeldet",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Anmeldung bei Last.fm fehlgeschlagen. Zugangsdaten prüfen und erneut versuchen.",
+    ["Could not start Last.fm login. Try again."] = "Last.fm-Anmeldung konnte nicht gestartet werden. Erneut versuchen.",
+    ["Add your Last.fm API credentials in settings first."] = "Trage zuerst deine Last.fm-API-Zugangsdaten in den Einstellungen ein.",
+    ["Last.fm Username"] = "Last.fm-Benutzername",
+    ["Last.fm Password"] = "Last.fm-Passwort",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm hat API-Schlüssel oder Secret abgelehnt. Prüfe sie in den Einstellungen.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Last.fm-Sitzung abgelaufen. Melde dich erneut an, um weiter zu scrobbeln.",
+    ["Credential saved"] = "Zugangsdaten gespeichert",
+    ["Could not save that credential. Try again."] = "Zugangsdaten konnten nicht gespeichert werden. Erneut versuchen.",
+    ["Set Last.fm API key"] = "Last.fm-API-Schlüssel festlegen",
+    ["Last.fm API key"] = "Last.fm-API-Schlüssel",
+    ["Set Last.fm API secret"] = "Last.fm-API-Secret festlegen",
+    ["Last.fm API secret"] = "Last.fm-API-Secret",
+    ["Enabled"] = "Aktiviert",
+    ["Log Out"] = "Abmelden",
+    ["Log In"] = "Anmelden",
+    ["LastFM Scrobbler Legacy"] = "Last.fm-Scrobbler (Legacy)",
+  },
+  es = {
+    ["Could not remove an old Last.fm file from the SD card"] = "No se pudo eliminar un archivo antiguo de Last.fm de la tarjeta SD",
+    ["Could not open text entry. Try again."] = "No se pudo abrir la entrada de texto. Inténtalo de nuevo.",
+    ["Logging in to Last.fm..."] = "Iniciando sesión en Last.fm...",
+    ["Logged in to Last.fm"] = "Sesión iniciada en Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "No se pudo iniciar sesión en Last.fm. Comprueba tus datos e inténtalo de nuevo.",
+    ["Could not start Last.fm login. Try again."] = "No se pudo iniciar el acceso a Last.fm. Inténtalo de nuevo.",
+    ["Add your Last.fm API credentials in settings first."] = "Añade primero tus credenciales de API de Last.fm en los ajustes.",
+    ["Last.fm Username"] = "Usuario de Last.fm",
+    ["Last.fm Password"] = "Contraseña de Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm no aceptó tu clave o secreto de API. Revísalos en los ajustes.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "La sesión de Last.fm caducó. Inicia sesión de nuevo para seguir haciendo scrobbling.",
+    ["Credential saved"] = "Credencial guardada",
+    ["Could not save that credential. Try again."] = "No se pudo guardar esa credencial. Inténtalo de nuevo.",
+    ["Set Last.fm API key"] = "Configurar clave de API de Last.fm",
+    ["Last.fm API key"] = "Clave de API de Last.fm",
+    ["Set Last.fm API secret"] = "Configurar secreto de API de Last.fm",
+    ["Last.fm API secret"] = "Secreto de API de Last.fm",
+    ["Enabled"] = "Activado",
+    ["Log Out"] = "Cerrar sesión",
+    ["Log In"] = "Iniciar sesión",
+    ["LastFM Scrobbler Legacy"] = "Scrobbler de Last.fm (clásico)",
+  },
+  fi = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Vanhaa Last.fm-tiedostoa ei voitu poistaa SD-kortilta",
+    ["Could not open text entry. Try again."] = "Tekstinsyöttöä ei voitu avata. Yritä uudelleen.",
+    ["Logging in to Last.fm..."] = "Kirjaudutaan Last.fm-palveluun...",
+    ["Logged in to Last.fm"] = "Kirjauduttu Last.fm-palveluun",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Kirjautuminen Last.fm-palveluun epäonnistui. Tarkista tiedot ja yritä uudelleen.",
+    ["Could not start Last.fm login. Try again."] = "Last.fm-kirjautumista ei voitu aloittaa. Yritä uudelleen.",
+    ["Add your Last.fm API credentials in settings first."] = "Lisää ensin Last.fm API -tunnuksesi asetuksissa.",
+    ["Last.fm Username"] = "Last.fm-käyttäjätunnus",
+    ["Last.fm Password"] = "Last.fm-salasana",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm ei hyväksynyt API-avainta tai salaisuutta. Tarkista ne asetuksista.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Last.fm-kirjautuminen vanheni. Kirjaudu uudelleen jatkaaksesi scrobblausta.",
+    ["Credential saved"] = "Tunniste tallennettu",
+    ["Could not save that credential. Try again."] = "Tunnistetta ei voitu tallentaa. Yritä uudelleen.",
+    ["Set Last.fm API key"] = "Aseta Last.fm API -avain",
+    ["Last.fm API key"] = "Last.fm API -avain",
+    ["Set Last.fm API secret"] = "Aseta Last.fm API -salaisuus",
+    ["Last.fm API secret"] = "Last.fm API -salaisuus",
+    ["Enabled"] = "Käytössä",
+    ["Log Out"] = "Kirjaudu ulos",
+    ["Log In"] = "Kirjaudu sisään",
+    ["LastFM Scrobbler Legacy"] = "Last.fm-scrobbleri (perinteinen)",
+  },
+  fr = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Impossible de supprimer un ancien fichier Last.fm de la carte SD",
+    ["Could not open text entry. Try again."] = "Impossible d'ouvrir la saisie de texte. Réessayez.",
+    ["Logging in to Last.fm..."] = "Connexion à Last.fm...",
+    ["Logged in to Last.fm"] = "Connecté à Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Impossible de se connecter à Last.fm. Vérifiez vos identifiants et réessayez.",
+    ["Could not start Last.fm login. Try again."] = "Impossible de lancer la connexion à Last.fm. Réessayez.",
+    ["Add your Last.fm API credentials in settings first."] = "Ajoutez d'abord vos identifiants API Last.fm dans les paramètres.",
+    ["Last.fm Username"] = "Nom d'utilisateur Last.fm",
+    ["Last.fm Password"] = "Mot de passe Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm a refusé votre clé ou secret API. Vérifiez-les dans les paramètres.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Session Last.fm expirée. Reconnectez-vous pour continuer le scrobbling.",
+    ["Credential saved"] = "Identifiant enregistré",
+    ["Could not save that credential. Try again."] = "Impossible d'enregistrer cet identifiant. Réessayez.",
+    ["Set Last.fm API key"] = "Définir la clé API Last.fm",
+    ["Last.fm API key"] = "Clé API Last.fm",
+    ["Set Last.fm API secret"] = "Définir le secret API Last.fm",
+    ["Last.fm API secret"] = "Secret API Last.fm",
+    ["Enabled"] = "Activé",
+    ["Log Out"] = "Se déconnecter",
+    ["Log In"] = "Se connecter",
+    ["LastFM Scrobbler Legacy"] = "Scrobbler Last.fm (ancien)",
+  },
+  it = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Impossibile rimuovere un vecchio file Last.fm dalla scheda SD",
+    ["Could not open text entry. Try again."] = "Impossibile aprire l'inserimento testo. Riprova.",
+    ["Logging in to Last.fm..."] = "Accesso a Last.fm...",
+    ["Logged in to Last.fm"] = "Accesso a Last.fm effettuato",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Impossibile accedere a Last.fm. Controlla i dati e riprova.",
+    ["Could not start Last.fm login. Try again."] = "Impossibile avviare l'accesso a Last.fm. Riprova.",
+    ["Add your Last.fm API credentials in settings first."] = "Aggiungi prima le credenziali API di Last.fm nelle impostazioni.",
+    ["Last.fm Username"] = "Nome utente Last.fm",
+    ["Last.fm Password"] = "Password Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm non ha accettato la chiave o il segreto API. Controllali nelle impostazioni.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Accesso a Last.fm scaduto. Accedi di nuovo per continuare lo scrobbling.",
+    ["Credential saved"] = "Credenziale salvata",
+    ["Could not save that credential. Try again."] = "Impossibile salvare la credenziale. Riprova.",
+    ["Set Last.fm API key"] = "Imposta chiave API Last.fm",
+    ["Last.fm API key"] = "Chiave API Last.fm",
+    ["Set Last.fm API secret"] = "Imposta segreto API Last.fm",
+    ["Last.fm API secret"] = "Segreto API Last.fm",
+    ["Enabled"] = "Attivato",
+    ["Log Out"] = "Esci",
+    ["Log In"] = "Accedi",
+    ["LastFM Scrobbler Legacy"] = "Scrobbler Last.fm (Legacy)",
+  },
+  ja = {
+    ["Could not remove an old Last.fm file from the SD card"] = "SD カードから古い Last.fm ファイルを削除できませんでした",
+    ["Could not open text entry. Try again."] = "テキスト入力を開けませんでした。もう一度お試しください。",
+    ["Logging in to Last.fm..."] = "Last.fm にログイン中...",
+    ["Logged in to Last.fm"] = "Last.fm にログインしました",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Last.fm にログインできませんでした。入力内容を確認してもう一度お試しください。",
+    ["Could not start Last.fm login. Try again."] = "Last.fm のログインを開始できませんでした。もう一度お試しください。",
+    ["Add your Last.fm API credentials in settings first."] = "先に設定で Last.fm API 認証情報を追加してください。",
+    ["Last.fm Username"] = "Last.fm ユーザー名",
+    ["Last.fm Password"] = "Last.fm パスワード",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm が API キーまたはシークレットを拒否しました。設定を確認してください。",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Last.fm のログイン期限が切れました。記録を続けるには再ログインしてください。",
+    ["Credential saved"] = "認証情報を保存しました",
+    ["Could not save that credential. Try again."] = "認証情報を保存できませんでした。もう一度お試しください。",
+    ["Set Last.fm API key"] = "Last.fm API キーを設定",
+    ["Last.fm API key"] = "Last.fm API キー",
+    ["Set Last.fm API secret"] = "Last.fm API シークレットを設定",
+    ["Last.fm API secret"] = "Last.fm API シークレット",
+    ["Enabled"] = "有効",
+    ["Log Out"] = "ログアウト",
+    ["Log In"] = "ログイン",
+    ["LastFM Scrobbler Legacy"] = "Last.fm Scrobbler (旧版)",
+  },
+  nl = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Kon een oud Last.fm-bestand niet van de SD-kaart verwijderen",
+    ["Could not open text entry. Try again."] = "Kon tekstinvoer niet openen. Probeer het opnieuw.",
+    ["Logging in to Last.fm..."] = "Inloggen bij Last.fm...",
+    ["Logged in to Last.fm"] = "Ingelogd bij Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Kon niet inloggen bij Last.fm. Controleer je gegevens en probeer het opnieuw.",
+    ["Could not start Last.fm login. Try again."] = "Kon inloggen bij Last.fm niet starten. Probeer het opnieuw.",
+    ["Add your Last.fm API credentials in settings first."] = "Voeg eerst je Last.fm API-gegevens toe in de instellingen.",
+    ["Last.fm Username"] = "Last.fm-gebruikersnaam",
+    ["Last.fm Password"] = "Last.fm-wachtwoord",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm accepteerde je API-sleutel of geheim niet. Controleer ze in de instellingen.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Last.fm-sessie verlopen. Log opnieuw in om te blijven scrobbelen.",
+    ["Credential saved"] = "Gegevens opgeslagen",
+    ["Could not save that credential. Try again."] = "Kon die gegevens niet opslaan. Probeer het opnieuw.",
+    ["Set Last.fm API key"] = "Last.fm API-sleutel instellen",
+    ["Last.fm API key"] = "Last.fm API-sleutel",
+    ["Set Last.fm API secret"] = "Last.fm API-geheim instellen",
+    ["Last.fm API secret"] = "Last.fm API-geheim",
+    ["Enabled"] = "Ingeschakeld",
+    ["Log Out"] = "Uitloggen",
+    ["Log In"] = "Inloggen",
+    ["LastFM Scrobbler Legacy"] = "Last.fm-scrobbler (verouderd)",
+  },
+  pt = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Não foi possível remover um arquivo antigo do Last.fm do cartão SD",
+    ["Could not open text entry. Try again."] = "Não foi possível abrir a entrada de texto. Tente novamente.",
+    ["Logging in to Last.fm..."] = "Entrando no Last.fm...",
+    ["Logged in to Last.fm"] = "Conectado ao Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Não foi possível entrar no Last.fm. Verifique seus dados e tente novamente.",
+    ["Could not start Last.fm login. Try again."] = "Não foi possível iniciar o login no Last.fm. Tente novamente.",
+    ["Add your Last.fm API credentials in settings first."] = "Adicione primeiro suas credenciais da API do Last.fm nas configurações.",
+    ["Last.fm Username"] = "Usuário do Last.fm",
+    ["Last.fm Password"] = "Senha do Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "O Last.fm não aceitou sua chave ou segredo da API. Verifique nas configurações.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "A sessão do Last.fm expirou. Entre novamente para continuar fazendo scrobble.",
+    ["Credential saved"] = "Credencial salva",
+    ["Could not save that credential. Try again."] = "Não foi possível salvar essa credencial. Tente novamente.",
+    ["Set Last.fm API key"] = "Definir chave da API do Last.fm",
+    ["Last.fm API key"] = "Chave da API do Last.fm",
+    ["Set Last.fm API secret"] = "Definir segredo da API do Last.fm",
+    ["Last.fm API secret"] = "Segredo da API do Last.fm",
+    ["Enabled"] = "Ativado",
+    ["Log Out"] = "Sair",
+    ["Log In"] = "Entrar",
+    ["LastFM Scrobbler Legacy"] = "Scrobbler do Last.fm (Legado)",
+  },
+  ru = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Не удалось удалить старый файл Last.fm с SD-карты",
+    ["Could not open text entry. Try again."] = "Не удалось открыть ввод текста. Повторите попытку.",
+    ["Logging in to Last.fm..."] = "Вход в Last.fm...",
+    ["Logged in to Last.fm"] = "Вход в Last.fm выполнен",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Не удалось войти в Last.fm. Проверьте данные и повторите попытку.",
+    ["Could not start Last.fm login. Try again."] = "Не удалось начать вход в Last.fm. Повторите попытку.",
+    ["Add your Last.fm API credentials in settings first."] = "Сначала укажите учётные данные API Last.fm в настройках.",
+    ["Last.fm Username"] = "Имя пользователя Last.fm",
+    ["Last.fm Password"] = "Пароль Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm не принял ключ или секрет API. Проверьте их в настройках.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Сессия Last.fm истекла. Войдите снова, чтобы продолжить скробблинг.",
+    ["Credential saved"] = "Данные сохранены",
+    ["Could not save that credential. Try again."] = "Не удалось сохранить данные. Повторите попытку.",
+    ["Set Last.fm API key"] = "Задать ключ API Last.fm",
+    ["Last.fm API key"] = "Ключ API Last.fm",
+    ["Set Last.fm API secret"] = "Задать секрет API Last.fm",
+    ["Last.fm API secret"] = "Секрет API Last.fm",
+    ["Enabled"] = "Включено",
+    ["Log Out"] = "Выйти",
+    ["Log In"] = "Войти",
+    ["LastFM Scrobbler Legacy"] = "Скробблер Last.fm (старый)",
+  },
+  uk = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Не вдалося видалити старий файл Last.fm із SD-карти",
+    ["Could not open text entry. Try again."] = "Не вдалося відкрити введення тексту. Спробуйте знову.",
+    ["Logging in to Last.fm..."] = "Вхід до Last.fm...",
+    ["Logged in to Last.fm"] = "Вхід до Last.fm виконано",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Не вдалося увійти до Last.fm. Перевірте дані та спробуйте знову.",
+    ["Could not start Last.fm login. Try again."] = "Не вдалося розпочати вхід до Last.fm. Спробуйте знову.",
+    ["Add your Last.fm API credentials in settings first."] = "Спочатку додайте облікові дані API Last.fm у налаштуваннях.",
+    ["Last.fm Username"] = "Ім'я користувача Last.fm",
+    ["Last.fm Password"] = "Пароль Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm не прийняв ключ або секрет API. Перевірте їх у налаштуваннях.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Сесія Last.fm закінчилася. Увійдіть знову, щоб продовжити скроблінг.",
+    ["Credential saved"] = "Дані збережено",
+    ["Could not save that credential. Try again."] = "Не вдалося зберегти ці дані. Спробуйте знову.",
+    ["Set Last.fm API key"] = "Задати ключ API Last.fm",
+    ["Last.fm API key"] = "Ключ API Last.fm",
+    ["Set Last.fm API secret"] = "Задати секрет API Last.fm",
+    ["Last.fm API secret"] = "Секрет API Last.fm",
+    ["Enabled"] = "Увімкнено",
+    ["Log Out"] = "Вийти",
+    ["Log In"] = "Увійти",
+    ["LastFM Scrobbler Legacy"] = "Скроблер Last.fm (старий)",
+  },
+  vi = {
+    ["Could not remove an old Last.fm file from the SD card"] = "Không thể xóa tệp Last.fm cũ khỏi thẻ SD",
+    ["Could not open text entry. Try again."] = "Không mở được ô nhập văn bản. Hãy thử lại.",
+    ["Logging in to Last.fm..."] = "Đang đăng nhập Last.fm...",
+    ["Logged in to Last.fm"] = "Đã đăng nhập Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "Không thể đăng nhập Last.fm. Hãy kiểm tra thông tin và thử lại.",
+    ["Could not start Last.fm login. Try again."] = "Không thể bắt đầu đăng nhập Last.fm. Hãy thử lại.",
+    ["Add your Last.fm API credentials in settings first."] = "Hãy thêm thông tin xác thực API Last.fm trong cài đặt trước.",
+    ["Last.fm Username"] = "Tên người dùng Last.fm",
+    ["Last.fm Password"] = "Mật khẩu Last.fm",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm không chấp nhận khóa hoặc mã bí mật API. Hãy kiểm tra trong cài đặt.",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Phiên đăng nhập Last.fm đã hết hạn. Hãy đăng nhập lại để tiếp tục scrobble.",
+    ["Credential saved"] = "Đã lưu thông tin xác thực",
+    ["Could not save that credential. Try again."] = "Không thể lưu thông tin xác thực đó. Hãy thử lại.",
+    ["Set Last.fm API key"] = "Đặt khóa API Last.fm",
+    ["Last.fm API key"] = "Khóa API Last.fm",
+    ["Set Last.fm API secret"] = "Đặt mã bí mật API Last.fm",
+    ["Last.fm API secret"] = "Mã bí mật API Last.fm",
+    ["Enabled"] = "Đã bật",
+    ["Log Out"] = "Đăng xuất",
+    ["Log In"] = "Đăng nhập",
+    ["LastFM Scrobbler Legacy"] = "Last.fm Scrobbler (Cũ)",
+  },
+  zh_CN = {
+    ["Could not remove an old Last.fm file from the SD card"] = "无法从 SD 卡删除旧的 Last.fm 文件",
+    ["Could not open text entry. Try again."] = "无法打开文本输入。请重试。",
+    ["Logging in to Last.fm..."] = "正在登录 Last.fm...",
+    ["Logged in to Last.fm"] = "已登录 Last.fm",
+    ["Could not log in to Last.fm. Check your details and try again."] = "无法登录 Last.fm。请检查账号信息后重试。",
+    ["Could not start Last.fm login. Try again."] = "无法启动 Last.fm 登录。请重试。",
+    ["Add your Last.fm API credentials in settings first."] = "请先在设置中添加 Last.fm API 凭据。",
+    ["Last.fm Username"] = "Last.fm 用户名",
+    ["Last.fm Password"] = "Last.fm 密码",
+    ["Last.fm did not accept your API key or secret. Check them in settings."] = "Last.fm 未接受你的 API 密钥或密钥口令。请在设置中检查。",
+    ["Last.fm login expired. Log in again to keep scrobbling."] = "Last.fm 登录已过期。请重新登录以继续记录播放。",
+    ["Credential saved"] = "凭据已保存",
+    ["Could not save that credential. Try again."] = "无法保存该凭据。请重试。",
+    ["Set Last.fm API key"] = "设置 Last.fm API 密钥",
+    ["Last.fm API key"] = "Last.fm API 密钥",
+    ["Set Last.fm API secret"] = "设置 Last.fm API 密钥口令",
+    ["Last.fm API secret"] = "Last.fm API 密钥口令",
+    ["Enabled"] = "已启用",
+    ["Log Out"] = "退出登录",
+    ["Log In"] = "登录",
+    ["LastFM Scrobbler Legacy"] = "Last.fm 播放记录器（旧版）",
+  },
+}
+local function tr(s)
+  return plugin.tr(s, T)
+end
 
 -- Last.fm scrobbler with a bounded, account-specific offline queue.
 
@@ -29,7 +311,7 @@ local function remove_legacy_file(path)
   local f = io.open(path, "r")
   if f then
     f:close()
-    plugin.show_toast("Could not remove an old Last.fm file from the SD card")
+    plugin.show_toast(tr("Could not remove an old Last.fm file from the SD card"))
   end
 end
 local legacy_state_done = plugin.storage.get("legacy_state_done") == "1"
@@ -155,13 +437,13 @@ end
 
 local function show_input(title, initial, secret, callback)
   local ok = plugin.show_text_input(title, initial, secret, callback)
-  if not ok then plugin.show_toast("Could not open text entry. Try again.") end
+  if not ok then plugin.show_toast(tr("Could not open text entry. Try again.")) end
   return ok
 end
 
 local function do_login(username, password)
   local generation = account_generation
-  plugin.show_toast("Logging in to Last.fm...")
+  plugin.show_toast(tr("Logging in to Last.fm..."))
   local handle = tracked_api_call("login", { method = "auth.getMobileSession", username = username, password = password },
     function(status, body, request_error)
       if generation ~= account_generation then return end
@@ -171,23 +453,23 @@ local function do_login(username, password)
           state.session_key, state.username = key, username
           save_state()
           sync_failures, next_sync_at = 0, 0
-          plugin.show_toast("Logged in to Last.fm")
+          plugin.show_toast(tr("Logged in to Last.fm"))
           return
         end
       end
-      plugin.show_toast("Could not log in to Last.fm. Check your details and try again.")
+      plugin.show_toast(tr("Could not log in to Last.fm. Check your details and try again."))
     end)
-  if not handle then plugin.show_toast("Could not start Last.fm login. Try again.") end
+  if not handle then plugin.show_toast(tr("Could not start Last.fm login. Try again.")) end
 end
 
 local function start_login()
   if API_KEY == "" or API_SECRET == "" then
-    plugin.show_toast("Add your Last.fm API credentials in settings first.")
+    plugin.show_toast(tr("Add your Last.fm API credentials in settings first."))
     return
   end
-  show_input("Last.fm Username", state.username, false, function(username)
+  show_input(tr("Last.fm Username"), state.username, false, function(username)
     if not username or username == "" then return end
-    show_input("Last.fm Password", nil, true, function(password)
+    show_input(tr("Last.fm Password"), nil, true, function(password)
       if password and password ~= "" then do_login(username, password) end
     end)
   end)
@@ -436,13 +718,13 @@ sync_queue = function()
       if code and CREDENTIAL_ERRORS[code] then
         if sent_with_credentials == credential_generation then
           credentials_rejected = true
-          plugin.show_toast("Last.fm did not accept your API key or secret. Check them in settings.")
+          plugin.show_toast(tr("Last.fm did not accept your API key or secret. Check them in settings."))
         end
       elseif code == "9" then
         cancel_account_requests()
         state.session_key, state.username = nil, nil
         save_state()
-        plugin.show_toast("Last.fm login expired. Log in again to keep scrobbling.")
+        plugin.show_toast(tr("Last.fm login expired. Log in again to keep scrobbling."))
       elseif code and not TEMPORARY_ERRORS[code] then
         -- Rejected for good (bad track data); keep the rest of the queue
         -- moving, and never send it again even if the removal fails.
@@ -551,18 +833,18 @@ local function save_credential(storage_key, title, current, secret)
       credentials_rejected = false
       credential_generation = credential_generation + 1
       sync_failures, next_sync_at = 0, 0
-      plugin.show_toast("Credential saved")
+      plugin.show_toast(tr("Credential saved"))
     else
-      plugin.show_toast("Could not save that credential. Try again.")
+      plugin.show_toast(tr("Could not save that credential. Try again."))
     end
   end)
 end
 
 local function open_menu()
   local rows = {
-    { type = "row", label = "Set Last.fm API key", on_select = function() save_credential("api_key", "Last.fm API key", API_KEY, false) end },
-    { type = "row", label = "Set Last.fm API secret", on_select = function() save_credential("api_secret", "Last.fm API secret", API_SECRET, true) end },
-    { type = "toggle", label = "Enabled", value = state.enabled, on_change = function(value)
+    { type = "row", label = tr("Set Last.fm API key"), on_select = function() save_credential("api_key", tr("Last.fm API key"), API_KEY, false) end },
+    { type = "row", label = tr("Set Last.fm API secret"), on_select = function() save_credential("api_secret", tr("Last.fm API secret"), API_SECRET, true) end },
+    { type = "toggle", label = tr("Enabled"), value = state.enabled, on_change = function(value)
       state.enabled = value
       save_state()
       if not value then
@@ -578,15 +860,15 @@ local function open_menu()
   }
 
   if state.session_key then
-    table.insert(rows, { type = "row", label = "Log Out", on_select = function()
+    table.insert(rows, { type = "row", label = tr("Log Out"), on_select = function()
       cancel_account_requests()
       state.session_key, state.username = nil, nil
       save_state()
     end })
   else
-    table.insert(rows, { type = "row", label = "Log In", on_select = start_login })
+    table.insert(rows, { type = "row", label = tr("Log In"), on_select = start_login })
   end
-  plugin.show_settings_list("LastFM Scrobbler Legacy", rows)
+  plugin.show_settings_list(tr("LastFM Scrobbler Legacy"), rows)
 end
 
-plugin.register_list_item("playback", "LastFM Scrobbler Legacy", open_menu)
+plugin.register_list_item("playback", tr("LastFM Scrobbler Legacy"), open_menu)

@@ -3,14 +3,56 @@
 plugin.define({
     id = "org.compas.gallery_player",
     name = "Gallery Player",
-    version = "1.1.6",
-    api_min = 17,
+    version = "1.2.0",
+    api_min = 19,
 })
+
+local T = {
+    de = {
+        ["Gallery Player"] = "Galerie-Player",
+    },
+    es = {
+        ["Gallery Player"] = "Reproductor galería",
+    },
+    fi = {
+        ["Gallery Player"] = "Galleriasoitin",
+    },
+    fr = {
+        ["Gallery Player"] = "Lecteur galerie",
+    },
+    it = {
+        ["Gallery Player"] = "Lettore galleria",
+    },
+    ja = {
+        ["Gallery Player"] = "ギャラリープレーヤー",
+    },
+    nl = {
+        ["Gallery Player"] = "Galeriespeler",
+    },
+    pt = {
+        ["Gallery Player"] = "Reprodutor galeria",
+    },
+    ru = {
+        ["Gallery Player"] = "Галерейный плеер",
+    },
+    uk = {
+        ["Gallery Player"] = "Галерейний плеєр",
+    },
+    vi = {
+        ["Gallery Player"] = "Trình phát phòng tranh",
+    },
+    zh_CN = {
+        ["Gallery Player"] = "画廊播放器",
+    },
+}
+local function tr(s)
+    return plugin.tr(s, T)
+end
 
 local LAYOUT = {
     id = "plugin.gallery_player",
     xml = "GalleryPlayer/player_layouts/gallery_player.xml",
-    name = "Gallery Player",
+    name = tr("Gallery Player"),
 }
 
 local LAYOUT_DIR = plugin.sd_root() .. "/.plugins/GalleryPlayer/player_layouts/"
