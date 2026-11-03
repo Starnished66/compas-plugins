@@ -191,7 +191,7 @@ plugin.define({
 
   | Area | Tokens |
   | --- | --- |
-  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.startup_image` |
+  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.startup_image` |
   | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
@@ -1350,6 +1350,19 @@ operations, and `"ui.file_manager"` before `open_file_manager`.
   returns `nil, error`; a successful open returns `true`. An invalid starting
   folder raises a Lua error. Plugin unload or UI reload silently cancels a
   pending callback. Check `plugin.has_capability("ui.file_picker")`.
+- `plugin.pick_color(default, presets, callback)`: opens the native color
+  picker (the Accent Color picker: saturation/brightness square, hue bar, and
+  a Hex code row that opens the keyboard) and calls `callback(color)` with the
+  chosen integer `0xRRGGBB` when the user taps Done, or `callback(nil)` if the
+  user backs out or returns Home. The callback runs after the picker leaves
+  the navigation stack. `default` is the starting color as an integer
+  `0xRRGGBB` or a `"#RRGGBB"` / `"RRGGBB"` string (`nil` for white).
+  `presets` is an array of up to 12 colors in the same forms shown as
+  swatches (`nil` hides the preset section). An invalid `default`, an invalid
+  preset or more than 12 presets raises a Lua error. Only one color picker
+  may be pending; another request returns `nil, error`; a successful open
+  returns `true`. Plugin unload or UI reload silently cancels a pending
+  callback. Check `plugin.has_capability("ui.color_picker")`.
 - `plugin.file_copy(paths, dest_dir [, callback])`,
   `plugin.file_move(paths, dest_dir [, callback])`,
   `plugin.file_delete(paths [, callback])`: copy, move or delete files and
