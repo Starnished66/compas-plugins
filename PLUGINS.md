@@ -192,7 +192,7 @@ plugin.define({
   | Area | Tokens |
   | --- | --- |
   | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image` |
-  | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve` |
+  | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve`, `audio.mseb.stock`, `audio.soundstage` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Language | `i18n.tr` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
@@ -241,6 +241,39 @@ plugin manager deinitializes; plugins must retain their own saved settings.
 When enabled, stock MSEB overrides the manual PEQ bands, preamp and stereo
 width while retaining independent crossfeed. The manual EQ configuration is
 kept intact and becomes audible again when MSEB is disabled.
+
+The native Soundstage stage is the additive capability `audio.soundstage`; it
+does not raise `PLUGIN_API_VERSION`, so check the capability instead of raising
+`api_min`. It creates a sense of space on headphones from three parts, in this
+order: a side EQ, early reflections, and a binaural virtual-speaker head model.
+`plugin.soundstage_apply_state(state)` atomically applies a configuration in
+which every field is required: `enabled` (boolean) and the numbers
+`speaker_angle_deg` (10..60, default 30), `binaural_amount` (0..1, default 0),
+`side_db` (-12..6, default 0), `side_low_db` (-12..6, default 0), `side_low_hz`
+(50..500, default 150), `side_high_db` (-12..6, default 0), `side_high_hz`
+(2000..12000, default 5000), `reflections` (0..1, default 0), `room_size`
+(0..1, default 0.5) and `damping` (0..1, default 0.5). Any missing, mistyped,
+non-finite or out-of-range field raises a Lua argument error before anything
+changes. It returns `true` once the state is applied. `plugin.get_soundstage_state()`
+returns the same fields.
+
+- The side EQ (`side_db` and the two shelves) changes only the side (left minus
+  right) signal. The mid (left plus right) is left exactly as it is. Boosts are
+  capped at 2x (6 dB) in combination; any resulting peaks are handled by the
+  output limiter.
+- The binaural part is normalised so it does not add level: its side path is
+  scaled so that its largest gain, checked on a frequency grid, is at most
+  about 1 (the unscaled path would peak about 4 to 7 dB near 1 to 2 kHz,
+  depending on the angle). A mono source passes through it unchanged.
+- The stage is bit-identical to bypass while disabled, and also while enabled
+  with `binaural_amount`, `reflections`, `side_db`, `side_low_db` and
+  `side_high_db` all 0. Enabling, disabling and changing values ramp smoothly.
+- It works on stereo streams only. It sits after the PEQ, MSEB, crossfeed and
+  stereo width stages and before the output limiter. It is independent of PEQ
+  bypass and of MSEB, and works alongside them.
+- Like MSEB, the native configuration is transient: it is reset when the plugin
+  manager deinitializes or the plugin that enabled it fails to load, and
+  plugins must retain their own saved settings.
 
 ## Screens
 
