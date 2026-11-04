@@ -329,9 +329,14 @@ use a list row for anything that needs a screen.
 - `id`: 1 to 39 letters, digits, `.`, `_` or `-`, unique.
 - `label`: short caption, about 8 characters fit.
 - `on_change(new_value)`: called with the new boolean when tapped.
-- `options.icon` (required, under 80 characters): the off-state image.
+- `options.icon` (required, under 80 characters): the off-state image. Like
+  settings row icons it may be a path under the plugin folder, for example
+  `"MyPlugin/icon.png"` (looked up at `<sd>/.plugins/MyPlugin/icon.png`), or a
+  theme path such as `"pull_down/x.png"`. A file found under `.plugins` wins;
+  otherwise the theme path is used. An absolute path is used as given.
 - `options.icon_selected`: the on-state image. Default: `icon` with
   `_s.png` in place of its extension. It is recolored to the accent color.
+  It follows the same lookup as `icon`.
 - `options.value`: initial state, default `false`.
 - `options.on_text`, `options.off_text`: state captions, default `"On"` and
   `"Off"`.

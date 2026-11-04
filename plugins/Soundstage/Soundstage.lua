@@ -27,6 +27,7 @@ local T = {
         ["Side EQ"] = "Side-EQ",
         ["Side level (dB)"] = "Side-Pegel (dB)",
         ["Small room"] = "Kleiner Raum",
+        ["Stage"] = "Bühne",
         ["Soundstage"] = "Klangbühne",
         ["Speaker angle (deg)"] = "Lautsprecherwinkel (deg)",
         ["Studio monitors"] = "Studiomonitore",
@@ -60,6 +61,7 @@ local T = {
         ["Side EQ"] = "EQ lateral",
         ["Side level (dB)"] = "Nivel lateral (dB)",
         ["Small room"] = "Sala pequeña",
+        ["Stage"] = "Escena",
         ["Soundstage"] = "Escenario sonoro",
         ["Speaker angle (deg)"] = "Ángulo de altavoces (deg)",
         ["Studio monitors"] = "Monitores de estudio",
@@ -93,6 +95,7 @@ local T = {
         ["Side EQ"] = "Sivu-EQ",
         ["Side level (dB)"] = "Sivutaso (dB)",
         ["Small room"] = "Pieni huone",
+        ["Stage"] = "Äänikuva",
         ["Soundstage"] = "Äänikuva",
         ["Speaker angle (deg)"] = "Kaiutinkulma (deg)",
         ["Studio monitors"] = "Studiomonitorit",
@@ -126,6 +129,7 @@ local T = {
         ["Side EQ"] = "EQ latéral",
         ["Side level (dB)"] = "Niveau latéral (dB)",
         ["Small room"] = "Petite pièce",
+        ["Stage"] = "Scène",
         ["Soundstage"] = "Scène sonore",
         ["Speaker angle (deg)"] = "Angle des haut-parleurs (deg)",
         ["Studio monitors"] = "Moniteurs de studio",
@@ -159,6 +163,7 @@ local T = {
         ["Side EQ"] = "EQ laterale",
         ["Side level (dB)"] = "Livello laterale (dB)",
         ["Small room"] = "Stanza piccola",
+        ["Stage"] = "Scena",
         ["Soundstage"] = "Scena sonora",
         ["Speaker angle (deg)"] = "Angolo altoparlanti (deg)",
         ["Studio monitors"] = "Monitor da studio",
@@ -192,6 +197,7 @@ local T = {
         ["Side EQ"] = "サイド EQ",
         ["Side level (dB)"] = "サイドレベル (dB)",
         ["Small room"] = "スモールルーム",
+        ["Stage"] = "音場",
         ["Soundstage"] = "音場",
         ["Speaker angle (deg)"] = "スピーカー角度 (deg)",
         ["Studio monitors"] = "スタジオモニター",
@@ -225,6 +231,7 @@ local T = {
         ["Side EQ"] = "Side-EQ",
         ["Side level (dB)"] = "Side-niveau (dB)",
         ["Small room"] = "Kleine ruimte",
+        ["Stage"] = "Podium",
         ["Soundstage"] = "Klankbeeld",
         ["Speaker angle (deg)"] = "Luidsprekerhoek (deg)",
         ["Studio monitors"] = "Studiomonitors",
@@ -258,6 +265,7 @@ local T = {
         ["Side EQ"] = "EQ lateral",
         ["Side level (dB)"] = "Nível lateral (dB)",
         ["Small room"] = "Sala pequena",
+        ["Stage"] = "Palco",
         ["Soundstage"] = "Palco sonoro",
         ["Speaker angle (deg)"] = "Ângulo dos alto-falantes (deg)",
         ["Studio monitors"] = "Monitores de estúdio",
@@ -291,6 +299,7 @@ local T = {
         ["Side EQ"] = "Боковой EQ",
         ["Side level (dB)"] = "Боковой уровень (dB)",
         ["Small room"] = "Маленькая комната",
+        ["Stage"] = "Сцена",
         ["Soundstage"] = "Звуковая сцена",
         ["Speaker angle (deg)"] = "Угол динамиков (deg)",
         ["Studio monitors"] = "Студийные мониторы",
@@ -324,6 +333,7 @@ local T = {
         ["Side EQ"] = "Бічний EQ",
         ["Side level (dB)"] = "Бічний рівень (dB)",
         ["Small room"] = "Маленька кімната",
+        ["Stage"] = "Сцена",
         ["Soundstage"] = "Звукова сцена",
         ["Speaker angle (deg)"] = "Кут динаміків (deg)",
         ["Studio monitors"] = "Студійні монітори",
@@ -357,6 +367,7 @@ local T = {
         ["Side EQ"] = "EQ kênh bên",
         ["Side level (dB)"] = "Mức kênh bên (dB)",
         ["Small room"] = "Phòng nhỏ",
+        ["Stage"] = "Sân khấu",
         ["Soundstage"] = "Âm trường",
         ["Speaker angle (deg)"] = "Góc loa (deg)",
         ["Studio monitors"] = "Loa kiểm âm",
@@ -390,6 +401,7 @@ local T = {
         ["Side EQ"] = "侧边 EQ",
         ["Side level (dB)"] = "侧边电平 (dB)",
         ["Small room"] = "小房间",
+        ["Stage"] = "声场",
         ["Soundstage"] = "声场",
         ["Speaker angle (deg)"] = "扬声器角度 (deg)",
         ["Studio monitors"] = "录音棚监听",
@@ -405,7 +417,8 @@ end
 
 local TITLE = "Soundstage"
 local TOGGLE_ID = "soundstage"
-local TOGGLE_ICON = "/usr/resource/litegui/theme2/launcher/music.png"
+local TOGGLE_ICON = "Soundstage/soundstage.png"
+local TOGGLE_ICON_ON = "Soundstage/soundstage_s.png"
 
 -- Native field name, allowed range, and the slider step used by the UI.
 local RANGES = {
@@ -663,11 +676,12 @@ if supported then
         plugin.show_toast(tr("Could not apply Soundstage. Try again."))
     end
     if plugin.has_capability("ui.quick_toggle") then
-        plugin.register_quick_toggle(TOGGLE_ID, tr(TITLE), function(on)
+        plugin.register_quick_toggle(TOGGLE_ID, tr("Stage"), function(on)
             -- No redraw here: update = true opens the screen when it is not showing.
             if not set_enabled(on) then sync_toggle() end
         end, {
             icon = TOGGLE_ICON,
+            icon_selected = TOGGLE_ICON_ON,
             value = state.enabled,
             on_hold = open_settings,
         })
