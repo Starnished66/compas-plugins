@@ -199,6 +199,7 @@ plugin.define({
   | Network | `network.http.sync`, `network.http.async`, `network.http.download`, `network.http.download_progress`, `network.status` |
   | Data | `data.json`, `crypto.md5`, `data.zip`, `data.zip_image`, `data.image_thumbnail`, `data.wallpaper`, `data.html` |
   | Library | `library.album_cover`, `library.artist_albums`, `library.paged`, `library.refresh`, `library.track_metadata` |
+  | Apps | `apps.list`, `apps.launch` |
 
 - LEDs depend on the model: check `plugin.led_available()` instead.
 - `plugin.get_app_info()` returns `{ version, build, platform, plugin_api }`.
@@ -1651,6 +1652,36 @@ end
 `plugin.get_battery()` returns `{ level, charging, full, external_power }`,
 `level` being 0 to 100 (0 without a battery). See also the `battery_changed`
 event.
+
+### External apps
+
+Native programs on the SD card that the player lists under **More > External
+Apps**. Check `plugin.has_capability("apps.list")` and
+`plugin.has_capability("apps.launch")` first.
+
+- `plugin.list_apps()`: the installed apps that run on this board, sorted by
+  name, as `{ id, name, version, opens }` tables. `opens` is an array of the
+  lower-case file extensions the app opens (empty when none).
+- `plugin.launch_app(id [, path])`: starts an app, optionally opening a file.
+  Returns `true` when the launch is accepted, or `nil, reason`. It only works
+  from a user action of your plugin (a list row or menu tap, a confirmation
+  callback), once per action; the action is used up even when the call
+  returns `nil`. `path` is an absolute path under `plugin.sd_root()` with no
+  `.`, `..` or empty parts, to an existing file with an extension from the
+  app's `opens`. The app starts after your function returns, and the player
+  asks the user first when the app's program is new or has changed. If the SD
+  card, USB storage, DAC mode, the emulator store or playback prevents the
+  launch, the player shows a message and nothing starts.
+
+```lua
+if plugin.has_capability("apps.list") then
+    for _, app in ipairs(plugin.list_apps()) do
+        print(app.id, app.name, app.version, table.concat(app.opens, ","))
+    end
+end
+```
+
+For the app side, see the [External apps guide](https://compasplayer.org/apps.html).
 
 ## Network
 
