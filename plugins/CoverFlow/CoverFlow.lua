@@ -1,12 +1,12 @@
 plugin.define({
     id = "example.cover_flow",
     name = "Cover Flow",
-    version = "0.1.0",
+    version = "0.1.1",
     api_min = 19,
 })
 
--- Albums as a carousel through plugin.show_cover_flow{}. On a player without
--- it the same albums open as a show_list grid.
+-- Albums as a carousel through plugin.show_cover_flow{} (capability
+-- ui.cover_flow). On a player without it the same albums open as a grid.
 
 local PAGE = 200
 local MAX_ALBUMS = 5000
@@ -113,7 +113,7 @@ local function open()
         plugin.show_toast("No albums in the library")
         return
     end
-    if plugin.show_cover_flow then
+    if plugin.has_capability("ui.cover_flow") then
         open_cover_flow(albums)
     else
         plugin.show_toast("Cover Flow needs a newer player build; showing a grid")
