@@ -408,6 +408,34 @@ Rows with icons use the native submenu look (44 px icons, 96 px rows, a blue
 gradient that a custom `list_row` color replaces). Text-only lists stay
 compact.
 
+### `plugin.show_cover_flow(options)`
+
+Opens a full-screen album carousel. Swipe or tap the side covers to move;
+tap the centre cover to select it.
+
+```lua
+if plugin.show_cover_flow then
+    local ok, err = plugin.show_cover_flow({
+        title = "Albums",
+        items = {
+            { title = "Popestar", subtitle = "Ghost", song_id = 1234 },
+        },
+        selected = 1,          -- item shown in the centre first
+        az_index = true,       -- letter strip for jumping by first letter
+        on_select = function(index) end,
+        on_hold = function(index) end,   -- optional
+    })
+end
+```
+
+- `items`: each item's `title` and `subtitle` show under the centre cover.
+  `song_id` is a library song whose album art is used. Without it the item
+  shows a placeholder.
+- `on_select` is required; `on_hold` is optional. Both get the 1-based index.
+- On bad options it returns `false` and a message instead of raising.
+- Builds without the carousel have no `plugin.show_cover_flow`; check that it
+  exists and fall back to `show_list` or a grid.
+
 ### `plugin.show_settings_list(title, items [, options])`
 
 Opens a screen that looks like a native Settings submenu, with real switches
@@ -740,6 +768,11 @@ Check these capabilities before calling the new functions on an older player.
 Declare layouts after `plugin.define()` during startup; use `plugin.reload_ui()`
 after saving a change in your plugin's own settings. These declarations do not
 write the user's preferences to storage.
+
+Users can also move and hide plugin rows in the Music menu and plugin toggles
+in the Quick Drawer from the player's reorder screens. New plugin entries
+appear at the end of the Music menu, and at the "plugins" position in the
+Quick Drawer.
 
 ```lua
 if plugin.has_capability("ui.music_layout") then
