@@ -191,7 +191,7 @@ plugin.define({
 
   | Area | Tokens |
   | --- | --- |
-  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image`, `ui.cover_flow` |
+  | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image` |
   | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve`, `audio.mseb.stock`, `audio.soundstage` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Language | `i18n.tr` |
@@ -407,34 +407,6 @@ moved on to. Check `ui.list_showing`.
 Rows with icons use the native submenu look (44 px icons, 96 px rows, a blue
 gradient that a custom `list_row` color replaces). Text-only lists stay
 compact.
-
-### `plugin.show_cover_flow(options)`
-
-Opens a full-screen album carousel. Swipe or tap the side covers to move;
-tap the centre cover to select it.
-
-```lua
-if plugin.has_capability("ui.cover_flow") then
-    local ok, err = plugin.show_cover_flow({
-        title = "Albums",
-        items = {
-            { title = "Popestar", subtitle = "Ghost", song_id = 1234 },
-        },
-        selected = 1,          -- item shown in the centre first
-        az_index = true,       -- letter strip for jumping by first letter
-        on_select = function(index) end,
-        on_hold = function(index) end,   -- optional
-    })
-end
-```
-
-- `items`: each item's `title` and `subtitle` show under the centre cover.
-  `song_id` is a library song whose album art is used. Without it the item
-  shows a placeholder.
-- `on_select` is required; `on_hold` is optional. Both get the 1-based index.
-- On bad options it returns `false` and a message instead of raising.
-- Check the capability `ui.cover_flow` (API 19, no new version) and fall back
-  to `show_list` or a grid; builds without the carousel do not have it.
 
 ### `plugin.show_settings_list(title, items [, options])`
 
