@@ -2,7 +2,7 @@
 
 This repository contains plugin packages, examples and essential store publishing files. Keep tests, services and development artifacts outside it.
 
-Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. The **Plugin Store** (Settings > System > Plugin Manager) installs and updates plugins from the latest release. Player layouts have their own download page under **Settings > Display > Player Layout > Layout > Download**.
+Plugins for [Compás](https://github.com/Starnished66/compas-player), the music player firmware for HiBy R1 and R3 Pro II. The **Plugin Store** (Settings > System > Plugins) installs and updates plugins from the latest release. Player layouts have their own download page under **Settings > Personalize > Player Layout > Download**.
 
 The canonical plugin API reference is [PLUGINS.md](PLUGINS.md); comments in plugin source link to this guide. The player documentation is on [compasplayer.org](https://compasplayer.org/guide.html).
 
@@ -13,11 +13,11 @@ Download the files of a plugin from the [latest release](https://github.com/Star
 - `<Name>.lua` goes in the `.plugins` folder.
 - Extra files go where the plugin's `store.json` says (`dest`). For example, `NetRadio` reads its stations from `Radio.txt` at the root of the card, and individual theme packages install their `.theme` and `.png` files in the `Themes` folder.
 
-Then open Settings > Plugin Manager and choose Refresh Plugins.
+Then open Settings > System > Plugins and choose Refresh Plugins.
 
 ## Themes
 
-Open **Settings > Display > Themes > Download** to download any of the 21 themes individually. Each package includes its theme definition and matching screenshot, so the main theme picker shows its preview after installation. If a theme was installed through the old Themes bundle, download its individual package to add the screenshot. The existing Themes plugin can remain installed.
+Open **Settings > Personalize > Themes > Download** to download any of the 21 themes individually. Each package includes its theme definition and matching screenshot, so the main theme picker shows its preview after installation. If a theme was installed through the old Themes bundle, download its individual package to add the screenshot. The existing Themes plugin can remain installed.
 
 ## AutoEQ profiles
 
@@ -33,9 +33,9 @@ Cover Art Fetcher and Lyrics Fetcher require Plugin API 17. Missing-sidecar requ
 
 Both use Plugin API 15, the API in Compás v1.0.1. No newer plugin API is required.
 
-**ListenBrainz Scrobbler** is under Settings > Playback & Controls. Turn on **Enabled** and enter a ListenBrainz user token. The token stays in the plugin secret store. A listen is kept on the device before it is sent, up to 40 records or 32 KiB. Past that, or if the save fails, the listens already stored stay and the new one is not added. Paused time and time skipped by seeking do not count. Tracks under 30 seconds and streams with no duration are skipped. Logging out or changing the token clears the previous account's queue. A rejected token stops new sends and keeps the saved listens.
+**ListenBrainz Scrobbler** is under Settings > Playback. Turn on **Enabled** and enter a ListenBrainz user token. The token stays in the plugin secret store. A listen is kept on the device before it is sent, up to 40 records or 32 KiB. Past that, or if the save fails, the listens already stored stay and the new one is not added. Paused time and time skipped by seeking do not count. Tracks under 30 seconds and streams with no duration are skipped. Logging out or changing the token clears the previous account's queue. A rejected token stops new sends and keeps the saved listens.
 
-**Net Radio** is one Stream Media tile for both saved stations and Radio Browser search. Open **Saved stations** to play the `Radio.txt` queue, or **Search stations** to find and save direct MP3, FLAC, or ADTS AAC/AAC+ streams. Favorites append to the same `Name | http(s)://direct-stream` file; existing bytes are preserved, and stations remain available offline (playback needs a network connection). Existing users of the separate Radio Browser plugin should disable it in Plugin Manager or remove `.plugins/RadioBrowser.lua`, then refresh plugins. Keep `Radio.txt` so saved stations remain available. Live ICY or ID3 titles are not shown by the player.
+**Net Radio** is one Stream Media tile for both saved stations and Radio Browser search. Open **Saved stations** to play the `Radio.txt` queue, or **Search stations** to find and save direct MP3, FLAC, or ADTS AAC/AAC+ streams. Favorites append to the same `Name | http(s)://direct-stream` file; existing bytes are preserved, and stations remain available offline (playback needs a network connection). Existing users of the separate Radio Browser plugin should disable it in Settings > System > Plugins or remove `.plugins/RadioBrowser.lua`, then refresh plugins. Keep `Radio.txt` so saved stations remain available. Live ICY or ID3 titles are not shown by the player.
 
 ## Kids Mode and Discover
 
@@ -52,7 +52,7 @@ work on API 15 firmware.
 
 ## Player layouts
 
-Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Player, Hiby's Graph Player, Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Display > Player Layout > Layout > Download**, then choose the layout in **Settings > Display > Player Layout > Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires Plugin API 15 or newer, which guarantees the current XML player-layout features and board-size variant discovery; all designs support tap-to-open lyrics, and Default Waveform, Gallery Waveform, Hibys Graph, Panorama, and Vinyl use waveform seeking.
+Download and install Default Waveform Player, Gallery Waveform Player, Hiby's Player, Hiby's Graph Player, Gallery Player, Panorama Player, Vinyl Player, or Orbit Player from **Settings > Personalize > Player Layout > Download**, then choose the layout in **Settings > Personalize > Player Layout**. Layout downloads install the plugin and its display assets. Each package includes layouts for the supported display sizes and requires Plugin API 15 or newer, which guarantees the current XML player-layout features and board-size variant discovery; all designs support tap-to-open lyrics, and Default Waveform, Gallery Waveform, Hibys Graph, Panorama, and Vinyl use waveform seeking.
 
 - **Default Waveform Player** keeps the familiar Default layout and adds waveform bars.
 - **Gallery Waveform Player** adds an envelope waveform to Gallery while preserving its artwork and lyrics transitions.
@@ -72,16 +72,16 @@ These plugins require Plugin API 16 or 17, as declared by each package.
 | AutoEQ | Settings > Sound > Equalizer > Profiles > Download profiles | Catalog and profile download status in a dismissible progress card. |
 | Cover Art Fetcher | Settings > Library | API 17. Manual search and download stages, persistent download history, scroll reset when paging, and confirmed revert to backups. |
 | Lyrics Fetcher | Settings > Library, and Now Playing > three-dot menu on players that support it | Requires Plugin API 17. Manual lookup, retry and save status in a dismissible progress card. Skips synchronized sidecars and backs up unsynchronized ones. The Now Playing action fetches the current track. |
-| Track Inspector | Settings > Playback & Controls | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
+| Track Inspector | Settings > Playback | Source codec and format, output route, DSP assessment, and bounded local file header inspection. Unknown information remains unknown; the assessment does not certify a DAC's output. |
 | Extended Sleep Timer | Settings > Power | Optional gradual fade before stopping playback. Fade writes neither remembered volume nor firmware settings. Finishing or cancelling leaves the current volume in place. |
 | Volume Limiter | Settings > Sound | Quietly pulls software volume down to a configured ceiling. Volume events arrive at the firmware's notification cadence. |
 | AutoEQ Context | Settings > Sound | Selects local `.peq` profiles by folder, artist, or genre. Applies and restores runtime EQ without saving each track change. |
 | Output-Aware Sound | Settings > Sound | Selects a local `.peq` profile for wired, USB DAC, or Bluetooth output, including codec-specific Bluetooth rules. |
 | MSEB | Settings > Sound | Mood-based tone tuning on top of the parametric EQ, with backup and restore. |
-| Album Playback Rules | Settings > Playback & Controls | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
-| A-B Repeat | Settings > Playback & Controls | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
-| Metronome | Settings > Playback & Controls, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Pauses music and plays a repeating click track; native looping keeps the current queue intact, and Stop can resume the previous track. Crossfade is turned off while it runs. |
-| ABX Blind Test | Settings > Playback & Controls | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
+| Album Playback Rules | Settings > Playback | Overrides crossfade, gapless, ReplayGain mode, and playback order by album tags. Native playback settings persist; ReplayGain changes take effect on the next track. |
+| A-B Repeat | Settings > Playback | Decoder-frame loops for finite local FLAC, WAV, AIFF, and CAF up to 16-bit, at normal speed with crossfade off. |
+| Metronome | Settings > Playback, and More on players that support it | Tempo 20 to 300 BPM with tap tempo, time signatures from 1/4 to 12/8, subdivisions (eighths, triplets, sixteenths, quintuplets, sextuplets, swing) and accent, beat and subdivision clicks. Pauses music and plays a repeating click track; native looping keeps the current queue intact, and Stop can resume the previous track. Crossfade is turned off while it runs. |
+| ABX Blind Test | Settings > Playback | Randomized hidden-X comparisons and scores. File comparisons require matched playable frame counts, sample rates, and channels; EQ comparisons cannot guarantee click-free coefficient changes. |
 | Jellyfin & Emby | Stream Media | API 17. Authenticated music library browsing and direct playback. Seeking depends on a supported finite source and the active native decoder. |
 | Audiobooks | Books | Browse audiobook files with File Manager; resume playback, use bookmarks and chapters, and set a sleep timer. Includes Reading Room layouts and icons. |
 | Podcasts | Stream Media | Search and subscribe, download episodes with progress, manage files with File Manager, and resume playback. Includes Reading Room layouts and icons. |

@@ -6,7 +6,7 @@ flash is needed.
 
 Ready-made plugins live in the
 [compas-plugins repository](https://github.com/Starnished66/compas-plugins).
-The in-app **Plugin Store** (Settings > System > Plugin Manager > Plugin
+The in-app **Plugin Store** (Settings > System > Plugins > Plugin
 Store) installs from it. Browse it for real examples, or contribute your own.
 Browse [published plugins](https://github.com/Starnished66/compas-plugins/tree/main/plugins)
 and [standalone examples](https://github.com/Starnished66/compas-plugins/tree/main/examples).
@@ -44,7 +44,7 @@ the Compás Tools sources ([`record.rs`](https://github.com/Starnished66/compas-
 2. Give the plugin an identity with `plugin.define()`.
 3. Add a way to open it, for example a row in Settings.
 4. Copy the file to `<SD card>/.plugins/`.
-5. Open **Settings > System > Plugin Manager** and tap **Refresh Plugins**,
+5. Open **Settings > System > Plugins** and tap **Refresh Plugins**,
    or restart the player.
 
 ```lua
@@ -81,7 +81,7 @@ Tip: start from the example closest to what you want to build.
   `plugin.reload_ui()`. Each one runs its file from top to bottom once; this is
   where it registers rows, tiles and events.
 - Files load in alphabetical order (byte-wise, case-sensitive). Up to 32
-  enabled plugins load; Plugin Manager marks the rest "not loaded: plugin limit
+  enabled plugins load; the Plugins screen marks the rest "not loaded: plugin limit
   reached".
 - Some settings are global and the last plugin to set them wins, for example
   colors, icons and the Home layout. Because the order is alphabetical, the
@@ -121,7 +121,7 @@ loop is stopped. File reads through Lua's own file handles do count.
 
 | Entry point | Function | Limit |
 | --- | --- | --- |
-| A row in a native list | `register_list_item` | 16 in Playback & Controls or Sound; 8 in other lists, all plugins together |
+| A row in a native list | `register_list_item` | 16 in Playback or Sound; 8 in other lists, all plugins together |
 | An action in the now-playing menu | `register_list_item` | 8 actions, all plugins together; requires `ui.player_menu` |
 | A row in More | `register_list_item` | 4 rows, all plugins together; requires `ui.more_menu` |
 | A tile in Stream Media | `register_stream_media_tile` | 5 tiles |
@@ -137,10 +137,10 @@ The lists that accept rows:
 | `"books"` | Books | Readers, audiobooks, reference tools |
 | `"music"` | Music | Music services, libraries and tools |
 | `"settings"` | Settings > System > Additional Tools | General plugin settings |
-| `"display"` | Settings > Display | Themes and visual tools |
-| `"playback"` | Settings > Playback & Controls | Resume and playback tools |
+| `"display"` | Settings > Personalize | Themes and visual tools |
+| `"playback"` | Settings > Playback | Resume and playback tools |
 | `"music_audio"` | Settings > Sound | EQ, DSP, gain and volume tools |
-| `"music_controls"` | Settings > Playback & Controls > Buttons & Remote | Button and remote behavior |
+| `"music_controls"` | Settings > Playback > Controls | Button and remote behavior |
 | `"music_timers"` | Settings > Power | Sleep and idle timers |
 | `"music_library"` | Settings > Library | Scanning, tagging, scrobbling |
 | `"power"` | Settings > Power | Battery and power tools |
@@ -237,8 +237,9 @@ configuration with `enabled` (boolean), the integer controls `temperature`,
 `sibilance_lf`, `sibilance_hf`, `impulse_tone`, and `air` (each -100..100),
 and `width` (finite number 0..2, with 1 neutral). Invalid state raises a Lua
 argument error before any field changes. `plugin.get_mseb_state()` returns the
-same fields. This native configuration is transient and is reset when the
-plugin manager deinitializes; plugins must retain their own saved settings.
+same fields. Plugin overrides are transient: manager teardown or a failed
+owner load restores the saved native Sound Tuning settings. Plugins retain
+their own saved overrides.
 When enabled, stock MSEB overrides the manual PEQ bands, preamp and stereo
 width while retaining independent crossfeed. The manual EQ configuration is
 kept intact and becomes audible again when MSEB is disabled.
@@ -272,9 +273,8 @@ returns the same fields.
 - It works on stereo streams only. It sits after the PEQ, MSEB, crossfeed and
   stereo width stages and before the output limiter. It is independent of PEQ
   bypass and of MSEB, and works alongside them.
-- Like MSEB, the native configuration is transient: it is reset when the plugin
-  manager deinitializes or the plugin that enabled it fails to load, and
-  plugins must retain their own saved settings.
+- Like MSEB, plugin overrides are transient. Manager teardown or a failed
+  owner load restores the saved native Soundstage settings.
 
 ## Screens
 
@@ -285,12 +285,11 @@ appears](#where-your-plugin-appears)). `on_open()` runs when the row is
 tapped; open your first screen from there.
 
 `options` may contain the [row options](#row-options) `icon`, `height`,
-`width` and `text_size`, plus `group` (up to 32 bytes) to place the row in a
-submenu:
+`width` and `text_size`, plus `group` (up to 32 bytes) to group the row on its settings page:
 
-- In `music_audio`: `"effects"` (under Sound Effects) or `"profiles"` (under
+- In `music_audio`: `"effects"` (in the Sound page’s Effects section) or `"profiles"` (under
   Equalizer > Profiles > Download profiles).
-- In `display`: `"appearance"` or `"player_layout"` (under those submenus).
+- In `display`: `"appearance"` or `"player_layout"` (on Personalize, alongside other display rows).
 - Other values leave the row directly in its list. Older players ignore
   `group`.
 
@@ -344,13 +343,14 @@ use a list row for anything that needs a screen.
 - `options.on_hold()`: called when the tile is held, for example to open the
   plugin's settings.
 
-Up to 4 tiles from all plugins; they fill the drawer's third row in
-registration order.
+Up to 4 plugin tiles are available alongside native Gain, MSEB and Stage.
+The IDs `gain`, `mseb` and `soundstage` are reserved for those native tiles.
+Saved drawer order and visibility still apply.
 
 ```lua
 if plugin.has_capability("ui.quick_toggle") then
-    plugin.register_quick_toggle("mseb", "MSEB", function(on) set_enabled(on) end,
-        { icon = "pull_down/mseb.png", value = enabled })
+    plugin.register_quick_toggle("my_effect", "Effect", function(on) set_enabled(on) end,
+        { icon = "MyPlugin/effect.png", value = enabled })
 end
 ```
 
@@ -763,7 +763,7 @@ if plugin.has_capability("ui.quick_drawer_layout") then
 end
 ```
 
-Native Music menu choices are saved under Settings → Display → Appearance. Plugin declarations remain session overrides: disabling Kids Mode restores the saved native choices. Music toolbar customization remains available to plugins and themes. Quick Drawer preferences remain independent.
+Native Music menu choices are saved under Settings → Personalize. Plugin declarations remain session overrides: disabling Kids Mode restores the saved native choices. Music toolbar customization remains available to plugins and themes. Quick Drawer preferences remain independent.
 
 `plugin.set_music_layout(options)` accepts `order` and `toolbar` arrays.
 Music keys are `files`, `artists`, `albums`, `album_artist`, `genres`,
@@ -794,8 +794,8 @@ combine: an item hidden by any plugin stays hidden, and a `false` request for
 drawer enablement, EQ visibility, or volume visibility wins over `true`.
 This keeps a later theme from undoing Kids Mode restrictions. Failed or unloaded plugins lose their
 declarations, restoring another plugin's declaration or the saved preferences.
-Users can configure Music menu and Quick Drawer under Settings > Display >
-Appearance. Music toolbar customization is available to plugins and themes. Plugin overrides can take precedence over these choices. These
+Users can configure Music menu and Quick Drawer under Settings >
+Personalize. Music toolbar customization is available to plugins and themes. Plugin overrides can take precedence over these choices. These
 controls simplify navigation; they are not a device security boundary.
 Customized saved Drawer orders are explicit selections:
 new entries added in future releases remain hidden until selected. Unchanged
@@ -956,8 +956,8 @@ in [Player layouts](https://compasplayer.org/layouts.html).
   leading outside the folder, or a missing file raise a Lua error.
 - If the file can't be used (invalid XML or a required widget missing), the
   default layout is shown instead.
-- Called from top-level code, it only adds the layout to **Settings > Display
-  > Player Layout > Layout**. Users pick it there like any other layout, and
+- Called from top-level code, it only adds the layout to **Settings >
+  Personalize > Player Layout**. Users pick it there like any other layout, and
   the choice is remembered while the plugin stays installed and enabled. If
   the plugin is disabled or removed, the default layout is shown instead.
 - Called from a callback (a button, for example), the layout is selected right
@@ -1379,7 +1379,7 @@ and is capped at, 200; use `offset` to page. Check `library.paged`.
   called on a later player tick with the absolute path of a BMP, which
   `show_list` accepts as an `icon`. If the library has not generated that cover
   yet, `callback(nil, "not_generated")` is called instead. This call never
-  creates a cover: covers come from Settings > Update Music Database. Returns
+  creates a cover: covers come from Settings > Library > Update Music Database. Returns
   `true`, or `nil, "busy"` while 32 requests are pending. Unloading the plugin
   drops its pending callbacks.
 
@@ -2059,7 +2059,7 @@ Settings > Library > **Cover Art Fetcher**. Requires Plugin API 17.
 
 ### Album Shuffle
 
-Settings > Playback & Controls > **Album Shuffle**.
+Settings > Playback > **Album Shuffle**.
 
 - **Start album shuffle** picks a random album through paged `plugin.library_get_albums`, resolves identity with `plugin.library_get_song(first_song_id)` (preferring `album_artist` so compilations keep every track), loads `plugin.get_album_tracks(artist, album)` in album order, and plays them with `plugin.play_list(paths, 1)`. Requires plugin API 15.
 - When the queue is exhausted forward (`queue_exhausted` with `direction == 1`), or the last track ends naturally, another album is chosen. Immediate repeats are avoided when more than one album exists. An empty library is reported with a toast.
@@ -2070,7 +2070,7 @@ Settings > Playback & Controls > **Album Shuffle**.
 1. Write the plugin in any text editor. `luac -p MyPlugin.lua` catches syntax
    errors before copying.
 2. Copy it to `<SD card>/.plugins/`.
-3. Tap **Refresh Plugins** in Settings > System > Plugin Manager (this reloads
+3. Tap **Refresh Plugins** in Settings > System > Plugins (this reloads
    every plugin and returns to Home), or restart.
 4. Watch the player's output through ADB.
 
@@ -2081,7 +2081,7 @@ Errors look like this:
 | `[plugins] failed to load <path>: <error>` | A syntax error or an error in the top-level code. |
 | `[plugins] <context> error: <error>` | A callback failed; `<context>` names which one. |
 
-Plugin Manager can switch each plugin off. Switching one off stops it from
+The Plugins screen can switch each plugin off. Switching one off stops it from
 loading; it doesn't undo what it already changed. Copied icons and EQ settings,
 for example, stay until changed again.
 
