@@ -12,8 +12,8 @@ local T = {
         ["Play Through Albums"] = "Alben weiter abspielen",
         ["How It Works"] = "Funktionsweise",
         ["About Play Through"] = "Über Weiterwiedergabe",
-        ["Albums continue in the artist's alphabetical album order."] = "Alben werden in alphabetischer Reihenfolge des Künstlers fortgesetzt.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Ordner werden in alphabetischer Reihenfolge der Nachbarordner fortgesetzt.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Alben werden in der Albumreihenfolge des Künstlers fortgesetzt, danach mit dem nächsten Künstler.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Ordner werden alphabetisch fortgesetzt, danach mit dem nächsten Ordner eine Ebene höher.",
         ["Album mode has priority when both options are enabled."] = "Der Albummodus hat Vorrang, wenn beide Optionen aktiviert sind.",
         ["Shuffle and repeat modes are left unchanged."] = "Zufalls- und Wiederholungsmodus bleiben unverändert.",
         ["Continuing playback"] = "Wiedergabe wird fortgesetzt",
@@ -25,8 +25,8 @@ local T = {
         ["Play Through Albums"] = "Continuar entre álbumes",
         ["How It Works"] = "Cómo funciona",
         ["About Play Through"] = "Acerca de Reproducción continua",
-        ["Albums continue in the artist's alphabetical album order."] = "Los álbumes continúan en el orden alfabético del artista.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Las carpetas continúan en orden alfabético (sin distinguir mayúsculas) entre carpetas vecinas.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Los álbumes continúan en el orden de álbumes del artista y después con el siguiente artista.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Las carpetas continúan en orden alfabético y después con la siguiente carpeta un nivel más arriba.",
         ["Album mode has priority when both options are enabled."] = "El modo de álbum tiene prioridad cuando ambas opciones están activadas.",
         ["Shuffle and repeat modes are left unchanged."] = "Los modos aleatorio y de repetición no cambian.",
         ["Continuing playback"] = "Continuando la reproducción",
@@ -38,8 +38,8 @@ local T = {
         ["Play Through Albums"] = "Jatka albumien läpi",
         ["How It Works"] = "Miten se toimii",
         ["About Play Through"] = "Tietoja jatkuvasta toistosta",
-        ["Albums continue in the artist's alphabetical album order."] = "Albumit jatkuvat esittäjän aakkosjärjestyksessä.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Kansiot jatkuvat rinnakkaiskansioiden aakkosjärjestyksessä.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Albumit jatkuvat esittäjän albumijärjestyksessä ja sen jälkeen seuraavan esittäjän albumeilla.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Kansiot jatkuvat aakkosjärjestyksessä ja sen jälkeen seuraavalla kansiolla yksi taso ylempänä.",
         ["Album mode has priority when both options are enabled."] = "Albumitila on ensisijainen, kun molemmat valinnat ovat käytössä.",
         ["Shuffle and repeat modes are left unchanged."] = "Satunnais- ja kertaustiloja ei muuteta.",
         ["Continuing playback"] = "Jatketaan toistoa",
@@ -51,8 +51,8 @@ local T = {
         ["Play Through Albums"] = "Enchaîner les albums",
         ["How It Works"] = "Fonctionnement",
         ["About Play Through"] = "À propos de Lecture enchaînée",
-        ["Albums continue in the artist's alphabetical album order."] = "Les albums s'enchaînent dans l'ordre alphabétique des albums de l'artiste.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Les dossiers s'enchaînent dans l'ordre alphabétique des dossiers voisins.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Les albums s'enchaînent dans l'ordre des albums de l'artiste, puis avec l'artiste suivant.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Les dossiers s'enchaînent par ordre alphabétique, puis avec le dossier suivant un niveau plus haut.",
         ["Album mode has priority when both options are enabled."] = "Le mode album est prioritaire lorsque les deux options sont activées.",
         ["Shuffle and repeat modes are left unchanged."] = "Les modes aléatoire et répétition restent inchangés.",
         ["Continuing playback"] = "Poursuite de la lecture",
@@ -64,8 +64,8 @@ local T = {
         ["Play Through Albums"] = "Continua tra gli album",
         ["How It Works"] = "Come funziona",
         ["About Play Through"] = "Informazioni su Riproduzione continua",
-        ["Albums continue in the artist's alphabetical album order."] = "Gli album proseguono nell'ordine alfabetico dell'artista.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Le cartelle proseguono in ordine alfabetico tra le cartelle adiacenti.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Gli album proseguono nell'ordine degli album dell'artista, poi con l'artista successivo.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Le cartelle proseguono in ordine alfabetico, poi con la cartella successiva un livello più su.",
         ["Album mode has priority when both options are enabled."] = "La modalità album ha la priorità quando entrambe le opzioni sono attive.",
         ["Shuffle and repeat modes are left unchanged."] = "Le modalità casuale e ripetizione restano invariate.",
         ["Continuing playback"] = "Proseguimento della riproduzione",
@@ -77,8 +77,8 @@ local T = {
         ["Play Through Albums"] = "アルバムを連続再生",
         ["How It Works"] = "仕組み",
         ["About Play Through"] = "連続再生について",
-        ["Albums continue in the artist's alphabetical album order."] = "アルバムはアーティストのアルバム名順（アルファベット順）で続きます。",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "フォルダは大文字小文字を区別しない名前順で次のフォルダへ続きます。",
+        ["Albums continue in the artist's album order, then with the next artist."] = "アルバムはアーティストのアルバム順で続き、その後は次のアーティストへ続きます。",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "フォルダは名前順で続き、その後は一つ上の階層の次のフォルダへ続きます。",
         ["Album mode has priority when both options are enabled."] = "両方有効な場合はアルバムモードが優先されます。",
         ["Shuffle and repeat modes are left unchanged."] = "シャッフルとリピートモードは変更されません。",
         ["Continuing playback"] = "再生を継続中",
@@ -90,8 +90,8 @@ local T = {
         ["Play Through Albums"] = "Albums doorspelen",
         ["How It Works"] = "Hoe het werkt",
         ["About Play Through"] = "Over Doorblijven spelen",
-        ["Albums continue in the artist's alphabetical album order."] = "Albums gaan verder in alfabetische albumvolgorde van de artiest.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Mappen gaan verder in alfabetische volgorde van naastgelegen mappen.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Albums gaan verder in de albumvolgorde van de artiest, daarna met de volgende artiest.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Mappen gaan verder in alfabetische volgorde, daarna met de volgende map een niveau hoger.",
         ["Album mode has priority when both options are enabled."] = "Albummodus heeft voorrang wanneer beide opties zijn ingeschakeld.",
         ["Shuffle and repeat modes are left unchanged."] = "Shuffle- en herhaalmodi blijven ongewijzigd.",
         ["Continuing playback"] = "Afspelen wordt voortgezet",
@@ -103,8 +103,8 @@ local T = {
         ["Play Through Albums"] = "Continuar pelos álbuns",
         ["How It Works"] = "Como funciona",
         ["About Play Through"] = "Sobre a Reprodução contínua",
-        ["Albums continue in the artist's alphabetical album order."] = "Os álbuns continuam na ordem alfabética dos álbuns do artista.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "As pastas continuam em ordem alfabética entre pastas vizinhas.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Os álbuns continuam na ordem dos álbuns do artista e depois com o próximo artista.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "As pastas continuam em ordem alfabética e depois com a próxima pasta um nível acima.",
         ["Album mode has priority when both options are enabled."] = "O modo de álbum tem prioridade quando ambas as opções estão ativadas.",
         ["Shuffle and repeat modes are left unchanged."] = "Os modos aleatório e de repetição permanecem inalterados.",
         ["Continuing playback"] = "Continuando a reprodução",
@@ -116,8 +116,8 @@ local T = {
         ["Play Through Albums"] = "Переходить к следующему альбому",
         ["How It Works"] = "Как это работает",
         ["About Play Through"] = "О сквозном воспроизведении",
-        ["Albums continue in the artist's alphabetical album order."] = "Альбомы продолжаются в алфавитном порядке альбомов исполнителя.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Папки продолжаются в алфавитном порядке соседних папок (без учёта регистра).",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Альбомы продолжаются в порядке альбомов исполнителя, затем со следующим исполнителем.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Папки продолжаются в алфавитном порядке, затем со следующей папкой уровнем выше.",
         ["Album mode has priority when both options are enabled."] = "Режим альбомов имеет приоритет, когда включены оба параметра.",
         ["Shuffle and repeat modes are left unchanged."] = "Режимы перемешивания и повтора не изменяются.",
         ["Continuing playback"] = "Продолжение воспроизведения",
@@ -129,8 +129,8 @@ local T = {
         ["Play Through Albums"] = "Переходити до наступного альбому",
         ["How It Works"] = "Як це працює",
         ["About Play Through"] = "Про наскрізне відтворення",
-        ["Albums continue in the artist's alphabetical album order."] = "Альбоми продовжуються в алфавітному порядку альбомів виконавця.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Теки продовжуються в алфавітному порядку сусідніх тек (без урахування регістру).",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Альбоми продовжуються в порядку альбомів виконавця, потім із наступним виконавцем.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Теки продовжуються в алфавітному порядку, потім із наступною текою на рівень вище.",
         ["Album mode has priority when both options are enabled."] = "Режим альбомів має пріоритет, коли увімкнено обидва параметри.",
         ["Shuffle and repeat modes are left unchanged."] = "Режими перемішування та повтору залишаються без змін.",
         ["Continuing playback"] = "Продовження відтворення",
@@ -142,8 +142,8 @@ local T = {
         ["Play Through Albums"] = "Phát tiếp qua các album",
         ["How It Works"] = "Cách hoạt động",
         ["About Play Through"] = "Giới thiệu Phát nối tiếp",
-        ["Albums continue in the artist's alphabetical album order."] = "Các album tiếp tục theo thứ tự bảng chữ cái của nghệ sĩ.",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "Các thư mục tiếp tục theo thứ tự bảng chữ cái của thư mục cùng cấp.",
+        ["Albums continue in the artist's album order, then with the next artist."] = "Các album tiếp tục theo thứ tự album của nghệ sĩ, sau đó đến nghệ sĩ tiếp theo.",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "Các thư mục tiếp tục theo thứ tự bảng chữ cái, sau đó đến thư mục kế tiếp ở cấp trên.",
         ["Album mode has priority when both options are enabled."] = "Chế độ album được ưu tiên khi bật cả hai tùy chọn.",
         ["Shuffle and repeat modes are left unchanged."] = "Chế độ phát ngẫu nhiên và lặp lại được giữ nguyên.",
         ["Continuing playback"] = "Đang tiếp tục phát",
@@ -155,8 +155,8 @@ local T = {
         ["Play Through Albums"] = "跨专辑连续播放",
         ["How It Works"] = "工作原理",
         ["About Play Through"] = "关于连续播放",
-        ["Albums continue in the artist's alphabetical album order."] = "专辑按艺人专辑名称的字母顺序继续播放。",
-        ["Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."] = "文件夹按同级文件夹的字母顺序（不区分大小写）继续播放。",
+        ["Albums continue in the artist's album order, then with the next artist."] = "专辑按该艺人的专辑顺序继续播放，之后播放下一位艺人。",
+        ["Folders continue alphabetically, then with the next folder one level up."] = "文件夹按字母顺序继续播放，之后播放上一级的下一个文件夹。",
         ["Album mode has priority when both options are enabled."] = "同时启用两个选项时，专辑模式优先。",
         ["Shuffle and repeat modes are left unchanged."] = "随机播放和重复模式保持不变。",
         ["Continuing playback"] = "正在继续播放",
@@ -169,8 +169,10 @@ local function tr(s)
 end
 
 -- Continues playback after a playlist reaches its natural end:
---   * Play Through Albums starts the artist's next album.
---   * Play Through Folders starts the next sibling folder.
+--   * Play Through Albums starts the artist's next album, then the next
+--     artist's first album.
+--   * Play Through Folders starts the next folder, climbing to the parent's
+--     next sibling when a folder has none.
 --
 -- Both may be enabled. Album continuation takes priority when the current
 -- file is the final track of a tagged album; folder continuation is the
@@ -251,36 +253,62 @@ local function folder_tracks(directory)
     return tracks
 end
 
-local function next_folder_tracks(current_path)
-    local current_directory, current_name = split_path(current_path)
-    if not current_directory then return nil end
-
-    local current_tracks = folder_tracks(current_directory)
-    if #current_tracks == 0 or current_tracks[#current_tracks].name ~= current_name then return nil end
-
-    local parent, folder_name = split_path(current_directory)
-    if not parent then return nil end
-
+local function sorted_folders(directory)
     local folders = {}
-    for _, entry in ipairs(plugin.list_dir(parent)) do
+    for _, entry in ipairs(plugin.list_dir(directory)) do
         if entry.dir then folders[#folders + 1] = entry end
     end
     table.sort(folders, lexical_less)
+    return folders
+end
 
-    local found_current = false
-    for _, folder in ipairs(folders) do
-        if found_current then
-            local tracks = folder_tracks(parent .. "/" .. folder.name)
-            if #tracks > 0 then
-                local paths = {}
-                for i, track in ipairs(tracks) do paths[i] = track.path end
-                return paths
-            end
-        elseif folder.name == folder_name then
-            found_current = true
-        end
+local MAX_DESCENT = 16 -- guards against symlink loops
+
+-- Audio paths of the first folder at or below directory, depth-first.
+local function first_audio_in(directory, depth)
+    local tracks = folder_tracks(directory)
+    if #tracks > 0 then
+        local paths = {}
+        for i, track in ipairs(tracks) do paths[i] = track.path end
+        return paths
+    end
+    if depth <= 0 then return nil end
+    for _, folder in ipairs(sorted_folders(directory)) do
+        local paths = first_audio_in(directory .. "/" .. folder.name, depth - 1)
+        if paths then return paths end
     end
     return nil
+end
+
+-- When the track ends its folder, the next folder's audio: the following
+-- sibling, else the parent's following sibling and so on, never above the
+-- music root. Outside the root only the first level is tried.
+local function next_folder_tracks(current_path)
+    local file = current_path:gsub("#compas%-cue=%d+$", "") -- a cue track counts as its file
+    local directory, current_name = split_path(file)
+    if not directory then return nil end
+
+    local current_tracks = folder_tracks(directory)
+    if #current_tracks == 0 or current_tracks[#current_tracks].name ~= current_name then return nil end
+
+    local root = plugin.sd_root()
+    if directory == root then return nil end
+    local inside = directory:sub(1, #root + 1) == root .. "/"
+    while true do
+        local parent, folder_name = split_path(directory)
+        if not parent then return nil end
+        local found_current = false
+        for _, folder in ipairs(sorted_folders(parent)) do
+            if found_current then
+                local paths = first_audio_in(parent .. "/" .. folder.name, MAX_DESCENT)
+                if paths then return paths end
+            elseif folder.name == folder_name then
+                found_current = true
+            end
+        end
+        if not inside or parent:sub(1, #root + 1) ~= root .. "/" then return nil end
+        directory = parent
+    end
 end
 
 local function same_path(a, b)
@@ -386,8 +414,8 @@ end)
 
 local function open_about()
     plugin.show_list(tr("About Play Through"), {
-        tr("Albums continue in the artist's alphabetical album order."),
-        tr("Folders continue in lexical (alphabetical, case-insensitive) sibling-folder order."),
+        tr("Albums continue in the artist's album order, then with the next artist."),
+        tr("Folders continue alphabetically, then with the next folder one level up."),
         tr("Album mode has priority when both options are enabled."),
         tr("Shuffle and repeat modes are left unchanged."),
     }, function() end)
