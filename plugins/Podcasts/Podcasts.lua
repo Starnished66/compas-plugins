@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.8.0", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.8.1", api_min = 19 })
 
 local T = {
     de = {
@@ -34,6 +34,7 @@ local T = {
         ["Unsubscribe"] = "Deabonnieren",
         ["Could not load episodes. Try again."] = "Folgen konnten nicht geladen werden. Erneut versuchen.",
         ["Could not parse feed"] = "Feed konnte nicht verarbeitet werden",
+        ["Feed is too large to load"] = "Der Feed ist zu groß zum Laden",
         ["The feed returned no episodes; kept the saved list"] = "Der Feed enthielt keine Folgen; gespeicherte Liste beibehalten",
         ["%d new episodes"] = "%d neue Folgen",
         ["No new episodes"] = "Keine neuen Folgen",
@@ -151,6 +152,7 @@ local T = {
         ["Unsubscribe"] = "Cancelar suscripción",
         ["Could not load episodes. Try again."] = "No se pudieron cargar los episodios. Inténtalo de nuevo.",
         ["Could not parse feed"] = "No se pudo procesar el feed",
+        ["Feed is too large to load"] = "El feed es demasiado grande para cargarlo",
         ["The feed returned no episodes; kept the saved list"] = "El feed no devolvió episodios; se conservó la lista guardada",
         ["%d new episodes"] = "%d episodios nuevos",
         ["No new episodes"] = "No hay episodios nuevos",
@@ -268,6 +270,7 @@ local T = {
         ["Unsubscribe"] = "Lopeta tilaus",
         ["Could not load episodes. Try again."] = "Jaksoja ei voitu ladata. Yritä uudelleen.",
         ["Could not parse feed"] = "Syötteen jäsentäminen epäonnistui",
+        ["Feed is too large to load"] = "Syöte on liian suuri ladattavaksi",
         ["The feed returned no episodes; kept the saved list"] = "Syöte ei palauttanut jaksoja; säilytettiin tallennettu luettelo",
         ["%d new episodes"] = "%d uutta jaksoa",
         ["No new episodes"] = "Ei uusia jaksoja",
@@ -385,6 +388,7 @@ local T = {
         ["Unsubscribe"] = "Se désabonner",
         ["Could not load episodes. Try again."] = "Impossible de charger les épisodes. Réessayez.",
         ["Could not parse feed"] = "Impossible d'analyser le flux",
+        ["Feed is too large to load"] = "Le flux est trop volumineux pour être chargé",
         ["The feed returned no episodes; kept the saved list"] = "Le flux n'a renvoyé aucun épisode ; liste enregistrée conservée",
         ["%d new episodes"] = "%d nouveaux épisodes",
         ["No new episodes"] = "Aucun nouvel épisode",
@@ -502,6 +506,7 @@ local T = {
         ["Unsubscribe"] = "Annulla iscrizione",
         ["Could not load episodes. Try again."] = "Impossibile caricare gli episodi. Riprova.",
         ["Could not parse feed"] = "Impossibile analizzare il feed",
+        ["Feed is too large to load"] = "Il feed è troppo grande per essere caricato",
         ["The feed returned no episodes; kept the saved list"] = "Il feed non ha restituito episodi; mantenuto l'elenco salvato",
         ["%d new episodes"] = "%d nuovi episodi",
         ["No new episodes"] = "Nessun nuovo episodio",
@@ -619,6 +624,7 @@ local T = {
         ["Unsubscribe"] = "登録解除",
         ["Could not load episodes. Try again."] = "エピソードを読み込めませんでした。再試行してください。",
         ["Could not parse feed"] = "フィードを解析できませんでした",
+        ["Feed is too large to load"] = "フィードが大きすぎて読み込めません",
         ["The feed returned no episodes; kept the saved list"] = "フィードにエピソードがありません。保存済みのリストを維持しました",
         ["%d new episodes"] = "%d 件の新着エピソード",
         ["No new episodes"] = "新着エピソードはありません",
@@ -736,6 +742,7 @@ local T = {
         ["Unsubscribe"] = "Abonnement opzeggen",
         ["Could not load episodes. Try again."] = "Kan afleveringen niet laden. Probeer het opnieuw.",
         ["Could not parse feed"] = "Kan feed niet verwerken",
+        ["Feed is too large to load"] = "De feed is te groot om te laden",
         ["The feed returned no episodes; kept the saved list"] = "De feed bevatte geen afleveringen; opgeslagen lijst behouden",
         ["%d new episodes"] = "%d nieuwe afleveringen",
         ["No new episodes"] = "Geen nieuwe afleveringen",
@@ -853,6 +860,7 @@ local T = {
         ["Unsubscribe"] = "Cancelar inscrição",
         ["Could not load episodes. Try again."] = "Não foi possível carregar os episódios. Tente novamente.",
         ["Could not parse feed"] = "Não foi possível analisar o feed",
+        ["Feed is too large to load"] = "O feed é grande demais para ser carregado",
         ["The feed returned no episodes; kept the saved list"] = "O feed não retornou episódios; lista salva mantida",
         ["%d new episodes"] = "%d novos episódios",
         ["No new episodes"] = "Nenhum episódio novo",
@@ -970,6 +978,7 @@ local T = {
         ["Unsubscribe"] = "Отписаться",
         ["Could not load episodes. Try again."] = "Не удалось загрузить выпуски. Повторите попытку.",
         ["Could not parse feed"] = "Не удалось разобрать ленту",
+        ["Feed is too large to load"] = "Лента слишком велика для загрузки",
         ["The feed returned no episodes; kept the saved list"] = "Лента не вернула выпусков; сохранён прежний список",
         ["%d new episodes"] = "Новых выпусков: %d",
         ["No new episodes"] = "Нет новых выпусков",
@@ -1087,6 +1096,7 @@ local T = {
         ["Unsubscribe"] = "Відписатися",
         ["Could not load episodes. Try again."] = "Не вдалося завантажити випуски. Спробуйте ще раз.",
         ["Could not parse feed"] = "Не вдалося розібрати стрічку",
+        ["Feed is too large to load"] = "Стрічка завелика для завантаження",
         ["The feed returned no episodes; kept the saved list"] = "Стрічка не повернула випусків; збережено попередній список",
         ["%d new episodes"] = "Нових випусків: %d",
         ["No new episodes"] = "Немає нових випусків",
@@ -1204,6 +1214,7 @@ local T = {
         ["Unsubscribe"] = "Hủy đăng ký",
         ["Could not load episodes. Try again."] = "Không thể tải danh sách tập. Hãy thử lại.",
         ["Could not parse feed"] = "Không thể phân tích nguồn cấp",
+        ["Feed is too large to load"] = "Nguồn cấp quá lớn để tải",
         ["The feed returned no episodes; kept the saved list"] = "Nguồn cấp không có tập nào; đã giữ danh sách lưu",
         ["%d new episodes"] = "%d tập mới",
         ["No new episodes"] = "Không có tập mới",
@@ -1321,6 +1332,7 @@ local T = {
         ["Unsubscribe"] = "取消订阅",
         ["Could not load episodes. Try again."] = "无法加载单集。请重试。",
         ["Could not parse feed"] = "无法解析订阅源",
+        ["Feed is too large to load"] = "订阅源太大，无法加载",
         ["The feed returned no episodes; kept the saved list"] = "订阅源未返回单集；已保留保存的列表",
         ["%d new episodes"] = "%d 个新单集",
         ["No new episodes"] = "没有新单集",
@@ -2828,9 +2840,14 @@ end
 
 -- Every redirect is followed here, one hop at a time, so each Location is
 -- resolved against the URL that sent it (the callback does not say which
--- URL the native client ended on). A feed over 1 MiB is retried once as
--- a Range request for its first 1 MiB (a chunked body reports io_error
--- instead of response_too_large when it overflows).
+-- URL the native client ended on). A feed over FEED_MAX_BYTES is retried
+-- once as a Range request for its first FEED_MAX_BYTES (a chunked body
+-- reports "io" instead of response_too_large when it overflows).
+-- Largest feed body asked for. The request default is only 512 KiB, which
+-- long-running shows (hundreds of episodes with full show notes) exceed;
+-- 2 MiB is the most plugin.http_request allows.
+local FEED_MAX_BYTES = 2 * 1024 * 1024
+
 local function request_feed(show, first_open)
     if fetching[show.key] then
         return
@@ -2841,8 +2858,8 @@ local function request_feed(show, first_open)
         plugin.show_toast(tr("Could not load episodes. Try again."))
     end
     local function fetch(url, hops, ranged)
-        local opts = request_options(url, ranged and { Range = "bytes=0-1048575" } or nil)
-        opts.redirect_limit, opts.max_response_bytes = 0, 1048576
+        local opts = request_options(url, ranged and { Range = "bytes=0-" .. (FEED_MAX_BYTES - 1) } or nil)
+        opts.redirect_limit, opts.max_response_bytes = 0, FEED_MAX_BYTES
         request_with_retry(opts, function(status, body, err, headers)
             local location = status and status >= 300 and status < 400 and header_value(headers, "location")
             if location then
@@ -2864,11 +2881,16 @@ local function request_feed(show, first_open)
                     return
                 end
             end
-            if not ranged and (err == "response_too_large" or err == "io_error") then
+            if not ranged and (err == "response_too_large" or err == "io") then
                 defer(function()
                     fetch(url, hops, true)
                 end)
                 return
+            end
+            -- Still cut short on the Range attempt: a chunked feed whose
+            -- server ignored Range, so it really is too large.
+            if ranged and err == "io" then
+                err = "response_too_large"
             end
             fetching[show.key] = nil
             feed_response(show, first_open, status, body, err)
@@ -2878,6 +2900,11 @@ local function request_feed(show, first_open)
 end
 
 feed_response = function(show, first_open, status, body, err)
+    if err == "response_too_large" then
+        -- Retrying cannot help, so say what is wrong.
+        plugin.show_toast(tr("Feed is too large to load"))
+        return
+    end
     if err then
         plugin.show_toast(tr("Could not load episodes. Try again."))
         return
@@ -2889,7 +2916,6 @@ feed_response = function(show, first_open, status, body, err)
     scan_budget = 400000
     local ok, result, parse_err = pcall(parse_rss, body or "", show.url)
     scan_budget = nil
-    body = nil
     collectgarbage("step")
     if not ok then
         plugin.show_toast(
@@ -3425,9 +3451,9 @@ resolve_redirect = function(url, callback, on_handle, is_cancelled)
             return
         end
         -- A body too big for the probe means this URL serves the file (a
-        -- chunked body reports io_error instead); the transfer itself will
+        -- chunked body reports "io" instead); the transfer itself will
         -- report a real network failure.
-        if from_get and (request_err == "response_too_large" or request_err == "io_error") then
+        if from_get and (request_err == "response_too_large" or request_err == "io") then
             callback(current)
             return
         end
