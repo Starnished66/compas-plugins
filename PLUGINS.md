@@ -1799,8 +1799,9 @@ Limits and rules:
 Error values: `invalid_url`, `invalid_request` (a line break in the URL or a
 header), `dns`, `connect`, `connect_timeout`, `tls`, `timeout`, `cancelled`,
 `too_many_redirects`, `invalid_redirect`, `insecure_redirect`,
-`response_too_large`, `malformed`, `write` and `io`. A chunked body that goes
-over `max_response_bytes` reports `io`, not `response_too_large`. They are
+`response_too_large`, `malformed`, `write` and `io`. A body over
+`max_response_bytes` reports `response_too_large`; older players report
+`io` for a chunked one, so check both. They are
 stable, so you can compare against them.
 
 `plugin.cancel(handle)` stops a request (or download) and returns whether it
