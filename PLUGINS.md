@@ -192,7 +192,7 @@ plugin.define({
   | Area | Tokens |
   | --- | --- |
   | UI | `ui.list`, `ui.settings`, `ui.row_width`, `ui.text_input`, `ui.confirmation`, `ui.toast`, `ui.progress`, `ui.screenshot`, `ui.theme`, `ui.theme_refresh`, `ui.reload`, `ui.home_layout`, `ui.home_tiles`, `ui.launcher_layout`, `ui.home_background`, `ui.lock_screen`, `ui.button_lock`, `ui.quick_toggle`, `ui.text_view`, `ui.text_view_images`, `ui.list_grid`, `ui.list_showing`, `ui.list_update`, `ui.list_scroll_reset`, `ui.list_wrap`, `ui.settings_list_wrap`, `ui.settings_list_10_sliders`, `ui.order_editor`, `ui.player_layout_xml`, `ui.now_playing.set_image`, `ui.now_playing.set_text`, `ui.file_manager`, `ui.file_picker`, `ui.color_picker`, `ui.list_hold`, `ui.menu`, `ui.text_view_style`, `ui.text_view_replace`, `ui.startup_image` |
-  | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve`, `audio.mseb.stock`, `audio.soundstage` |
+  | Playback and audio | `playback.control`, `playback.state`, `playback.events`, `playback.lyrics_refresh`, `playback.progress`, `playback.remote`, `playback.remote_resolve`, `playback.transport_skip`, `playback.speed`, `playback.format`, `playback.output_info`, `playback.silent_volume`, `playback.transient_volume`, `playback.output_events`, `playback.settings`, `playback.ab_loop`, `playback.ab_switch`, `playback.http_seek`, `audio.loop`, `audio.peq`, `audio.peq.transient`, `audio.peq.state`, `audio.stereo_width`, `audio.mono`, `audio.crossfeed`, `audio.crossfeed.angle`, `audio.hw_volume_curve`, `audio.mseb.stock`, `audio.soundstage` |
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Language | `i18n.tr` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
@@ -229,6 +229,8 @@ plugin.define({
 All of these are additions; older plugins keep working.
 
 Headphone crossfeed is the capability `audio.crossfeed` (`plugin.eq_get_crossfeed` / `plugin.eq_set_crossfeed`). It does not raise `PLUGIN_API_VERSION`. Check the capability; do not require a newer `api_min`. The additive capability `audio.crossfeed.angle` indicates the optional angle field in `get_eq_state()` / `eq_apply_state()`; it does not raise the API version.
+
+Mono audio is the capability `audio.mono` (`plugin.eq_get_mono` / `plugin.eq_set_mono`). It does not raise `PLUGIN_API_VERSION`; check the capability. The player has no built-in control for it, so a plugin is the way to offer it.
 
 Stock MSEB is available through the additive API 16 capability
 `audio.mseb.stock`. `plugin.mseb_apply_state(state)` atomically applies a
@@ -1539,6 +1541,8 @@ saved immediately, and the EQ screen shows it.
 | `plugin.eq_set_preamp(db)` | Sets the preamp gain. |
 | `plugin.eq_get_stereo_width()` | Gets the configured width (API 16, capability `audio.stereo_width`). |
 | `plugin.eq_set_stereo_width(width)` | Sets width from 0 (mono fold) through 1 (neutral) to 2 (wider). Rejects nonfinite/out-of-range values. |
+| `plugin.eq_get_mono()` | Whether Mono audio is on (capability `audio.mono`). |
+| `plugin.eq_set_mono(on)` | `true` sends the same full mix to both ears, for listeners with hearing in one ear. Saved as a device setting, so it survives reboots and is not affected by EQ profiles, `eq_reset()`, bypass, MSEB or soundstage. Native DSD plays as PCM while it is on. Not applied in Bluetooth DAC mode. Rejects non-boolean values. |
 | `plugin.eq_get_crossfeed()` | Gets headphone crossfeed strength (capability `audio.crossfeed`). 0 is off. |
 | `plugin.eq_set_crossfeed(strength)` | Sets strength from 0 (off) to 1 (full effect). Rejects nonfinite or out-of-range values. 0.65 is a conservative strength when a plugin turns crossfeed on itself. |
 | `plugin.eq_set_band(index, freq_hz, gain_db, q)` | Sets one band. `index` is 1 to 10. |
