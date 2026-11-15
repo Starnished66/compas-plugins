@@ -1,4 +1,4 @@
-local PLUGIN_VERSION = "1.1.0"
+local PLUGIN_VERSION = "1.1.1"
 local WISHLIST_FORMAT_VERSION = 1
 
 plugin.define({
@@ -1689,7 +1689,7 @@ end
 
 -- no api for wifi state, so map connection errors to a readable message
 local CONNECTION_ERRORS = {
-    dns_failure = true, connect_failed = true, connect_timeout = true, timeout = true,
+    dns = true, connect = true, connect_timeout = true, timeout = true,
 }
 
 local function friendly_request_error(err)
