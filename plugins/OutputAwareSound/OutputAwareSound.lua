@@ -1,7 +1,7 @@
 plugin.define({
     id = "org.compas.output_aware_sound",
     name = "Output-Aware Sound",
-    version = "1.2.0",
+    version = "1.2.1",
     api_min = 19,
 })
 
@@ -10,6 +10,7 @@ local T = {
         ["Failed to encode configuration"] = "Konfiguration konnte nicht kodiert werden",
         ["Failed to save settings to storage; changes are live for this session only"] = "Einstellungen konnten nicht gespeichert werden; Änderungen gelten nur für diese Sitzung",
         ["Storage unavailable; changes are live for this session only"] = "Speicher nicht verfügbar; Änderungen gelten nur für diese Sitzung",
+        ["Loudness Boost is on"] = "Lautstärke-Boost ist aktiv",
         ["Manual or external EQ change detected"] = "Manuelle oder externe EQ-Änderung erkannt",
         ["(None / Clear)"] = "(Keine / Löschen)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Richtlinien für ausgabeabhängigen Klang:\n\n• EQ-Vorrang: Werden EQ-Einstellungen manuell oder durch AutoEQ geändert, pausiert die Automatik sofort.\n• Temporäre Profile: Wendet PEQ-Profile an, ohne sie im Flash zu speichern ({persist = false}).\n• Vorverstärkung & Gain: Im .peq-Profil enthalten; eq_set_preamp wird beim Wechsel nicht aufgerufen.\n• Gehörschutz: Passt die Lautstärke nicht automatisch an.\n• Nicht zugewiesene Ausgänge: Stellt beim Wechsel zu einem nicht zugewiesenen Ausgang den Ausgangszustand wieder her.\n• Audioformate: Profile passen den Frequenzgang an; keine Bit-Perfect-Ausgabe.",
@@ -42,6 +43,7 @@ local T = {
         ["Failed to encode configuration"] = "No se pudo codificar la configuración",
         ["Failed to save settings to storage; changes are live for this session only"] = "No se pudieron guardar los ajustes; los cambios solo se aplican en esta sesión",
         ["Storage unavailable; changes are live for this session only"] = "Almacenamiento no disponible; los cambios solo se aplican en esta sesión",
+        ["Loudness Boost is on"] = "Realce de volumen activado",
         ["Manual or external EQ change detected"] = "Cambio de EQ manual o externo detectado",
         ["(None / Clear)"] = "(Ninguno / Borrar)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Pautas de Sonido según salida:\n\n• Control del EQ: Si cambias los ajustes de EQ manualmente o mediante AutoEQ Context, la automatización se suspende de inmediato para evitar conflictos.\n• Perfiles transitorios: Aplica perfiles PEQ sin guardarlos en la memoria flash ({persist = false}).\n• Preamp y ganancia: Incluidos en los perfiles .peq; nunca se llama a eq_set_preamp al cambiar.\n• Seguridad auditiva: No ajusta el volumen automáticamente.\n• Salidas sin asignar: Restaura la base guardada al cambiar a una salida sin perfil.\n• Formatos de audio: Los perfiles ajustan la curva tonal; no ofrece salida bit-perfect.",
@@ -74,6 +76,7 @@ local T = {
         ["Failed to encode configuration"] = "Asetusten koodaus epäonnistui",
         ["Failed to save settings to storage; changes are live for this session only"] = "Asetusten tallennus epäonnistui; muutokset ovat voimassa vain tämän istunnon ajan",
         ["Storage unavailable; changes are live for this session only"] = "Tallennustila ei käytettävissä; muutokset ovat voimassa vain tämän istunnon ajan",
+        ["Loudness Boost is on"] = "Äänenvoimakkuuden korostus on käytössä",
         ["Manual or external EQ change detected"] = "Manuaalinen tai ulkoinen EQ-muutos havaittu",
         ["(None / Clear)"] = "(Ei mitään / Tyhjennä)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Lähtökohtaisen äänen ohjeet:\n\n• EQ-hallinta: Jos EQ-asetuksia muutetaan käsin tai AutoEQ Contextilla, automatiikka keskeytyy heti ristiriitojen estämiseksi.\n• Väliaikaiset profiilit: Ottaa PEQ-profiilit käyttöön tallentamatta flash-muistiin ({persist = false}).\n• Esivahvistus ja vahvistus: Sisältyvät .peq-profiileihin; eq_set_preampia ei kutsuta vaihdon yhteydessä.\n• Kuuloturvallisuus: Ei säädä äänenvoimakkuutta automaattisesti.\n• Määrittämättömät lähdöt: Palauttaa perustilan siirryttäessä määrittämättömään lähtöön.\n• Äänimuodot: Profiilit säätävät äänikäyrää; ei lupaa bit-perfect-toistoa.",
@@ -106,6 +109,7 @@ local T = {
         ["Failed to encode configuration"] = "Échec de l'encodage de la configuration",
         ["Failed to save settings to storage; changes are live for this session only"] = "Échec de la sauvegarde ; les modifications ne s'appliquent qu'à cette session",
         ["Storage unavailable; changes are live for this session only"] = "Stockage indisponible ; les modifications ne s'appliquent qu'à cette session",
+        ["Loudness Boost is on"] = "Boost de volume activé",
         ["Manual or external EQ change detected"] = "Modification d'EQ manuelle ou externe détectée",
         ["(None / Clear)"] = "(Aucun / Effacer)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Principes du Son selon la sortie :\n\n• Priorité EQ : Si l'EQ est modifié manuellement ou par AutoEQ Context, l'automatisation est immédiatement suspendue.\n• Profils transitoires : Applique les profils PEQ sans écrire en mémoire flash ({persist = false}).\n• Préampli et gain : Inclus dans les fichiers .peq ; eq_set_preamp n'est jamais appelé lors d'une transition.\n• Sécurité auditive : Ne modifie pas le volume automatiquement.\n• Sorties non associées : Restaure l'EQ de base lors du passage à une sortie sans profil.\n• Formats audio : Les profils ajustent la courbe tonale ; ne garantit pas une sortie bit-perfect.",
@@ -138,6 +142,7 @@ local T = {
         ["Failed to encode configuration"] = "Impossibile codificare la configurazione",
         ["Failed to save settings to storage; changes are live for this session only"] = "Impossibile salvare le impostazioni; le modifiche valgono solo per questa sessione",
         ["Storage unavailable; changes are live for this session only"] = "Archiviazione non disponibile; le modifiche valgono solo per questa sessione",
+        ["Loudness Boost is on"] = "Aumento volume attivo",
         ["Manual or external EQ change detected"] = "Rilevata modifica EQ manuale o esterna",
         ["(None / Clear)"] = "(Nessuno / Cancella)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Linee guida Suono in base all'uscita:\n\n• Controllo EQ: Se l'EQ viene modificato manualmente o da AutoEQ Context, l'automazione si sospende subito per evitare conflitti.\n• Profili transitori: Applica i profili PEQ senza salvarli nella memoria flash ({persist = false}).\n• Preamp e guadagno: Inclusi nei profili .peq; eq_set_preamp non viene mai chiamato al cambio.\n• Sicurezza uditiva: Non regola il volume automaticamente.\n• Uscite non associate: Ripristina l'EQ di base passando a un'uscita non associata.\n• Formati audio: I profili regolano la curva tonale; non garantisce uscita bit-perfect.",
@@ -170,6 +175,7 @@ local T = {
         ["Failed to encode configuration"] = "設定のエンコードに失敗しました",
         ["Failed to save settings to storage; changes are live for this session only"] = "設定を保存できませんでした。変更は今回のセッションのみ有効です",
         ["Storage unavailable; changes are live for this session only"] = "ストレージを利用できません。変更は今回のセッションのみ有効です",
+        ["Loudness Boost is on"] = "ラウドネスブーストがオンです",
         ["Manual or external EQ change detected"] = "手動または外部による EQ 変更を検出しました",
         ["(None / Clear)"] = "(なし / クリア)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "出力連動サウンドのガイドライン:\n\n• EQ の優先権: 手動または AutoEQ Context で EQ が変更されると、競合を防ぐため自動切替はただちに一時停止します。\n• 一時プロファイル: フラッシュに保存せず PEQ プロファイルを適用します ({persist = false})。\n• プリアンプとゲイン: .peq 内に含まれ、切替時に eq_set_preamp は呼び出されません。\n• 聴覚保護: 音量の自動変更は行いません。\n• 未設定の出力先: 未設定の出力先に切り替わると元の EQ 状態に戻します。\n• 音声フォーマット: トーンカーブを調整するもので、ビットパーフェクト出力ではありません。",
@@ -202,6 +208,7 @@ local T = {
         ["Failed to encode configuration"] = "Configuratie coderen mislukt",
         ["Failed to save settings to storage; changes are live for this session only"] = "Instellingen opslaan mislukt; wijzigingen gelden alleen voor deze sessie",
         ["Storage unavailable; changes are live for this session only"] = "Opslag niet beschikbaar; wijzigingen gelden alleen voor deze sessie",
+        ["Loudness Boost is on"] = "Volumeboost staat aan",
         ["Manual or external EQ change detected"] = "Handmatige of externe EQ-wijziging gedetecteerd",
         ["(None / Clear)"] = "(Geen / Wissen)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Richtlijnen voor Uitgangsbewust geluid:\n\n• EQ-eigendom: Als EQ-instellingen handmatig of door AutoEQ Context worden gewijzigd, pauzeert de automatisering direct.\n• Tijdelijke profielen: Past PEQ-profielen toe zonder naar flash te schrijven ({persist = false}).\n• Preamp & gain: Opgenomen in .peq-profielen; eq_set_preamp wordt niet per overgang aangeroepen.\n• Gehoorveiligheid: Past het volume niet automatisch aan.\n• Niet-gekoppelde uitgangen: Herstelt de basis-EQ bij overschakelen naar een uitgang zonder profiel.\n• Audioformaten: Profielen passen de klankcurve aan; geen bit-perfect uitvoer.",
@@ -234,6 +241,7 @@ local T = {
         ["Failed to encode configuration"] = "Falha ao codificar a configuração",
         ["Failed to save settings to storage; changes are live for this session only"] = "Falha ao salvar configurações; as alterações valem apenas nesta sessão",
         ["Storage unavailable; changes are live for this session only"] = "Armazenamento indisponível; as alterações valem apenas nesta sessão",
+        ["Loudness Boost is on"] = "Reforço de volume ativado",
         ["Manual or external EQ change detected"] = "Alteração manual ou externa de EQ detectada",
         ["(None / Clear)"] = "(Nenhum / Limpar)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Diretrizes do Som por saída:\n\n• Controle do EQ: Se o EQ for alterado manualmente ou pelo AutoEQ Context, a automação é suspensa imediatamente para evitar conflitos.\n• Perfis transitórios: Aplica perfis PEQ sem gravar na memória flash ({persist = false}).\n• Pré-amplificação e ganho: Contidos nos perfis .peq; eq_set_preamp nunca é chamado na transição.\n• Segurança auditiva: Não ajusta o volume automaticamente.\n• Saídas sem perfil: Restaura o EQ base ao mudar para uma saída não mapeada.\n• Formatos de áudio: Os perfis ajustam a curva tonal; não garante saída bit-perfect.",
@@ -266,6 +274,7 @@ local T = {
         ["Failed to encode configuration"] = "Не удалось закодировать конфигурацию",
         ["Failed to save settings to storage; changes are live for this session only"] = "Не удалось сохранить настройки; изменения действуют только в этом сеансе",
         ["Storage unavailable; changes are live for this session only"] = "Хранилище недоступно; изменения действуют только в этом сеансе",
+        ["Loudness Boost is on"] = "Усиление громкости включено",
         ["Manual or external EQ change detected"] = "Обнаружено ручное или внешнее изменение EQ",
         ["(None / Clear)"] = "(Нет / Очистить)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Правила Звука по выходу:\n\n• Приоритет EQ: Если настройки EQ изменены вручную или через AutoEQ Context, автоматика сразу приостанавливается.\n• Временные профили: Применяет профили PEQ без записи во флеш-память ({persist = false}).\n• Предусиление и гейн: Хранятся внутри профилей .peq; eq_set_preamp не вызывается при переключении.\n• Безопасность слуха: Не меняет громкость автоматически.\n• Неназначенные выходы: Восстанавливает исходный EQ при переходе на выход без профиля.\n• Аудиоформаты: Профили меняют АЧХ; режим bit-perfect не заявлен.",
@@ -298,6 +307,7 @@ local T = {
         ["Failed to encode configuration"] = "Не вдалося закодувати конфігурацію",
         ["Failed to save settings to storage; changes are live for this session only"] = "Не вдалося зберегти налаштування; зміни діють лише в цьому сеансі",
         ["Storage unavailable; changes are live for this session only"] = "Сховище недоступне; зміни діють лише в цьому сеансі",
+        ["Loudness Boost is on"] = "Підсилення гучності увімкнено",
         ["Manual or external EQ change detected"] = "Виявлено ручну або зовнішню зміну EQ",
         ["(None / Clear)"] = "(Немає / Очистити)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Правила Звуку за виходом:\n\n• Пріоритет EQ: Якщо налаштування EQ змінено вручну або через AutoEQ Context, автоматика одразу призупиняється.\n• Тимчасові профілі: Застосовує профілі PEQ без запису у флеш-пам'ять ({persist = false}).\n• Передпідсилення та гейн: Містяться у профілях .peq; eq_set_preamp не викликається під час перемикання.\n• Безпека слуху: Не регулює гучність автоматично.\n• Непризначені виходи: Відновлює початковий EQ при переході на вихід без профілю.\n• Аудіоформати: Профілі змінюють АЧХ; bit-perfect не заявлено.",
@@ -330,6 +340,7 @@ local T = {
         ["Failed to encode configuration"] = "Không thể mã hóa cấu hình",
         ["Failed to save settings to storage; changes are live for this session only"] = "Không thể lưu cài đặt; thay đổi chỉ có hiệu lực trong phiên này",
         ["Storage unavailable; changes are live for this session only"] = "Bộ nhớ không khả dụng; thay đổi chỉ có hiệu lực trong phiên này",
+        ["Loudness Boost is on"] = "Tăng âm lượng đang bật",
         ["Manual or external EQ change detected"] = "Phát hiện thay đổi EQ thủ công hoặc từ bên ngoài",
         ["(None / Clear)"] = "(Không / Xóa)",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "Nguyên tắc Âm thanh theo đầu ra:\n\n• Quyền điều khiển EQ: Nếu cài đặt EQ bị thay đổi thủ công hoặc bởi AutoEQ Context, tự động hóa sẽ tạm dừng ngay để tránh xung đột.\n• Hồ sơ tạm thời: Áp dụng hồ sơ PEQ mà không ghi vào bộ nhớ flash ({persist = false}).\n• Preamp & Gain: Nằm sẵn trong tệp .peq; không gọi eq_set_preamp khi chuyển đổi.\n• An toàn thính giác: Không tự động thay đổi âm lượng.\n• Đầu ra chưa gán: Khôi phục EQ gốc khi chuyển sang đầu ra chưa gán hồ sơ.\n• Định dạng âm thanh: Hồ sơ điều chỉnh đường cong âm sắc; không cam kết xuất bit-perfect.",
@@ -362,6 +373,7 @@ local T = {
         ["Failed to encode configuration"] = "无法编码配置",
         ["Failed to save settings to storage; changes are live for this session only"] = "无法保存设置；更改仅在本次会话中生效",
         ["Storage unavailable; changes are live for this session only"] = "存储不可用；更改仅在本次会话中生效",
+        ["Loudness Boost is on"] = "响度增强已开启",
         ["Manual or external EQ change detected"] = "检测到手动或外部 EQ 更改",
         ["(None / Clear)"] = "（无 / 清除）",
         ["Output-Aware Sound Guidelines:\n\n• EQ Ownership: If EQ settings are changed manually or by AutoEQ Context, Output-Aware automation suspends immediately to prevent fighting.\n• Transient Profiles: Applies PEQ profiles without persisting to flash ({persist = false}).\n• Preamp & Gain: Bound inside .peq profiles; eq_set_preamp is never called per transition.\n• Hearing Safety: Does not adjust volume automatically.\n• Unmapped Routes: Restores owned baseline when switching to an unmapped route.\n• Audio Formats: Profiles adjust tonal curve; does not claim bit-perfect output."] = "输出感知音效说明：\n\n• EQ 控制权：如果手动或通过 AutoEQ Context 更改了 EQ 设置，自动切换会立即暂停以避免冲突。\n• 临时配置文件：应用 PEQ 配置文件时不写入闪存（{persist = false}）。\n• 前级与增益：包含在 .peq 配置文件内；切换时不会调用 eq_set_preamp。\n• 听力安全：不会自动调节音量。\n• 未映射输出：切换到未映射的输出时恢复原有基线 EQ。\n• 音频格式：配置文件会调整频响曲线，并非源码直通（bit-perfect）输出。",
@@ -415,6 +427,13 @@ local CONFIG_PATH = plugin.sd_root() .. "/.plugins/output_aware_sound_config.jso
 local PROFILES_DIR = plugin.sd_root() .. "/PEQ_Profiles"
 local MAX_UI_ROWS = 500
 local EPSILON = 1e-6
+-- Loudness Boost (PlaybackExtras) owns the whole EQ while its backup file exists.
+local BOOST_BACKUP_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_backup.peq"
+local function loudness_boost_active()
+    local f = io.open(BOOST_BACKUP_PATH, "r")
+    if f then f:close() return true end
+    return false
+end
 
 local config = {
     enabled = false,
@@ -621,6 +640,13 @@ local function handle_output_snapshot(snapshot)
     if not config.enabled then return end
     if is_suspended then return end
 
+    -- Never write the EQ over Loudness Boost; suspend like an external change.
+    if loudness_boost_active() then
+        is_suspended = true
+        suspension_reason = "Loudness Boost is on"
+        return
+    end
+
     local route_key = resolve_route_key(snapshot)
     local target_profile = resolve_profile_for_route_key(route_key)
 
@@ -703,7 +729,7 @@ local function grant_control(is_reclaiming)
 end
 
 local function release_control()
-    if baseline_state and plugin.has_capability and plugin.has_capability("audio.peq.state")
+    if baseline_state and not loudness_boost_active() and plugin.has_capability and plugin.has_capability("audio.peq.state")
        and plugin.get_eq_state and plugin.eq_apply_state then
         local current_eq = plugin.get_eq_state()
         if last_applied_state and eq_states_equal(current_eq, last_applied_state) then
@@ -801,7 +827,10 @@ open_main_settings = function()
             on_select = function()
                 if is_suspended then
                     grant_control(true)
-                    if plugin.show_toast then plugin.show_toast(tr("Output-Aware Sound reclaimed")) end
+                    -- Still suspended means Loudness Boost kept the EQ; say so.
+                    if plugin.show_toast then
+                        plugin.show_toast(is_suspended and tr(suspension_reason) or tr("Output-Aware Sound reclaimed"))
+                    end
                     open_main_settings()
                 end
             end

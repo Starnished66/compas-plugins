@@ -1,7 +1,7 @@
 plugin.define({
     id = "org.compas.autoeq_context",
     name = "AutoEQ Context",
-    version = "1.2.0",
+    version = "1.2.1",
     api_min = 19,
 })
 
@@ -11,6 +11,7 @@ local T = {
         ["Failed to encode configuration"] = "Konfiguration konnte nicht kodiert werden",
         ["Failed to save settings to storage; changes are live for this session only"] = "Speichern fehlgeschlagen; Änderungen gelten nur für diese Sitzung",
         ["Storage unavailable; changes are live for this session only"] = "Speicher nicht verfügbar; Änderungen gelten nur für diese Sitzung",
+        ["Loudness Boost is on"] = "Lautstärke-Boost ist aktiv",
         ["Manual or external EQ change detected"] = "Manuelle oder externe EQ-Änderung erkannt",
         ["External change"] = "Externe Änderung",
         ["(None / Clear)"] = "(Keine / Zurücksetzen)",
@@ -55,6 +56,7 @@ local T = {
         ["Failed to encode configuration"] = "No se pudo codificar la configuración",
         ["Failed to save settings to storage; changes are live for this session only"] = "No se pudieron guardar los ajustes; los cambios solo valen en esta sesión",
         ["Storage unavailable; changes are live for this session only"] = "Almacenamiento no disponible; los cambios solo valen en esta sesión",
+        ["Loudness Boost is on"] = "Realce de volumen activado",
         ["Manual or external EQ change detected"] = "Cambio de EQ manual o externo detectado",
         ["External change"] = "Cambio externo",
         ["(None / Clear)"] = "(Ninguno / Limpiar)",
@@ -99,6 +101,7 @@ local T = {
         ["Failed to encode configuration"] = "Asetusten koodaus epäonnistui",
         ["Failed to save settings to storage; changes are live for this session only"] = "Tallennus epäonnistui; muutokset ovat voimassa vain tämän istunnon ajan",
         ["Storage unavailable; changes are live for this session only"] = "Tallennustila ei käytettävissä; muutokset ovat voimassa vain tämän istunnon ajan",
+        ["Loudness Boost is on"] = "Äänenvoimakkuuden korostus on käytössä",
         ["Manual or external EQ change detected"] = "Manuaalinen tai ulkoinen EQ-muutos havaittu",
         ["External change"] = "Ulkoinen muutos",
         ["(None / Clear)"] = "(Ei mitään / Tyhjennä)",
@@ -143,6 +146,7 @@ local T = {
         ["Failed to encode configuration"] = "Échec d'encodage de la configuration",
         ["Failed to save settings to storage; changes are live for this session only"] = "Échec d'enregistrement ; modifications actives pour cette session uniquement",
         ["Storage unavailable; changes are live for this session only"] = "Stockage indisponible ; modifications actives pour cette session uniquement",
+        ["Loudness Boost is on"] = "Boost de volume activé",
         ["Manual or external EQ change detected"] = "Modification manuelle ou externe de l'EQ détectée",
         ["External change"] = "Modification externe",
         ["(None / Clear)"] = "(Aucun / Effacer)",
@@ -187,6 +191,7 @@ local T = {
         ["Failed to encode configuration"] = "Impossibile codificare la configurazione",
         ["Failed to save settings to storage; changes are live for this session only"] = "Salvataggio non riuscito; modifiche valide solo per questa sessione",
         ["Storage unavailable; changes are live for this session only"] = "Archiviazione non disponibile; modifiche valide solo per questa sessione",
+        ["Loudness Boost is on"] = "Aumento volume attivo",
         ["Manual or external EQ change detected"] = "Rilevata modifica EQ manuale o esterna",
         ["External change"] = "Modifica esterna",
         ["(None / Clear)"] = "(Nessuno / Cancella)",
@@ -231,6 +236,7 @@ local T = {
         ["Failed to encode configuration"] = "設定のエンコードに失敗しました",
         ["Failed to save settings to storage; changes are live for this session only"] = "設定を保存できませんでした。変更はこのセッションのみ有効です",
         ["Storage unavailable; changes are live for this session only"] = "ストレージを利用できません。変更はこのセッションのみ有効です",
+        ["Loudness Boost is on"] = "ラウドネスブーストがオンです",
         ["Manual or external EQ change detected"] = "手動または外部による EQ 変更を検出しました",
         ["External change"] = "外部変更",
         ["(None / Clear)"] = "(なし / クリア)",
@@ -275,6 +281,7 @@ local T = {
         ["Failed to encode configuration"] = "Configuratie coderen mislukt",
         ["Failed to save settings to storage; changes are live for this session only"] = "Opslaan mislukt; wijzigingen gelden alleen voor deze sessie",
         ["Storage unavailable; changes are live for this session only"] = "Opslag niet beschikbaar; wijzigingen gelden alleen voor deze sessie",
+        ["Loudness Boost is on"] = "Volumeboost staat aan",
         ["Manual or external EQ change detected"] = "Handmatige of externe EQ-wijziging gedetecteerd",
         ["External change"] = "Externe wijziging",
         ["(None / Clear)"] = "(Geen / Wissen)",
@@ -319,6 +326,7 @@ local T = {
         ["Failed to encode configuration"] = "Falha ao codificar a configuração",
         ["Failed to save settings to storage; changes are live for this session only"] = "Falha ao salvar; as alterações valem apenas nesta sessão",
         ["Storage unavailable; changes are live for this session only"] = "Armazenamento indisponível; as alterações valem apenas nesta sessão",
+        ["Loudness Boost is on"] = "Reforço de volume ativado",
         ["Manual or external EQ change detected"] = "Alteração manual ou externa de EQ detectada",
         ["External change"] = "Alteração externa",
         ["(None / Clear)"] = "(Nenhum / Limpar)",
@@ -363,6 +371,7 @@ local T = {
         ["Failed to encode configuration"] = "Не удалось закодировать конфигурацию",
         ["Failed to save settings to storage; changes are live for this session only"] = "Не удалось сохранить настройки; изменения действуют только в этом сеансе",
         ["Storage unavailable; changes are live for this session only"] = "Хранилище недоступно; изменения действуют только в этом сеансе",
+        ["Loudness Boost is on"] = "Усиление громкости включено",
         ["Manual or external EQ change detected"] = "Обнаружено ручное или внешнее изменение EQ",
         ["External change"] = "Внешнее изменение",
         ["(None / Clear)"] = "(Нет / Очистить)",
@@ -407,6 +416,7 @@ local T = {
         ["Failed to encode configuration"] = "Не вдалося закодувати конфігурацію",
         ["Failed to save settings to storage; changes are live for this session only"] = "Не вдалося зберегти налаштування; зміни діють лише в цьому сеансі",
         ["Storage unavailable; changes are live for this session only"] = "Сховище недоступне; зміни діють лише в цьому сеансі",
+        ["Loudness Boost is on"] = "Підсилення гучності увімкнено",
         ["Manual or external EQ change detected"] = "Виявлено ручну або зовнішню зміну EQ",
         ["External change"] = "Зовнішня зміна",
         ["(None / Clear)"] = "(Немає / Очистити)",
@@ -451,6 +461,7 @@ local T = {
         ["Failed to encode configuration"] = "Không thể mã hóa cấu hình",
         ["Failed to save settings to storage; changes are live for this session only"] = "Không lưu được cài đặt; thay đổi chỉ có hiệu lực trong phiên này",
         ["Storage unavailable; changes are live for this session only"] = "Bộ nhớ không khả dụng; thay đổi chỉ có hiệu lực trong phiên này",
+        ["Loudness Boost is on"] = "Tăng âm lượng đang bật",
         ["Manual or external EQ change detected"] = "Phát hiện thay đổi EQ thủ công hoặc từ bên ngoài",
         ["External change"] = "Thay đổi bên ngoài",
         ["(None / Clear)"] = "(Không / Xóa)",
@@ -495,6 +506,7 @@ local T = {
         ["Failed to encode configuration"] = "无法编码配置",
         ["Failed to save settings to storage; changes are live for this session only"] = "无法保存设置；更改仅在本次会话中生效",
         ["Storage unavailable; changes are live for this session only"] = "存储不可用；更改仅在本次会话中生效",
+        ["Loudness Boost is on"] = "响度增强已开启",
         ["Manual or external EQ change detected"] = "检测到手动或外部 EQ 更改",
         ["External change"] = "外部更改",
         ["(None / Clear)"] = "（无 / 清除）",
@@ -555,6 +567,13 @@ local CONFIG_PATH = plugin.sd_root() .. "/.plugins/autoeq_context_config.json"
 local PROFILES_DIR = plugin.sd_root() .. "/PEQ_Profiles"
 local MAX_UI_ROWS = 500
 local EPSILON = 1e-6
+-- Loudness Boost (PlaybackExtras) owns the whole EQ while its backup file exists.
+local BOOST_BACKUP_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_backup.peq"
+local function loudness_boost_active()
+    local f = io.open(BOOST_BACKUP_PATH, "r")
+    if f then f:close() return true end
+    return false
+end
 
 local config = {
     enabled = false,
@@ -846,6 +865,13 @@ local function evaluate_current_track()
     if not config.enabled then return end
     if is_suspended then return end
 
+    -- Never write the EQ over Loudness Boost; suspend like an external change.
+    if loudness_boost_active() then
+        is_suspended = true
+        suspension_reason = "Loudness Boost is on"
+        return
+    end
+
     local track_path = plugin.get_current_track_path and plugin.get_current_track_path()
     local target_profile, match_type = resolve_profile_for_track(track_path)
 
@@ -918,7 +944,7 @@ local function grant_control(is_reclaiming)
 end
 
 local function release_control()
-    if baseline_state and plugin.has_capability and plugin.has_capability("audio.peq.state")
+    if baseline_state and not loudness_boost_active() and plugin.has_capability and plugin.has_capability("audio.peq.state")
        and plugin.get_eq_state and plugin.eq_apply_state then
         local current_eq = plugin.get_eq_state()
         if last_applied_state and eq_states_equal(current_eq, last_applied_state) then
@@ -1179,7 +1205,10 @@ open_main_settings = function()
             on_select = function()
                 if is_suspended then
                     grant_control(true)
-                    if plugin.show_toast then plugin.show_toast(tr("AutoEQ Context reclaimed")) end
+                    -- Still suspended means Loudness Boost kept the EQ; say so.
+                    if plugin.show_toast then
+                        plugin.show_toast(is_suspended and tr(suspension_reason) or tr("AutoEQ Context reclaimed"))
+                    end
                     open_main_settings()
                 end
             end
