@@ -1527,6 +1527,28 @@ appear there immediately.
 
 ## Sound
 
+### EQ ownership backups
+
+Paths below are relative to `plugin.sd_root()`:
+
+- `.plugins/.playback_extras_backup.peq` is PlaybackExtras (Loudness Boost)'s
+  saved user EQ. A readable backup reserves the whole EQ, including when a
+  failed restore leaves it behind. AutoEQContext and OutputAwareSound must
+  defer EQ changes while `io.open(path, "r")` succeeds, closing the handle.
+- `.plugins/.mseb_pre_backup.peq` is legacy MSEB's saved EQ and ownership
+  marker. Loudness Boost must defer while it is readable. Stock MSEB instead
+  exposes its transient ownership through `plugin.get_mseb_state().enabled`.
+
+The owning plugin restores the saved EQ before removing its backup. These
+files are recovery snapshots, not just flags; other plugins must not remove
+or overwrite them. `.plugins/.playback_extras_active.peq` is the derived boost
+profile and `.plugins/.playback_extras_state` stores its settings; neither is
+an ownership marker.
+
+The two Loudness Boost checks stay local because the sandbox has no
+`require` or `dofile`. Sharing executable code would require a native API and
+capability gating. Keep their readable-file semantics aligned with this contract.
+
 ### Equalizer
 
 These control the player's 10-band parametric EQ. Every change applies and is

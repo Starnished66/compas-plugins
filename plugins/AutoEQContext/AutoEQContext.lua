@@ -567,7 +567,7 @@ local CONFIG_PATH = plugin.sd_root() .. "/.plugins/autoeq_context_config.json"
 local PROFILES_DIR = plugin.sd_root() .. "/PEQ_Profiles"
 local MAX_UI_ROWS = 500
 local EPSILON = 1e-6
--- Loudness Boost (PlaybackExtras) owns the whole EQ while its backup file exists.
+-- EQ ownership contract: PLUGINS.md, "EQ ownership backups".
 local BOOST_BACKUP_PATH = plugin.sd_root() .. "/.plugins/.playback_extras_backup.peq"
 local function loudness_boost_active()
     local f = io.open(BOOST_BACKUP_PATH, "r")
