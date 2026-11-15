@@ -1775,10 +1775,11 @@ Limits and rules:
 - If a response repeats a header, the last one wins.
 
 Error values: `invalid_url`, `invalid_request` (a line break in the URL or a
-header), `dns_failure`, `connect_failed`, `connect_timeout`, `tls_failure`,
-`timeout`, `cancelled`, `too_many_redirects`, `response_too_large`,
-`malformed_response`, `io_error`, `insecure_redirect`. They are stable, so you
-can compare against them.
+header), `dns`, `connect`, `connect_timeout`, `tls`, `timeout`, `cancelled`,
+`too_many_redirects`, `invalid_redirect`, `insecure_redirect`,
+`response_too_large`, `malformed`, `write` and `io`. A chunked body that goes
+over `max_response_bytes` reports `io`, not `response_too_large`. They are
+stable, so you can compare against them.
 
 `plugin.cancel(handle)` stops a request (or download) and returns whether it
 was still running. Its callback is then not called. The connection closes at
