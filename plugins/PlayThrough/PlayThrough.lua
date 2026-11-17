@@ -1,7 +1,7 @@
 plugin.define({
     id = "example.play_through",
     name = "Play Through",
-    version = "1.2.0",
+    version = "1.2.1",
     api_min = 19,
 })
 
