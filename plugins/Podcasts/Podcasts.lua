@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.8.1", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.0", api_min = 19 })
 
 local T = {
     de = {
@@ -112,6 +112,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Abonnements konnten nicht exportiert werden. Erneut versuchen.",
         ["Continue: %s"] = "Weiterhören: %s",
         ["Downloads (File Manager)"] = "Downloads (Dateimanager)",
+        ["Files on SD card"] = "Dateien auf SD-Karte",
+        ["No other audio files in the Podcasts folder"] = "Keine weiteren Audiodateien im Ordner Podcasts",
         ["1 new episode"] = "1 neue Folge",
         ["%d new"] = "%d neu",
         ["Discover podcasts"] = "Podcasts entdecken",
@@ -230,6 +232,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "No se pudieron exportar las suscripciones. Inténtalo de nuevo.",
         ["Continue: %s"] = "Continuar: %s",
         ["Downloads (File Manager)"] = "Descargas (Gestor de archivos)",
+        ["Files on SD card"] = "Archivos en la tarjeta SD",
+        ["No other audio files in the Podcasts folder"] = "No hay otros archivos de audio en la carpeta Podcasts",
         ["1 new episode"] = "1 episodio nuevo",
         ["%d new"] = "%d nuevos",
         ["Discover podcasts"] = "Descubrir podcasts",
@@ -348,6 +352,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Tilauksia ei voitu viedä. Yritä uudelleen.",
         ["Continue: %s"] = "Jatka: %s",
         ["Downloads (File Manager)"] = "Lataukset (Tiedostonhallinta)",
+        ["Files on SD card"] = "Tiedostot SD-kortilla",
+        ["No other audio files in the Podcasts folder"] = "Podcasts-kansiossa ei ole muita äänitiedostoja",
         ["1 new episode"] = "1 uusi jakso",
         ["%d new"] = "%d uutta",
         ["Discover podcasts"] = "Etsi podcasteja",
@@ -466,6 +472,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Impossible d'exporter les abonnements. Réessayez.",
         ["Continue: %s"] = "Continuer : %s",
         ["Downloads (File Manager)"] = "Téléchargements (Gestionnaire)",
+        ["Files on SD card"] = "Fichiers sur la carte SD",
+        ["No other audio files in the Podcasts folder"] = "Aucun autre fichier audio dans le dossier Podcasts",
         ["1 new episode"] = "1 nouvel épisode",
         ["%d new"] = "%d nouveaux",
         ["Discover podcasts"] = "Découvrir des podcasts",
@@ -584,6 +592,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Impossibile esportare le iscrizioni. Riprova.",
         ["Continue: %s"] = "Continua: %s",
         ["Downloads (File Manager)"] = "Download (Gestione file)",
+        ["Files on SD card"] = "File sulla scheda SD",
+        ["No other audio files in the Podcasts folder"] = "Nessun altro file audio nella cartella Podcasts",
         ["1 new episode"] = "1 nuovo episodio",
         ["%d new"] = "%d nuovi",
         ["Discover podcasts"] = "Scopri podcast",
@@ -702,6 +712,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "登録リストをエクスポートできませんでした。再試行してください。",
         ["Continue: %s"] = "続きを再生: %s",
         ["Downloads (File Manager)"] = "ダウンロード（ファイルマネージャー）",
+        ["Files on SD card"] = "SDカード上のファイル",
+        ["No other audio files in the Podcasts folder"] = "Podcasts フォルダに他の音声ファイルはありません",
         ["1 new episode"] = "1 件の新着エピソード",
         ["%d new"] = "%d 件の新着",
         ["Discover podcasts"] = "ポッドキャストを探す",
@@ -820,6 +832,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Kan abonnementen niet exporteren. Probeer het opnieuw.",
         ["Continue: %s"] = "Verder luisteren: %s",
         ["Downloads (File Manager)"] = "Downloads (Bestandsbeheer)",
+        ["Files on SD card"] = "Bestanden op SD-kaart",
+        ["No other audio files in the Podcasts folder"] = "Geen andere audiobestanden in de map Podcasts",
         ["1 new episode"] = "1 nieuwe aflevering",
         ["%d new"] = "%d nieuw",
         ["Discover podcasts"] = "Podcasts ontdekken",
@@ -938,6 +952,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Não foi possível exportar as inscrições. Tente novamente.",
         ["Continue: %s"] = "Continuar: %s",
         ["Downloads (File Manager)"] = "Downloads (Gerenciador de arquivos)",
+        ["Files on SD card"] = "Arquivos no cartão SD",
+        ["No other audio files in the Podcasts folder"] = "Nenhum outro arquivo de áudio na pasta Podcasts",
         ["1 new episode"] = "1 novo episódio",
         ["%d new"] = "%d novos",
         ["Discover podcasts"] = "Descobrir podcasts",
@@ -1056,6 +1072,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Не удалось экспортировать подписки. Повторите попытку.",
         ["Continue: %s"] = "Продолжить: %s",
         ["Downloads (File Manager)"] = "Загрузки (Файловый менеджер)",
+        ["Files on SD card"] = "Файлы на SD-карте",
+        ["No other audio files in the Podcasts folder"] = "В папке Podcasts нет других аудиофайлов",
         ["1 new episode"] = "1 новый выпуск",
         ["%d new"] = "%d нов.",
         ["Discover podcasts"] = "Найти подкасты",
@@ -1174,6 +1192,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Не вдалося експортувати підписки. Спробуйте ще раз.",
         ["Continue: %s"] = "Продовжити: %s",
         ["Downloads (File Manager)"] = "Завантаження (Файловий менеджер)",
+        ["Files on SD card"] = "Файли на SD-картці",
+        ["No other audio files in the Podcasts folder"] = "У папці Podcasts немає інших аудіофайлів",
         ["1 new episode"] = "1 новий випуск",
         ["%d new"] = "%d нов.",
         ["Discover podcasts"] = "Знайти подкасти",
@@ -1292,6 +1312,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "Không thể xuất đăng ký. Hãy thử lại.",
         ["Continue: %s"] = "Tiếp tục: %s",
         ["Downloads (File Manager)"] = "Bản tải (Trình quản lý tệp)",
+        ["Files on SD card"] = "Tệp trên thẻ SD",
+        ["No other audio files in the Podcasts folder"] = "Không có tệp âm thanh nào khác trong thư mục Podcasts",
         ["1 new episode"] = "1 tập mới",
         ["%d new"] = "%d mới",
         ["Discover podcasts"] = "Khám phá podcast",
@@ -1410,6 +1432,8 @@ local T = {
         ["Could not export subscriptions. Try again."] = "无法导出订阅。请重试。",
         ["Continue: %s"] = "继续：%s",
         ["Downloads (File Manager)"] = "下载（文件管理器）",
+        ["Files on SD card"] = "SD 卡上的文件",
+        ["No other audio files in the Podcasts folder"] = "Podcasts 文件夹中没有其他音频文件",
         ["1 new episode"] = "1 个新单集",
         ["%d new"] = "%d 个新单集",
         ["Discover podcasts"] = "发现播客",
@@ -2631,6 +2655,27 @@ local function progress_key(show, episode)
     return show.key .. "|" .. episode.guid
 end
 
+-- Audio the user copied into the Podcasts folders. Show keys are hex, so
+-- this prefix never collides with one.
+local SD_PREFIX = "@sd|"
+local function is_sd_key(k)
+    return k:sub(1, #SD_PREFIX) == SD_PREFIX
+end
+
+-- Starts a saved file from its resume point; a finished one starts over.
+local function start_playback(current, path)
+    if current.played then
+        current.played = false
+        current.position = 0
+    end
+    current.last_played = os.time()
+    save_progress()
+    -- Keep the saved point guarded even if native playback refuses
+    -- to restart and no track_started event follows.
+    pending_seek = { path = path, position = current.position or 0, tries = 0 }
+    plugin.play_file(path)
+end
+
 local function episode_progress(show, episode)
     local k = progress_key(show, episode)
     progress[k] = progress[k]
@@ -3062,18 +3107,7 @@ open_episode = function(show, episode)
     end
     if path then
         add((p.position > 5 and not p.played) and tr("Resume") or tr("Play download"), function()
-            local current = state()
-            -- A replay of a finished episode starts over and can be resumed.
-            if current.played then
-                current.played = false
-                current.position = 0
-            end
-            current.last_played = os.time()
-            save_progress()
-            -- Keep the saved point guarded even if native playback refuses
-            -- to restart and no track_started event follows.
-            pending_seek = { path = path, position = current.position or 0, tries = 0 }
-            plugin.play_file(path)
+            start_playback(state(), path)
         end, ICON.play)
     end
     if not path and not is_queued and episode.url ~= "" then
@@ -3644,8 +3678,8 @@ enqueue_download = function(show, episode)
         return
     end
     local downloads = #queue + (active_download and 1 or 0)
-    for _ in pairs(path_to_key) do
-        downloads = downloads + 1
+    for _, k in pairs(path_to_key) do
+        if not is_sd_key(k) then downloads = downloads + 1 end
     end
     -- A history that could not be read whole cannot record new downloads.
     if progress_partial or downloads >= MAX_DOWNLOADS then
@@ -3691,7 +3725,7 @@ end
 local function downloaded_entries()
     local list = {}
     for k, p in pairs(progress) do
-        if p.path and p.path ~= "" then
+        if p.path and p.path ~= "" and not is_sd_key(k) then
             local f = io.open(p.path, "rb")
             if f then
                 f:close()
@@ -3727,7 +3761,8 @@ end
 local MAX_LIST_ROWS = 500
 
 -- Newest first, unless keep_order (a range already ordered by show).
-local function show_download_list(title, list, with_show, keep_order)
+-- open_row(row) runs on tap; it defaults to the episode screen.
+local function show_download_list(title, list, with_show, keep_order, open_row)
     if not keep_order then
         table.sort(list, function(a, b)
             return (a.episode.epoch or 0) > (b.episode.epoch or 0)
@@ -3755,7 +3790,11 @@ local function show_download_list(title, list, with_show, keep_order)
         }
     end
     plugin.show_list(title, labels, function(index)
-        open_episode(list[index].show, list[index].episode)
+        if open_row then
+            open_row(list[index])
+        else
+            open_episode(list[index].show, list[index].episode)
+        end
     end)
 end
 
@@ -3875,6 +3914,129 @@ local function open_downloads(filter, heading)
     end)
 end
 
+local SD_AUDIO = { mp3 = true, m4a = true, m4b = true, aac = true, ogg = true, oga = true,
+    opus = true, flac = true, wav = true }
+-- Longer paths could overflow a history line.
+local SD_MAX_PATH = 1000
+
+-- Untracked audio in ROOT and its immediate folders, from list_dir only.
+local function sd_scan_dir(dir, folder, tracked, found, out)
+    for _, e in ipairs(plugin.list_dir(dir) or {}) do
+        local ext = e.name:lower():match("%.(%w+)$")
+        local path = dir .. "/" .. e.name
+        if not e.dir and e.name:sub(1, 1) ~= "." and SD_AUDIO[ext] and #path <= SD_MAX_PATH then
+            found[path] = true
+            if not tracked[path] then
+                out[#out + 1] = { path = path, folder = folder, name = e.name:sub(1, -#ext - 2) }
+            end
+        end
+    end
+end
+
+-- Files the plugin does not track as downloads, sorted by name. Progress of
+-- SD files that are gone is dropped.
+local function sd_scan()
+    local top = plugin.list_dir(ROOT)
+    local out = {}
+    if type(top) ~= "table" then return out end
+    local tracked, found = {}, {}
+    for k, p in pairs(progress) do
+        if p.path ~= "" and not is_sd_key(k) then tracked[p.path] = true end
+    end
+    sd_scan_dir(ROOT, "", tracked, found, out)
+    for _, e in ipairs(top) do
+        if e.dir and e.name:sub(1, 1) ~= "." then
+            sd_scan_dir(ROOT .. "/" .. e.name, e.name, tracked, found, out)
+        end
+    end
+    local gone = false
+    for k, p in pairs(progress) do
+        if is_sd_key(k) and not found[p.path] then
+            progress[k], gone = nil, true
+        end
+    end
+    if gone then save_progress() end
+    table.sort(out, function(a, b)
+        local x, y = a.name:lower(), b.name:lower()
+        if x ~= y then return x < y end
+        return a.path < b.path
+    end)
+    return out
+end
+
+local function sd_row(file)
+    local k = SD_PREFIX .. file.path
+    local p = progress[k] or { position = 0, played = false }
+    return { show = { title = "" }, episode = { title = file.name, date = "" }, path = file.path, progress = p, key = k }
+end
+
+local function sd_play(row)
+    local k = row.key
+    progress[k] = progress[k] or { position = 0, duration = 0, played = false, new = false,
+        path = row.path, last_played = 0, title = cap(row.episode.title, 200), date = "", epoch = 0 }
+    start_playback(progress[k], row.path)
+end
+
+-- Saved SD files, shaped like downloaded_entries so Continue can use them.
+local function sd_progress_rows()
+    local rows = {}
+    for k, p in pairs(progress) do
+        if is_sd_key(k) and p.path ~= "" then
+            local f = io.open(p.path, "rb")
+            if f then
+                f:close()
+                rows[#rows + 1] = { show = { title = "" }, episode = { title = p.title, date = "" },
+                    path = p.path, progress = p, key = k }
+            end
+        end
+    end
+    return rows
+end
+
+local function show_sd_group(title, rows)
+    if #rows <= MAX_LIST_ROWS then
+        show_download_list(title, rows, false, true, sd_play)
+        return
+    end
+    local parts, labels = {}, {}
+    for first = 1, #rows, MAX_LIST_ROWS do
+        parts[#parts + 1] = table.move(rows, first, math.min(first + MAX_LIST_ROWS - 1, #rows), 1, {})
+        labels[#labels + 1] = { label = string.format(tr("%s part %d"), title, #parts), icon = ICON.download }
+    end
+    plugin.show_list(title, labels, function(index)
+        show_download_list(labels[index].label, parts[index], false, true, sd_play)
+    end)
+end
+
+-- One folder opens its list; several give one row per folder first.
+local function open_sd_files()
+    local groups, names = {}, {}
+    for _, file in ipairs(sd_scan()) do
+        local name = file.folder ~= "" and file.folder or tr("Podcasts")
+        if not groups[name] then
+            groups[name] = {}
+            names[#names + 1] = name
+        end
+        table.insert(groups[name], sd_row(file))
+    end
+    if #names == 0 then
+        plugin.show_toast(tr("No other audio files in the Podcasts folder"))
+        return
+    end
+    if #names == 1 then
+        show_sd_group(names[1], groups[names[1]])
+        return
+    end
+    table.sort(names, function(a, b) return a:lower() < b:lower() end)
+    local labels = {}
+    for i = 1, math.min(#names, MAX_LIST_ROWS) do
+        labels[i] = { label = cap(names[i] .. " (" .. #groups[names[i]] .. ")", 159), icon = ICON.show }
+    end
+    plugin.show_list(tr("Files on SD card"), labels, function(index)
+        show_sd_group(names[index], groups[names[index]])
+    end)
+end
+
 local function open_podcasts_downloads()
     if not (plugin.has_capability and plugin.has_capability("ui.file_manager")) then
         plugin.show_toast(tr("File Manager is not supported on this device"))
@@ -3978,6 +4140,7 @@ end
 local function open_home()
     local rows, actions = {}, {}
     local entries = downloaded_entries()
+    for _, row in ipairs(sd_progress_rows()) do entries[#entries + 1] = row end
     local cont = continue_episode(entries)
     if cont then
         rows[#rows + 1] = {
@@ -3994,6 +4157,8 @@ local function open_home()
     end
     rows[#rows + 1] = { label = tr("Downloads (File Manager)"), icon = ICON.download }
     actions[#actions + 1] = open_podcasts_downloads
+    rows[#rows + 1] = { label = tr("Files on SD card"), icon = ICON.download }
+    actions[#actions + 1] = open_sd_files
     if #subscriptions > 0 then
         sort_subscriptions()
         -- New counts come from progress state, so Home never loads every catalog.
