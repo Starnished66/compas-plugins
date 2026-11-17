@@ -196,7 +196,7 @@ plugin.define({
   | Files | `filesystem.sd`, `filesystem.realpath`, `filesystem.mkdir`, `filesystem.playlists`, `filesystem.file_ops` |
   | Language | `i18n.tr` |
   | Storage | `storage.namespaced`, `storage.secrets`, `storage.secrets_get` |
-  | Network | `network.http.sync`, `network.http.async`, `network.http.download`, `network.http.download_progress`, `network.status` |
+  | Network | `network.http.async`, `network.http.download`, `network.http.download_progress`, `network.status` |
   | Data | `data.json`, `crypto.md5`, `data.zip`, `data.zip_image`, `data.image_thumbnail`, `data.wallpaper`, `data.html` |
   | Library | `library.album_cover`, `library.artist_albums`, `library.paged`, `library.refresh`, `library.track_metadata` |
   | Apps | `apps.list`, `apps.launch` |
@@ -1840,10 +1840,11 @@ end
 
 ### `plugin.http_get(url [, verify_tls])` / `plugin.http_post(url, body [, content_type] [, verify_tls])`
 
-Older, blocking requests: the whole player freezes until they finish. Use
-`http_request` instead. They return `status, body` (HTTP error codes such as
-404 included), or `nil, "network error"`. `http_post` sends `body` as is, with
-`content_type` defaulting to `application/x-www-form-urlencoded`.
+Removed from the player API because synchronous requests blocked the UI.
+Use `plugin.http_request(options, callback)` for GET and POST requests. The
+callback runs on the UI thread after the worker completes. Its default response
+limit is 512 KiB and its maximum is 2 MiB; set `max_response_bytes` within the documented async limits when
+needed.
 
 ## Data and storage
 
