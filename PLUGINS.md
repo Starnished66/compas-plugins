@@ -805,14 +805,16 @@ default orders follow the defaults of the installed release.
 
 ### `plugin.set_icon(theme_path, source_file)`
 
-Replaces a built-in icon. `theme_path` is the icon's path in the theme (for
-example `"launcher/book.png"`); `source_file` is the replacement image, which
+Replaces a built-in icon. `theme_path` is the icon's path in the theme, written
+plainly like `"launcher/book.png"` (`"./launcher/book.png"` or
+`"launcher//book.png"` is an error); `source_file` is the replacement image, which
 is copied into the theme override folder. Raises an error if it can't be
-copied.
+copied, or past 256 overridden icons.
 
-- Call it from top-level code. The app caches icons, and screens built before
-  the override existed keep using the old file until `refresh_theme()` or
-  `reload_ui()`.
+- Call it from top-level code, on every load. The override takes priority over
+  the theme and the built-in icon only while the plugin that set it is loaded.
+  The app caches icons, and screens built before the override existed keep
+  using the old file until `refresh_theme()` or `reload_ui()`.
 - Keep the replacement close to the original's size and shape: the layout was
   measured for the original.
 
