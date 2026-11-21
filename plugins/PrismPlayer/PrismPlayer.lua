@@ -1,5 +1,5 @@
 -- Accent-led cover art with glass badges and a gradient waveform.
-plugin.define({ id = "org.compas.prism_player", name = "Prism Player", version = "0.2.0", api_min = 19 })
+plugin.define({ id = "org.compas.prism_player", name = "Prism Player", version = "0.2.1", api_min = 19 })
 
 local T = {
     de = {

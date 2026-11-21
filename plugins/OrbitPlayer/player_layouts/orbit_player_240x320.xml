@@ -1,4 +1,7 @@
 <component>
+    <consts>
+        <int name="compas_layout_version" value="1"/>
+    </consts>
     <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="0" style_border_width="0" style_radius="0" style_pad_all="0">
         <lv_obj name="cover_card" x="48" y="12" width="144" height="144" scrollable="false" style_radius="32767" style_clip_corner="true" style_bg_opa="255" style_border_width="0" style_pad_all="0" clickable="false">
             <lv_image name="cover_img" src="default_cover" align="center" />

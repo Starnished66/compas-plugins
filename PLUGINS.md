@@ -918,6 +918,11 @@ Layout-local lyrics and click options, complete XML and Lua examples, and the
 lifetime rules are documented in [Player layouts](https://compasplayer.org/layouts.html#interaction-options-and-plugin-menus).
 No LVGL patches, Lua evaluation from XML, or custom widget types are required.
 
+Gallery, Orbit and Panorama ship both in the firmware and in the store. Their
+layouts declare `<int name="compas_layout_version" value="N"/>` in `<consts>`,
+and when both copies are present the player lists only the higher one (the
+store copy on a tie). Bump it on both sides when you change one of them.
+
 ### `plugin.restore_player_layout()`
 
 Requires `plugin.define` and capability `ui.player_layout_restore`. Clears only

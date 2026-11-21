@@ -43,8 +43,8 @@
         <lv_obj name="cover_card" x="90" y="60" width="300" height="300" scrollable="false" style_radius="14" style_clip_corner="true" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
             <lv_image name="cover_img" src="default_cover" align="center" />
         </lv_obj>
-        <lv_obj name="dismiss_btn" x="0" y="32" width="48" height="48" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_image name="dismiss_icon" src="btn_back" x="12" y="12" width="24" height="24" inner_align="contain" />
+        <lv_obj name="dismiss_btn" x="0" y="48" width="64" height="64" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="44" height="44" inner_align="contain" />
         </lv_obj>
         <lv_image name="more_btn" src="ic_more" x="414" y="626" width="36" height="36" inner_align="contain" />
         <lv_label name="title" text="" x="20" y="380" width="440" height="content" style_text_font="player_title" style_text_align="center" style_pad_all="0" />

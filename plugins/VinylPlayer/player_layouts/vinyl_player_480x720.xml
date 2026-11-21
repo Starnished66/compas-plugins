@@ -7,8 +7,8 @@
             <lv_obj name="record_ring_outer" align="center" width="96%" height="96%" scrollable="false" style_radius="32767" style_bg_opa="0" style_border_width="2" style_border_color="0x252e34" style_pad_all="0" clickable="false" />
             <lv_obj name="record_ring_inner" align="center" width="91%" height="91%" scrollable="false" style_radius="32767" style_bg_opa="0" style_border_width="2" style_border_color="0x303a40" style_pad_all="0" clickable="false" />
         </lv_obj>
-        <lv_obj name="dismiss_btn" x="8" y="32" width="44" height="44" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="24" height="24" inner_align="contain" />
+        <lv_obj name="dismiss_btn" x="0" y="48" width="64" height="64" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="44" height="44" inner_align="contain" />
         </lv_obj>
         <lv_image name="more_btn" src="ic_more" x="412" y="638" width="40" height="40" inner_align="contain" />
         <lv_label name="title" text="" x="24" y="398" width="432" height="content" style_text_font="player_title" style_text_align="center" style_pad_all="0" />

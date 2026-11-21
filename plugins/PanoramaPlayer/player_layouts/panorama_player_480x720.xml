@@ -1,4 +1,7 @@
 <component>
+    <consts>
+        <int name="compas_layout_version" value="1"/>
+    </consts>
     <animations>
         <timeline name="lyrics_open">
             <animation prop="width" target="title" start="432" end="324" duration="260" />
@@ -32,16 +35,16 @@
         </timeline>
     </animations>
     <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="255" style_border_width="0" style_radius="0" style_pad_all="0">
-        <lv_obj name="lyrics_backdrop" x="0" y="32" width="480" height="490" scrollable="false" clickable="false" style_bg_opa="255" style_border_width="0" style_radius="0" style_pad_all="0">
-            <lv_obj name="cover_card" x="0" y="0" width="480" height="480" scrollable="false" style_radius="0" style_clip_corner="true" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
+        <lv_obj name="lyrics_backdrop" x="0" y="0" width="480" height="522" scrollable="false" clickable="false" style_bg_opa="255" style_border_width="0" style_radius="0" style_pad_all="0">
+            <lv_obj name="cover_card" x="0" y="0" width="480" height="512" scrollable="false" style_radius="0" style_clip_corner="true" style_bg_opa="0" style_border_width="0" style_pad_all="0" clickable="false">
                 <lv_image name="cover_img" src="default_cover" align="center" />
-                <lv_image name="cover_fade" x="0" y="0" width="480" height="480" inner_align="stretch" />
+                <lv_image name="cover_fade" x="0" y="0" width="480" height="512" inner_align="stretch" />
             </lv_obj>
-            <lv_obj name="lyrics_dim" x="0" y="0" width="480" height="480" scrollable="false" clickable="false" style_bg_opa="0" style_opa="255" style_border_width="0" style_radius="0" style_pad_all="0" />
-            <lv_obj name="lyrics_area" x="18" y="118" width="444" height="372" scrollable="false" style_bg_opa="0" style_opa="255" style_radius="20" style_border_width="0" style_pad_all="12" style_text_align="left" clickable="false" />
+            <lv_obj name="lyrics_dim" x="0" y="0" width="480" height="512" scrollable="false" clickable="false" style_bg_opa="0" style_opa="255" style_border_width="0" style_radius="0" style_pad_all="0" />
+            <lv_obj name="lyrics_area" x="18" y="150" width="444" height="372" scrollable="false" style_bg_opa="0" style_opa="255" style_radius="20" style_border_width="0" style_pad_all="12" style_text_align="left" clickable="false" />
         </lv_obj>
-        <lv_obj name="dismiss_btn" x="8" y="32" width="44" height="44" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
-            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="24" height="24" inner_align="contain" />
+        <lv_obj name="dismiss_btn" x="0" y="48" width="64" height="64" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="44" height="44" inner_align="contain" />
         </lv_obj>
         <lv_image name="more_btn" src="ic_more" x="424" y="38" width="40" height="40" inner_align="contain" />
         <lv_label name="title" text="" x="24" y="402" width="432" height="content" style_text_font="player_title" style_text_align="left" style_pad_all="0" />

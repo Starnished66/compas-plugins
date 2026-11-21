@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.hibys_graph_player",
     name = "Hiby's Graph Player",
-    version = "1.1.0",
+    version = "1.1.1",
     api_min = 19,
 })
 

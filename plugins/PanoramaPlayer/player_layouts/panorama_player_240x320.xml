@@ -1,4 +1,7 @@
 <component>
+    <consts>
+        <int name="compas_layout_version" value="1"/>
+    </consts>
     <animations>
         <timeline name="lyrics_open">
             <animation prop="width" target="title" start="216" end="142" duration="260" />

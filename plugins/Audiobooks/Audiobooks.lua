@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.8.0", api_min = 19 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.8.1", api_min = 19 })
 
 local T = {
     de = {

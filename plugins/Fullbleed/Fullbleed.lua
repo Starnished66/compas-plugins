@@ -1,5 +1,5 @@
 -- Fullbleed player layout.
-plugin.define({ id = "org.compas.fullbleed_player", name = "Fullbleed", version = "1.1.0", api_min = 19 })
+plugin.define({ id = "org.compas.fullbleed_player", name = "Fullbleed", version = "1.1.1", api_min = 19 })
 
 local T = {
     de = {

@@ -1,4 +1,7 @@
 <component>
+    <consts>
+        <int name="compas_layout_version" value="1"/>
+    </consts>
     <animations>
         <timeline name="lyrics_open">
             <animation prop="width" target="cover_card" start="128" end="40" duration="260" />

@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.orbit_player",
     name = "Orbit Player",
-    version = "1.1.0",
+    version = "1.1.1",
     api_min = 19,
 })
 

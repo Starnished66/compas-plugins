@@ -5,7 +5,7 @@
 plugin.define({
     id = "example.reading_room_player",
     name = "Reading Room Player",
-    version = "1.0.0",
+    version = "1.0.1",
     api_min = 17,
 })
 

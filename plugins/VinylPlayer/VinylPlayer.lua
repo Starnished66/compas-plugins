@@ -3,7 +3,7 @@
 plugin.define({
     id = "org.compas.vinyl_player",
     name = "Vinyl Player",
-    version = "1.1.0",
+    version = "1.1.1",
     api_min = 19,
 })
 

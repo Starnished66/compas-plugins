@@ -8,8 +8,8 @@
             <lv_image name="cover_img" src="default_cover" align="center" />
             <lv_image name="cover_fade" x="0" y="0" width="480" height="480" inner_align="stretch" />
         </lv_obj>
-        <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="dismiss_btn" x="32" y="20" width="48" height="48" style_radius="48" style_bg_color="0x000000" style_bg_opa="110">
-            <lv_image inner_align="contain" name="dismiss_icon" src="v1_back" width="24" height="24" align="center" />
+        <lv_obj name="dismiss_btn" x="0" y="48" width="64" height="64" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+            <lv_image name="dismiss_icon" src="btn_back" x="10" y="10" width="44" height="44" inner_align="contain" />
         </lv_obj>
         <lv_obj scrollable="false" clickable="false" style_border_width="0" style_pad_all="0" name="favorite_circle" x="400" y="20" width="48" height="48" style_radius="48" style_bg_color="0x000000" style_bg_opa="110">
             <lv_image inner_align="contain" name="favorite_icon" src="collect_out" width="24" height="24" align="center" />

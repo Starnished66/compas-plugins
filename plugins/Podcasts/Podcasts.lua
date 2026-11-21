@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.0", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.1", api_min = 19 })
 
 local T = {
     de = {

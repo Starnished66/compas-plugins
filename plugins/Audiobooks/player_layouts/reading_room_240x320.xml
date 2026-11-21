@@ -5,7 +5,7 @@
     <str name="compas_artist_action" value="none"/>
     <str name="compas_album_action" value="reading_menu"/>
   </consts>
-  <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="255" style_border_width="0" style_pad_all="0">
+  <view extends="lv_obj" width="#screen_w" height="#screen_h" scrollable="false" style_bg_opa="255" style_border_width="0" style_pad_all="0" style_radius="0">
     <lv_obj name="cover_card" x="64" y="10" width="112" height="112"
             scrollable="false" style_radius="18" style_clip_corner="true" style_bg_opa="255" style_border_width="0" style_pad_all="0">
       <lv_image name="cover_img" src="default_cover" width="112" height="112" align="center" inner_align="stretch"/>
@@ -39,5 +39,8 @@
     </lv_button>
     <lv_image name="next_btn" src="btn_next" x="174" y="260" width="24" height="24" inner_align="contain"/>
     <lv_label name="caption_speed" text="Speed" x="88" y="288" width="64" height="18" style_text_align="center" style_text_font="font_16" style_pad_all="0"/>
+    <lv_obj name="dismiss_btn" x="0" y="8" width="32" height="32" scrollable="false" style_bg_opa="0" style_border_width="0" style_pad_all="0">
+      <lv_image name="dismiss_icon" src="btn_back" x="4" y="4" width="24" height="24" inner_align="contain" />
+    </lv_obj>
   </view>
 </component>
