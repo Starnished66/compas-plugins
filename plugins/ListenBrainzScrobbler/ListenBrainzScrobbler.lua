@@ -1,4 +1,4 @@
-plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = "1.1", api_min = 19 })
+plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = "1.2", api_min = 19 })
 
 local T = {
   de = {
@@ -18,12 +18,86 @@ local T = {
     ["ListenBrainz token saved."] = "ListenBrainz-Token gespeichert.",
     ["Set ListenBrainz user token"] = "ListenBrainz-Benutzertoken festlegen",
     ["ListenBrainz user token"] = "ListenBrainz-Benutzertoken",
-    ["Enabled"] = "Aktiviert",
-    ["Could not save that setting. Try again."] = "Einstellung konnte nicht gespeichert werden. Erneut versuchen.",
     ["Log out"] = "Abmelden",
     ["Log out (%s)"] = "Abmelden (%s)",
-    ["Logged out of ListenBrainz."] = "Von ListenBrainz abgemeldet.",
     ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi aus \u{2014} wird bei Verbindung gesendet",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi nicht verbunden \u{2014} wird bei Verbindung gesendet",
+    ["Waiting list could not be updated."] = "Warteliste konnte nicht aktualisiert werden.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Gesendet, aber Bereinigung der Warteliste konnte nicht gespeichert werden.",
+    ["Could not send scrobble request."] = "Scrobble-Anfrage konnte nicht gesendet werden.",
+    ["Waiting to send"] = "Wartet auf Senden",
+    ["Not saved yet"] = "Noch nicht gespeichert",
+    ["Discarded by you"] = "Von dir verworfen",
+    ["Sending…"] = "Senden…",
+    ["waiting for Wi-Fi"] = "wartet auf Wi-Fi",
+    ["next try %dm"] = "nächster Versuch in %dm",
+    ["sent %s"] = "gesendet %s",
+    ["Sync now"] = "Jetzt synchronisieren",
+    ["Account & settings"] = "Konto & Einstellungen",
+    ["Press Back."] = "Zurück drücken.",
+    ["Account changed. Nothing changed."] = "Konto geändert. Keine Änderungen vorgenommen.",
+    ["Account changed. Nothing discarded."] = "Konto geändert. Nichts verworfen.",
+    ["Saved: %s"] = "Gespeichert: %s",
+    ["Saved time unavailable"] = "Speicherzeit nicht verfügbar",
+    ["Scrobbling"] = "Scrobbeln",
+    ["Scrobbling: %s"] = "Scrobbeln: %s",
+    ["Scrobbling turned on."] = "Scrobbeln aktiviert.",
+    ["Scrobbling turned off."] = "Scrobbeln deaktiviert.",
+    ["Could not save scrobbling preference. Try again."] = "Scrobbel-Einstellung konnte nicht gespeichert werden. Erneut versuchen.",
+    ["This track: No music playing"] = "Dieser Titel: Keine Musikwiedergabe",
+    ["This track: Scrobbling off"] = "Dieser Titel: Scrobbeln aus",
+    ["This track: Reading length"] = "Dieser Titel: Dauer wird gelesen",
+    ["This track: Too short (<30s)"] = "Dieser Titel: Zu kurz (<30s)",
+    ["This track: Playback paused"] = "Dieser Titel: Wiedergabe pausiert",
+    ["This track: Counts after %s"] = "Dieser Titel: Zählt nach %s",
+    ["This track: This listen not counted"] = "Dieser Titel: Dieses Anhören wird nicht gezählt",
+    ["This track: %s"] = "Dieser Titel: %s",
+    ["No track playing."] = "Kein Titel wird abgespielt.",
+    ["Status: %s"] = "Status: %s",
+    ["How Scrobbling Works"] = "So funktioniert Scrobbeln",
+    ["Tracks >= 30s only"] = "Nur Titel ab 30s",
+    ["Listened 50% or 4 min"] = "50% oder 4 Min. gehört",
+    ["Pauses do not count"] = "Pausen zählen nicht",
+    ["ListenBrainz not reachable."] = "ListenBrainz nicht erreichbar.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz vorübergehend ausgelastet.",
+    ["Status: user token not accepted"] = "Status: Benutzertoken nicht akzeptiert",
+    ["Logged in as %s"] = "Angemeldet als %s",
+    ["Sent to ListenBrainz"] = "An ListenBrainz gesendet",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz hat diese Wiedergabe abgelehnt",
+    ["%d listen waiting"] = "%d Wiedergabe wartet",
+    ["%d listens waiting"] = "%d Wiedergaben warten",
+    ["Waiting listens could not be read"] = "Wartende Wiedergaben konnten nicht gelesen werden",
+    ["Waiting listens could not be read. Nothing discarded."] = "Wartende Wiedergaben konnten nicht gelesen werden. Nichts verworfen.",
+    ["Waiting listens"] = "Wartende Wiedergaben",
+    ["No listens are waiting to send"] = "Keine Wiedergaben warten auf das Senden",
+    ["Qualified listens send automatically."] = "Qualifizierte Wiedergaben werden automatisch gesendet.",
+    ["%d listens kept for %s"] = "%d Wiedergaben behalten für %s",
+    ["Oldest listens are sent first."] = "Älteste Wiedergaben werden zuerst gesendet.",
+    ["Send waiting listens now"] = "Wartende Wiedergaben jetzt senden",
+    ["Discard waiting listens…"] = "Wartende Wiedergaben verwerfen…",
+    ["Discard waiting listens (%d)"] = "Wartende Wiedergaben verwerfen (%d)",
+    ["Discard %d listens?"] = "%d Wiedergaben verwerfen?",
+    ["Discard %d listens"] = "%d Wiedergaben verwerfen",
+    ["Keep waiting listens"] = "Wartende Wiedergaben behalten",
+    ["Kept waiting listens."] = "Wartende Wiedergaben behalten.",
+    ["Waiting listens discarded."] = "Wartende Wiedergaben verworfen.",
+    ["Could not discard listens. Try again."] = "Wartende Wiedergaben konnten nicht verworfen werden. Erneut versuchen.",
+    ["Account changed. Open waiting listens again."] = "Konto geändert. Wartende Wiedergaben erneut öffnen.",
+    ["Log out?"] = "Abmelden?",
+    ["Stay logged in"] = "Angemeldet bleiben",
+    ["Log out %s"] = "Abmelden: %s",
+    ["Stayed logged in."] = "Angemeldet geblieben.",
+    ["Logged out. Waiting listens are kept for this account."] = "Abgemeldet. Wartende Wiedergaben bleiben für dieses Konto erhalten.",
+    ["Sending waiting listens…"] = "Wartende Wiedergaben werden gesendet…",
+    ["Already sending waiting listens."] = "Wartende Wiedergaben werden bereits gesendet.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Lege dein ListenBrainz-Benutzertoken fest, bevor du wartende Wiedergaben sendest.",
+    ["Turn scrobbling on before sending waiting listens."] = "Aktiviere Scrobbeln, bevor du wartende Wiedergaben sendest.",
+    ["User token: set"] = "Benutzertoken: festgelegt",
+    ["Up to 100 offline listens"] = "Bis zu 100 Offline-Wiedergaben",
+    ["Separate queue per account"] = "Eigene Warteschlange pro Konto",
+    ["Streams without length are not sent"] = "Streams ohne Länge werden nicht gesendet",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "So funktioniert das ListenBrainz-Scrobbeln:\n\n1. 30-Sekunden-Regel: Titel unter 30 Sekunden werden nicht gescrobbelt.\n\n2. Hörschwelle: Eine Wiedergabe zählt nach der halben Dauer oder 4 Minuten (was zuerst eintritt).\n\n3. Pause & Spulen: Pausierte oder gespulte Zeit zählt nicht zur Schwelle.\n\n4. Offline-Warteschlange: Bis zu 100 Wiedergaben (64 KB) werden offline gespeichert und bei Verbindung gesendet.\n\n5. Kontentrennung: Wartende Wiedergaben werden pro ListenBrainz-Konto aufbewahrt.\n\n6. Unbekannte Länge: Streams ohne bekannte Länge, etwa die meisten Radiosender, werden nicht gesendet.",
   },
   es = {
     ["Could not open text entry. Try again."] = "No se pudo abrir la entrada de texto. Inténtalo de nuevo.",
@@ -42,12 +116,86 @@ local T = {
     ["ListenBrainz token saved."] = "Token de ListenBrainz guardado.",
     ["Set ListenBrainz user token"] = "Configurar token de usuario de ListenBrainz",
     ["ListenBrainz user token"] = "Token de usuario de ListenBrainz",
-    ["Enabled"] = "Activado",
-    ["Could not save that setting. Try again."] = "No se pudo guardar ese ajuste. Inténtalo de nuevo.",
     ["Log out"] = "Cerrar sesión",
     ["Log out (%s)"] = "Cerrar sesión (%s)",
-    ["Logged out of ListenBrainz."] = "Sesión cerrada en ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Scrobbler de ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi apagado \u{2014} se enviará al conectar",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi no conectado \u{2014} se enviará al conectar",
+    ["Waiting list could not be updated."] = "No se pudo actualizar la lista de espera.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Enviado, pero no se pudo guardar la limpieza de la lista de espera.",
+    ["Could not send scrobble request."] = "No se pudo enviar la solicitud de scrobble.",
+    ["Waiting to send"] = "Esperando para enviar",
+    ["Not saved yet"] = "Aún no guardado",
+    ["Discarded by you"] = "Descartado por ti",
+    ["Sending…"] = "Enviando…",
+    ["waiting for Wi-Fi"] = "esperando Wi-Fi",
+    ["next try %dm"] = "próximo intento en %dm",
+    ["sent %s"] = "enviado %s",
+    ["Sync now"] = "Sincronizar ahora",
+    ["Account & settings"] = "Cuenta y ajustes",
+    ["Press Back."] = "Pulsa Atrás.",
+    ["Account changed. Nothing changed."] = "La cuenta ha cambiado. No se modificó nada.",
+    ["Account changed. Nothing discarded."] = "La cuenta ha cambiado. No se descartó nada.",
+    ["Saved: %s"] = "Guardado: %s",
+    ["Saved time unavailable"] = "Hora de guardado no disponible",
+    ["Scrobbling"] = "Scrobbling",
+    ["Scrobbling: %s"] = "Scrobbling: %s",
+    ["Scrobbling turned on."] = "Scrobbling activado.",
+    ["Scrobbling turned off."] = "Scrobbling desactivado.",
+    ["Could not save scrobbling preference. Try again."] = "No se pudo guardar la preferencia de scrobbling. Inténtalo de nuevo.",
+    ["This track: No music playing"] = "Esta pista: No hay música reproduciéndose",
+    ["This track: Scrobbling off"] = "Esta pista: Scrobbling desactivado",
+    ["This track: Reading length"] = "Esta pista: Leyendo duración",
+    ["This track: Too short (<30s)"] = "Esta pista: Demasiado corta (<30s)",
+    ["This track: Playback paused"] = "Esta pista: Reproducción en pausa",
+    ["This track: Counts after %s"] = "Esta pista: Cuenta tras %s",
+    ["This track: This listen not counted"] = "Esta pista: Esta escucha no se cuenta",
+    ["This track: %s"] = "Esta pista: %s",
+    ["No track playing."] = "No se está reproduciendo ninguna pista.",
+    ["Status: %s"] = "Estado: %s",
+    ["How Scrobbling Works"] = "Cómo funciona el scrobbling",
+    ["Tracks >= 30s only"] = "Solo pistas >= 30s",
+    ["Listened 50% or 4 min"] = "50% o 4 min escuchados",
+    ["Pauses do not count"] = "Las pausas no cuentan",
+    ["ListenBrainz not reachable."] = "No se puede conectar con ListenBrainz.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz está ocupado temporalmente.",
+    ["Status: user token not accepted"] = "Estado: token de usuario no aceptado",
+    ["Logged in as %s"] = "Sesión iniciada como %s",
+    ["Sent to ListenBrainz"] = "Enviado a ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz rechazó esta escucha",
+    ["%d listen waiting"] = "%d escucha en espera",
+    ["%d listens waiting"] = "%d escuchas en espera",
+    ["Waiting listens could not be read"] = "No se pudieron leer las escuchas en espera",
+    ["Waiting listens could not be read. Nothing discarded."] = "No se pudieron leer las escuchas en espera. No se descartó nada.",
+    ["Waiting listens"] = "Escuchas en espera",
+    ["No listens are waiting to send"] = "No hay escuchas esperando para enviar",
+    ["Qualified listens send automatically."] = "Las escuchas aptas se envían automáticamente.",
+    ["%d listens kept for %s"] = "%d escuchas guardadas para %s",
+    ["Oldest listens are sent first."] = "Las escuchas más antiguas se envían primero.",
+    ["Send waiting listens now"] = "Enviar escuchas en espera ahora",
+    ["Discard waiting listens…"] = "Descartar escuchas en espera…",
+    ["Discard waiting listens (%d)"] = "Descartar escuchas en espera (%d)",
+    ["Discard %d listens?"] = "¿Descartar %d escuchas?",
+    ["Discard %d listens"] = "Descartar %d escuchas",
+    ["Keep waiting listens"] = "Conservar escuchas en espera",
+    ["Kept waiting listens."] = "Escuchas en espera conservadas.",
+    ["Waiting listens discarded."] = "Escuchas en espera descartadas.",
+    ["Could not discard listens. Try again."] = "No se pudieron descartar las escuchas. Inténtalo de nuevo.",
+    ["Account changed. Open waiting listens again."] = "La cuenta ha cambiado. Abre las escuchas en espera de nuevo.",
+    ["Log out?"] = "¿Cerrar sesión?",
+    ["Stay logged in"] = "Mantener sesión",
+    ["Log out %s"] = "Cerrar sesión de %s",
+    ["Stayed logged in."] = "Sesión mantenida.",
+    ["Logged out. Waiting listens are kept for this account."] = "Sesión cerrada. Las escuchas en espera se conservan para esta cuenta.",
+    ["Sending waiting listens…"] = "Enviando escuchas en espera…",
+    ["Already sending waiting listens."] = "Ya se están enviando las escuchas en espera.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Configura tu token de usuario de ListenBrainz antes de enviar las escuchas en espera.",
+    ["Turn scrobbling on before sending waiting listens."] = "Activa el scrobbling antes de enviar las escuchas en espera.",
+    ["User token: set"] = "Token de usuario: configurado",
+    ["Up to 100 offline listens"] = "Hasta 100 escuchas sin conexión",
+    ["Separate queue per account"] = "Cola separada por cuenta",
+    ["Streams without length are not sent"] = "Las emisiones sin duración no se envían",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Cómo funciona el scrobbling de ListenBrainz:\n\n1. Regla de 30 segundos: Las pistas de menos de 30 segundos no se envían.\n\n2. Umbral de escucha: Una escucha califica tras la mitad de su duración o 4 minutos (lo que ocurra antes).\n\n3. Pausas y búsqueda: El tiempo en pausa o buscando no cuenta para el umbral.\n\n4. Cola sin conexión: Se guardan hasta 100 escuchas (64 KB) y se envían al conectar.\n\n5. Separación por cuenta: Las escuchas en espera se conservan por cuenta de ListenBrainz.\n\n6. Duración desconocida: Las emisiones sin duración conocida, como casi toda la radio, no se envían.",
   },
   fi = {
     ["Could not open text entry. Try again."] = "Tekstinsyöttöä ei voitu avata. Yritä uudelleen.",
@@ -66,12 +214,86 @@ local T = {
     ["ListenBrainz token saved."] = "ListenBrainz-tunniste tallennettu.",
     ["Set ListenBrainz user token"] = "Aseta ListenBrainz-käyttäjätunniste",
     ["ListenBrainz user token"] = "ListenBrainz-käyttäjätunniste",
-    ["Enabled"] = "Käytössä",
-    ["Could not save that setting. Try again."] = "Asetusta ei voitu tallentaa. Yritä uudelleen.",
     ["Log out"] = "Kirjaudu ulos",
     ["Log out (%s)"] = "Kirjaudu ulos (%s)",
-    ["Logged out of ListenBrainz."] = "Kirjauduttu ulos ListenBrainzista.",
     ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi pois päältä \u{2014} lähetetään yhdistettäessä",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Ei Wi-Fi-yhteyttä \u{2014} lähetetään yhdistettäessä",
+    ["Waiting list could not be updated."] = "Odotuslistaa ei voitu päivittää.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Lähetetty, mutta odotuslistan siivousta ei voitu tallentaa.",
+    ["Could not send scrobble request."] = "Skrobblauspyyntöä ei voitu lähettää.",
+    ["Waiting to send"] = "Odottaa lähetystä",
+    ["Not saved yet"] = "Ei vielä tallennettu",
+    ["Discarded by you"] = "Hylkäsit tämän",
+    ["Sending…"] = "Lähetetään…",
+    ["waiting for Wi-Fi"] = "odottaa Wi-Fi-yhteyttä",
+    ["next try %dm"] = "seuraava yritys %d min",
+    ["sent %s"] = "lähetetty %s",
+    ["Sync now"] = "Synkronoi nyt",
+    ["Account & settings"] = "Tili ja asetukset",
+    ["Press Back."] = "Paina Takaisin.",
+    ["Account changed. Nothing changed."] = "Tili muuttui. Mitään ei muutettu.",
+    ["Account changed. Nothing discarded."] = "Tili muuttui. Mitään ei hylätty.",
+    ["Saved: %s"] = "Tallennettu: %s",
+    ["Saved time unavailable"] = "Tallennusaika ei saatavilla",
+    ["Scrobbling"] = "Skrobblaus",
+    ["Scrobbling: %s"] = "Skrobblaus: %s",
+    ["Scrobbling turned on."] = "Skrobblaus kytketty päälle.",
+    ["Scrobbling turned off."] = "Skrobblaus kytketty pois päältä.",
+    ["Could not save scrobbling preference. Try again."] = "Skrobbailuasetusta ei voitu tallentaa. Yritä uudelleen.",
+    ["This track: No music playing"] = "Tämä kappale: Musiikkia ei toisteta",
+    ["This track: Scrobbling off"] = "Tämä kappale: Skrobblaus pois päältä",
+    ["This track: Reading length"] = "Tämä kappale: Luetaan kestoa",
+    ["This track: Too short (<30s)"] = "Tämä kappale: Liian lyhyt (<30s)",
+    ["This track: Playback paused"] = "Tämä kappale: Toisto keskeytetty",
+    ["This track: Counts after %s"] = "Tämä kappale: Lasketaan %s jälkeen",
+    ["This track: This listen not counted"] = "Tämä kappale: Tätä kuuntelua ei lasketa",
+    ["This track: %s"] = "Tämä kappale: %s",
+    ["No track playing."] = "Kappaletta ei toisteta.",
+    ["Status: %s"] = "Tila: %s",
+    ["How Scrobbling Works"] = "Kuinka skrobblaus toimii",
+    ["Tracks >= 30s only"] = "Vain kappaleet >= 30s",
+    ["Listened 50% or 4 min"] = "Kuunneltu 50 % tai 4 min",
+    ["Pauses do not count"] = "Taukoja ei lasketa",
+    ["ListenBrainz not reachable."] = "ListenBrainz ei ole tavoitettavissa.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz on tilapäisesti varattu.",
+    ["Status: user token not accepted"] = "Tila: käyttäjätunnistetta ei hyväksytty",
+    ["Logged in as %s"] = "Kirjauduttu nimellä %s",
+    ["Sent to ListenBrainz"] = "Lähetetty ListenBrainziin",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz hylkäsi tämän kuuntelun",
+    ["%d listen waiting"] = "%d kuuntelu odottaa",
+    ["%d listens waiting"] = "%d kuuntelua odottaa",
+    ["Waiting listens could not be read"] = "Odottavia kuunteluita ei voitu lukea",
+    ["Waiting listens could not be read. Nothing discarded."] = "Odottavia kuunteluita ei voitu lukea. Mitään ei hylätty.",
+    ["Waiting listens"] = "Odottavat kuuntelut",
+    ["No listens are waiting to send"] = "Ei lähettämistä odottavia kuunteluita",
+    ["Qualified listens send automatically."] = "Kelvolliset kuuntelut lähetetään automaattisesti.",
+    ["%d listens kept for %s"] = "%d kuuntelua säilytetty käyttäjälle %s",
+    ["Oldest listens are sent first."] = "Vanhimmat kuuntelut lähetetään ensin.",
+    ["Send waiting listens now"] = "Lähetä odottavat kuuntelut nyt",
+    ["Discard waiting listens…"] = "Hylkää odottavat kuuntelut…",
+    ["Discard waiting listens (%d)"] = "Hylkää odottavat kuuntelut (%d)",
+    ["Discard %d listens?"] = "Hylätäänkö %d kuuntelua?",
+    ["Discard %d listens"] = "Hylkää %d kuuntelua",
+    ["Keep waiting listens"] = "Säilytä odottavat kuuntelut",
+    ["Kept waiting listens."] = "Odottavat kuuntelut säilytettiin.",
+    ["Waiting listens discarded."] = "Odottavat kuuntelut hylätty.",
+    ["Could not discard listens. Try again."] = "Kuunteluja ei voitu hylätä. Yritä uudelleen.",
+    ["Account changed. Open waiting listens again."] = "Tili muuttui. Avaa odottavat kuuntelut uudelleen.",
+    ["Log out?"] = "Kirjaudutaanko ulos?",
+    ["Stay logged in"] = "Pysy kirjautuneena",
+    ["Log out %s"] = "Kirjaa ulos %s",
+    ["Stayed logged in."] = "Pysyttiin kirjautuneena.",
+    ["Logged out. Waiting listens are kept for this account."] = "Kirjauduttu ulos. Odottavat kuuntelut säilytetään tälle tilille.",
+    ["Sending waiting listens…"] = "Lähetetään odottavia kuunteluita…",
+    ["Already sending waiting listens."] = "Odottavia kuunteluita lähetetään jo.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Aseta ListenBrainz-käyttäjätunniste ennen odottavien kuuntelujen lähettämistä.",
+    ["Turn scrobbling on before sending waiting listens."] = "Ota skrobblaus käyttöön ennen odottavien kuuntelujen lähettämistä.",
+    ["User token: set"] = "Käyttäjätunniste: asetettu",
+    ["Up to 100 offline listens"] = "Jopa 100 offline-kuuntelua",
+    ["Separate queue per account"] = "Erillinen jono tiliä kohden",
+    ["Streams without length are not sent"] = "Virtoja ilman kestoa ei lähetetä",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Miten ListenBrainz-skrobblaus toimii:\n\n1. 30 sekunnin sääntö: Alle 30 sekunnin kappaleita ei skroblata.\n\n2. Kuuntelukynnys: Kuuntelu hyväksytään puolivälissä tai 4 minuutin jälkeen (kumpi täyttyy ensin).\n\n3. Tauot ja kelaus: Tauolla tai kelatessa vietettyä aikaa ei lasketa kynnykseen.\n\n4. Offline-jono: Jopa 100 kuuntelua (64 KB) tallennetaan offline-tilassa ja lähetetään yhdistettäessä.\n\n5. Tilikohtainen erottelu: Odottavat kuuntelut säilytetään erikseen kullekin ListenBrainz-tilille.\n\n6. Tuntematon kesto: Virtoja, joiden kestoa ei tiedetä, kuten useimpia radioasemia, ei lähetetä.",
   },
   fr = {
     ["Could not open text entry. Try again."] = "Impossible d'ouvrir la saisie de texte. Réessayez.",
@@ -90,12 +312,86 @@ local T = {
     ["ListenBrainz token saved."] = "Jeton ListenBrainz enregistré.",
     ["Set ListenBrainz user token"] = "Définir le jeton utilisateur ListenBrainz",
     ["ListenBrainz user token"] = "Jeton utilisateur ListenBrainz",
-    ["Enabled"] = "Activé",
-    ["Could not save that setting. Try again."] = "Impossible d'enregistrer ce paramètre. Réessayez.",
     ["Log out"] = "Se déconnecter",
     ["Log out (%s)"] = "Se déconnecter (%s)",
-    ["Logged out of ListenBrainz."] = "Déconnecté de ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Scrobbler ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi désactivé \u{2014} envoi dès connexion",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi non connecté \u{2014} envoi dès connexion",
+    ["Waiting list could not be updated."] = "Impossible de mettre à jour la file d'attente.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Envoyé, mais nettoyage de la file d'attente non enregistré.",
+    ["Could not send scrobble request."] = "Impossible d'envoyer la demande de scrobble.",
+    ["Waiting to send"] = "En attente d'envoi",
+    ["Not saved yet"] = "Pas encore enregistré",
+    ["Discarded by you"] = "Rejeté par vous",
+    ["Sending…"] = "Envoi…",
+    ["waiting for Wi-Fi"] = "en attente du Wi-Fi",
+    ["next try %dm"] = "prochain essai dans %dm",
+    ["sent %s"] = "envoyé %s",
+    ["Sync now"] = "Synchroniser maintenant",
+    ["Account & settings"] = "Compte et réglages",
+    ["Press Back."] = "Appuyez sur Retour.",
+    ["Account changed. Nothing changed."] = "Compte modifié. Rien n'a changé.",
+    ["Account changed. Nothing discarded."] = "Compte modifié. Rien n'a été rejeté.",
+    ["Saved: %s"] = "Enregistré : %s",
+    ["Saved time unavailable"] = "Heure d'enregistrement indisponible",
+    ["Scrobbling"] = "Scrobble",
+    ["Scrobbling: %s"] = "Scrobble : %s",
+    ["Scrobbling turned on."] = "Scrobble activé.",
+    ["Scrobbling turned off."] = "Scrobble désactivé.",
+    ["Could not save scrobbling preference. Try again."] = "Impossible d'enregistrer la préférence de scrobble. Réessayez.",
+    ["This track: No music playing"] = "Ce morceau : Aucune musique en cours",
+    ["This track: Scrobbling off"] = "Ce morceau : Scrobble désactivé",
+    ["This track: Reading length"] = "Ce morceau : Lecture de la durée",
+    ["This track: Too short (<30s)"] = "Ce morceau : Trop court (<30s)",
+    ["This track: Playback paused"] = "Ce morceau : Lecture en pause",
+    ["This track: Counts after %s"] = "Ce morceau : Compte après %s",
+    ["This track: This listen not counted"] = "Ce morceau : Cette écoute n'est pas comptabilisée",
+    ["This track: %s"] = "Ce morceau : %s",
+    ["No track playing."] = "Aucun morceau en cours de lecture.",
+    ["Status: %s"] = "État : %s",
+    ["How Scrobbling Works"] = "Comment fonctionne le scrobble",
+    ["Tracks >= 30s only"] = "Morceaux >= 30s uniquement",
+    ["Listened 50% or 4 min"] = "50% ou 4 min écoutés",
+    ["Pauses do not count"] = "Les pauses ne comptent pas",
+    ["ListenBrainz not reachable."] = "ListenBrainz injoignable.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz est temporairement occupé.",
+    ["Status: user token not accepted"] = "État : jeton utilisateur non accepté",
+    ["Logged in as %s"] = "Connecté en tant que %s",
+    ["Sent to ListenBrainz"] = "Envoyé à ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz a rejeté cette écoute",
+    ["%d listen waiting"] = "%d écoute en attente",
+    ["%d listens waiting"] = "%d écoutes en attente",
+    ["Waiting listens could not be read"] = "Impossible de lire les écoutes en attente",
+    ["Waiting listens could not be read. Nothing discarded."] = "Impossible de lire les écoutes en attente. Rien n'a été rejeté.",
+    ["Waiting listens"] = "Écoutes en attente",
+    ["No listens are waiting to send"] = "Aucune écoute en attente d'envoi",
+    ["Qualified listens send automatically."] = "Les écoutes éligibles sont envoyées automatiquement.",
+    ["%d listens kept for %s"] = "%d écoutes conservées pour %s",
+    ["Oldest listens are sent first."] = "Les écoutes les plus anciennes sont envoyées en premier.",
+    ["Send waiting listens now"] = "Envoyer les écoutes en attente maintenant",
+    ["Discard waiting listens…"] = "Rejeter les écoutes en attente…",
+    ["Discard waiting listens (%d)"] = "Rejeter les écoutes en attente (%d)",
+    ["Discard %d listens?"] = "Rejeter %d écoutes ?",
+    ["Discard %d listens"] = "Rejeter %d écoutes",
+    ["Keep waiting listens"] = "Conserver les écoutes en attente",
+    ["Kept waiting listens."] = "Écoutes en attente conservées.",
+    ["Waiting listens discarded."] = "Écoutes en attente rejetées.",
+    ["Could not discard listens. Try again."] = "Impossible de rejeter les écoutes. Réessayez.",
+    ["Account changed. Open waiting listens again."] = "Compte modifié. Rouvrez les écoutes en attente.",
+    ["Log out?"] = "Se déconnecter ?",
+    ["Stay logged in"] = "Rester connecté",
+    ["Log out %s"] = "Déconnecter %s",
+    ["Stayed logged in."] = "Session maintenue.",
+    ["Logged out. Waiting listens are kept for this account."] = "Déconnecté. Les écoutes en attente sont conservées pour ce compte.",
+    ["Sending waiting listens…"] = "Envoi des écoutes en attente…",
+    ["Already sending waiting listens."] = "Envoi des écoutes en attente déjà en cours.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Définissez votre jeton utilisateur ListenBrainz avant d'envoyer les écoutes en attente.",
+    ["Turn scrobbling on before sending waiting listens."] = "Activez le scrobbling avant d'envoyer les écoutes en attente.",
+    ["User token: set"] = "Jeton utilisateur : défini",
+    ["Up to 100 offline listens"] = "Jusqu'à 100 écoutes hors ligne",
+    ["Separate queue per account"] = "File distincte par compte",
+    ["Streams without length are not sent"] = "Les flux sans durée ne sont pas envoyés",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Fonctionnement du scrobble ListenBrainz :\n\n1. Règle des 30 secondes : Les morceaux de moins de 30 secondes ne sont pas scrobblés.\n\n2. Seuil d'écoute : Une écoute est validée après la moitié de sa durée ou 4 minutes (au premier des deux).\n\n3. Pauses et recherche : Le temps en pause ou en avance rapide ne compte pas dans le seuil.\n\n4. File hors ligne : Jusqu'à 100 écoutes (64 Ko) enregistrées hors ligne et envoyées dès la connexion.\n\n5. Séparation des comptes : Les écoutes en attente sont conservées par compte ListenBrainz.\n\n6. Durée inconnue : Les flux de durée inconnue, comme la plupart des radios, ne sont pas envoyés.",
   },
   it = {
     ["Could not open text entry. Try again."] = "Impossibile aprire l'inserimento testo. Riprova.",
@@ -114,12 +410,86 @@ local T = {
     ["ListenBrainz token saved."] = "Token ListenBrainz salvato.",
     ["Set ListenBrainz user token"] = "Imposta token utente ListenBrainz",
     ["ListenBrainz user token"] = "Token utente ListenBrainz",
-    ["Enabled"] = "Attivato",
-    ["Could not save that setting. Try again."] = "Impossibile salvare l'impostazione. Riprova.",
     ["Log out"] = "Esci",
     ["Log out (%s)"] = "Esci (%s)",
-    ["Logged out of ListenBrainz."] = "Disconnesso da ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Scrobbler ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi disattivato \u{2014} invio alla connessione",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi non connesso \u{2014} invio alla connessione",
+    ["Waiting list could not be updated."] = "Impossibile aggiornare la coda di attesa.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Inviato, ma impossibile salvare la pulizia della coda.",
+    ["Could not send scrobble request."] = "Impossibile inviare la richiesta di scrobble.",
+    ["Waiting to send"] = "In attesa di invio",
+    ["Not saved yet"] = "Non ancora salvato",
+    ["Discarded by you"] = "Scartato da te",
+    ["Sending…"] = "Invio…",
+    ["waiting for Wi-Fi"] = "in attesa del Wi-Fi",
+    ["next try %dm"] = "prossimo tentativo tra %dm",
+    ["sent %s"] = "inviato %s",
+    ["Sync now"] = "Sincronizza ora",
+    ["Account & settings"] = "Account e impostazioni",
+    ["Press Back."] = "Premi Indietro.",
+    ["Account changed. Nothing changed."] = "Account modificato. Nessuna modifica.",
+    ["Account changed. Nothing discarded."] = "Account modificato. Nulla è stato scartato.",
+    ["Saved: %s"] = "Salvato: %s",
+    ["Saved time unavailable"] = "Orario di salvataggio non disponibile",
+    ["Scrobbling"] = "Scrobbling",
+    ["Scrobbling: %s"] = "Scrobbling: %s",
+    ["Scrobbling turned on."] = "Scrobbling attivato.",
+    ["Scrobbling turned off."] = "Scrobbling disattivato.",
+    ["Could not save scrobbling preference. Try again."] = "Impossibile salvare la preferenza di scrobbling. Riprova.",
+    ["This track: No music playing"] = "Questo brano: Nessuna musica in riproduzione",
+    ["This track: Scrobbling off"] = "Questo brano: Scrobbling disattivato",
+    ["This track: Reading length"] = "Questo brano: Lettura durata",
+    ["This track: Too short (<30s)"] = "Questo brano: Troppo breve (<30s)",
+    ["This track: Playback paused"] = "Questo brano: Riproduzione in pausa",
+    ["This track: Counts after %s"] = "Questo brano: Conta dopo %s",
+    ["This track: This listen not counted"] = "Questo brano: Questo ascolto non viene conteggiato",
+    ["This track: %s"] = "Questo brano: %s",
+    ["No track playing."] = "Nessun brano in riproduzione.",
+    ["Status: %s"] = "Stato: %s",
+    ["How Scrobbling Works"] = "Come funziona lo scrobbling",
+    ["Tracks >= 30s only"] = "Solo brani >= 30s",
+    ["Listened 50% or 4 min"] = "Ascoltato al 50% o 4 min",
+    ["Pauses do not count"] = "Le pause non contano",
+    ["ListenBrainz not reachable."] = "ListenBrainz non raggiungibile.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz temporaneamente occupato.",
+    ["Status: user token not accepted"] = "Stato: token utente non accettato",
+    ["Logged in as %s"] = "Connesso come %s",
+    ["Sent to ListenBrainz"] = "Inviato a ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz ha rifiutato questo ascolto",
+    ["%d listen waiting"] = "%d ascolto in attesa",
+    ["%d listens waiting"] = "%d ascolti in attesa",
+    ["Waiting listens could not be read"] = "Impossibile leggere gli ascolti in attesa",
+    ["Waiting listens could not be read. Nothing discarded."] = "Impossibile leggere gli ascolti in attesa. Nulla è stato scartato.",
+    ["Waiting listens"] = "Ascolti in attesa",
+    ["No listens are waiting to send"] = "Nessun ascolto in attesa di invio",
+    ["Qualified listens send automatically."] = "Gli ascolti idonei vengono inviati automaticamente.",
+    ["%d listens kept for %s"] = "%d ascolti conservati per %s",
+    ["Oldest listens are sent first."] = "Gli ascolti più vecchi vengono inviati prima.",
+    ["Send waiting listens now"] = "Invia ascolti in attesa ora",
+    ["Discard waiting listens…"] = "Scarta ascolti in attesa…",
+    ["Discard waiting listens (%d)"] = "Scarta ascolti in attesa (%d)",
+    ["Discard %d listens?"] = "Scartare %d ascolti?",
+    ["Discard %d listens"] = "Scarta %d ascolti",
+    ["Keep waiting listens"] = "Mantieni ascolti in attesa",
+    ["Kept waiting listens."] = "Ascolti in attesa mantenuti.",
+    ["Waiting listens discarded."] = "Ascolti in attesa scartati.",
+    ["Could not discard listens. Try again."] = "Impossibile scartare gli ascolti. Riprova.",
+    ["Account changed. Open waiting listens again."] = "Account modificato. Riapri gli ascolti in attesa.",
+    ["Log out?"] = "Uscire?",
+    ["Stay logged in"] = "Resta connesso",
+    ["Log out %s"] = "Esci da %s",
+    ["Stayed logged in."] = "Accesso mantenuto.",
+    ["Logged out. Waiting listens are kept for this account."] = "Disconnesso. Gli ascolti in attesa sono conservati per questo account.",
+    ["Sending waiting listens…"] = "Invio ascolti in attesa…",
+    ["Already sending waiting listens."] = "Invio ascolti in attesa già in corso.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Imposta il token utente ListenBrainz prima di inviare gli ascolti in attesa.",
+    ["Turn scrobbling on before sending waiting listens."] = "Attiva lo scrobbling prima di inviare gli ascolti in attesa.",
+    ["User token: set"] = "Token utente: impostato",
+    ["Up to 100 offline listens"] = "Fino a 100 ascolti offline",
+    ["Separate queue per account"] = "Coda separata per account",
+    ["Streams without length are not sent"] = "Gli stream senza durata non vengono inviati",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Come funziona lo scrobbling di ListenBrainz:\n\n1. Regola dei 30 secondi: I brani sotto i 30 secondi non vengono inviati.\n\n2. Soglia di ascolto: Un ascolto è valido dopo metà durata o 4 minuti (quello che viene prima).\n\n3. Pause e avanzamento: Il tempo in pausa o ricerca non conta ai fini della soglia.\n\n4. Coda non in linea: Fino a 100 ascolti (64 KB) salvati offline e inviati automaticamente alla connessione.\n\n5. Separazione account: Gli ascolti in attesa sono conservati per ogni account ListenBrainz.\n\n6. Durata sconosciuta: Gli stream di durata sconosciuta, come la maggior parte delle radio, non vengono inviati.",
   },
   ja = {
     ["Could not open text entry. Try again."] = "テキスト入力を開けませんでした。もう一度お試しください。",
@@ -138,12 +508,86 @@ local T = {
     ["ListenBrainz token saved."] = "ListenBrainz トークンを保存しました。",
     ["Set ListenBrainz user token"] = "ListenBrainz ユーザートークンを設定",
     ["ListenBrainz user token"] = "ListenBrainz ユーザートークン",
-    ["Enabled"] = "有効",
-    ["Could not save that setting. Try again."] = "設定を保存できませんでした。もう一度お試しください。",
     ["Log out"] = "ログアウト",
     ["Log out (%s)"] = "ログアウト (%s)",
-    ["Logged out of ListenBrainz."] = "ListenBrainz からログアウトしました。",
     ["ListenBrainz Scrobbler"] = "ListenBrainz スクブラー",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fiオフ \u{2014} 接続時に送信します",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi未接続 \u{2014} 接続時に送信します",
+    ["Waiting list could not be updated."] = "待機リストを更新できませんでした。",
+    ["Sent, but waiting-list cleanup could not be saved."] = "送信されましたが、待機リストのクリーンアップを保存できませんでした。",
+    ["Could not send scrobble request."] = "スクロブルリクエストを送信できませんでした。",
+    ["Waiting to send"] = "送信待ち",
+    ["Not saved yet"] = "まだ保存されていません",
+    ["Discarded by you"] = "あなたによって破棄されました",
+    ["Sending…"] = "送信中…",
+    ["waiting for Wi-Fi"] = "Wi-Fi待機中",
+    ["next try %dm"] = "次の試行まで %d分",
+    ["sent %s"] = "送信日時: %s",
+    ["Sync now"] = "今すぐ同期",
+    ["Account & settings"] = "アカウントと設定",
+    ["Press Back."] = "「戻る」を押してください。",
+    ["Account changed. Nothing changed."] = "アカウントが変更されました。何も変更されていません。",
+    ["Account changed. Nothing discarded."] = "アカウントが変更されました。何も破棄されていません。",
+    ["Saved: %s"] = "保存日時: %s",
+    ["Saved time unavailable"] = "保存日時は利用不可",
+    ["Scrobbling"] = "スクロブル",
+    ["Scrobbling: %s"] = "スクロブル: %s",
+    ["Scrobbling turned on."] = "スクロブルをオンにしました。",
+    ["Scrobbling turned off."] = "スクロブルをオフにしました。",
+    ["Could not save scrobbling preference. Try again."] = "スクロブル設定を保存できませんでした。もう一度お試しください。",
+    ["This track: No music playing"] = "この曲: 再生中の音楽はありません",
+    ["This track: Scrobbling off"] = "この曲: スクロブルオフ",
+    ["This track: Reading length"] = "この曲: 曲の長さを読み取り中",
+    ["This track: Too short (<30s)"] = "この曲: 短すぎます (<30秒)",
+    ["This track: Playback paused"] = "この曲: 再生一時停止中",
+    ["This track: Counts after %s"] = "この曲: %s 後にカウント",
+    ["This track: This listen not counted"] = "この曲: この再生はカウントされません",
+    ["This track: %s"] = "この曲: %s",
+    ["No track playing."] = "再生中の曲はありません。",
+    ["Status: %s"] = "状態: %s",
+    ["How Scrobbling Works"] = "スクロブルの仕組み",
+    ["Tracks >= 30s only"] = "30秒以上の曲のみ",
+    ["Listened 50% or 4 min"] = "50%または4分再生",
+    ["Pauses do not count"] = "一時停止は含みません",
+    ["ListenBrainz not reachable."] = "ListenBrainz にアクセスできません。",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz は一時的にビジー状態です。",
+    ["Status: user token not accepted"] = "状態: ユーザートークンが受け付けられません",
+    ["Logged in as %s"] = "%s としてログイン中",
+    ["Sent to ListenBrainz"] = "ListenBrainz に送信済み",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz がこの再生履歴を拒否しました",
+    ["%d listen waiting"] = "%d件の再生履歴が待機中",
+    ["%d listens waiting"] = "%d件の再生履歴が待機中",
+    ["Waiting listens could not be read"] = "待機中の再生履歴を読み取れませんでした",
+    ["Waiting listens could not be read. Nothing discarded."] = "待機中の再生履歴を読み取れませんでした。何も破棄されていません。",
+    ["Waiting listens"] = "待機中の再生履歴",
+    ["No listens are waiting to send"] = "送信待ちの再生履歴はありません",
+    ["Qualified listens send automatically."] = "条件を満たした再生履歴は自動的に送信されます。",
+    ["%d listens kept for %s"] = "%d件の再生履歴を保持 (%s)",
+    ["Oldest listens are sent first."] = "最も古い再生履歴から順に送信されます。",
+    ["Send waiting listens now"] = "待機中の再生履歴を今すぐ送信",
+    ["Discard waiting listens…"] = "待機中の再生履歴を破棄…",
+    ["Discard waiting listens (%d)"] = "待機中の再生履歴を破棄 (%d)",
+    ["Discard %d listens?"] = "%d件の再生履歴を破棄しますか？",
+    ["Discard %d listens"] = "%d件の再生履歴を破棄",
+    ["Keep waiting listens"] = "待機中の再生履歴を保持",
+    ["Kept waiting listens."] = "待機中の再生履歴を保持しました。",
+    ["Waiting listens discarded."] = "待機中の再生履歴を破棄しました。",
+    ["Could not discard listens. Try again."] = "再生履歴を破棄できませんでした。もう一度お試しください。",
+    ["Account changed. Open waiting listens again."] = "アカウントが変更されました。待機中の再生履歴をもう一度開いてください。",
+    ["Log out?"] = "ログアウトしますか？",
+    ["Stay logged in"] = "ログインを維持",
+    ["Log out %s"] = "%s をログアウト",
+    ["Stayed logged in."] = "ログインを維持しました。",
+    ["Logged out. Waiting listens are kept for this account."] = "ログアウトしました。このアカウントの待機中の再生履歴は保持されます。",
+    ["Sending waiting listens…"] = "待機中の再生履歴を送信中…",
+    ["Already sending waiting listens."] = "待機中の再生履歴をすでに送信中です。",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "待機中の再生履歴を送信する前に ListenBrainz ユーザートークンを設定してください。",
+    ["Turn scrobbling on before sending waiting listens."] = "待機中の再生履歴を送信する前にスクロブルをオンにしてください。",
+    ["User token: set"] = "ユーザートークン: 設定済み",
+    ["Up to 100 offline listens"] = "最大100件のオフライン再生履歴",
+    ["Separate queue per account"] = "アカウントごとの個別キュー",
+    ["Streams without length are not sent"] = "長さ不明のストリームは送信されません",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "ListenBrainz スクロブルの仕組み：\n\n1. 30秒ルール：30秒未満のトラックはスクロブルされません。\n\n2. 再生しきい値：曲の半分または4分のいずれか早い方に達すると再生履歴としてカウントされます。\n\n3. 一時停止とシーク：一時停止中やシーク中の時間はしきい値に含まれません。\n\n4. オフラインキュー：最大100件（64 KB）までオフライン保存され、接続時に自動送信されます。\n\n5. アカウント分離：待機中の再生履歴は ListenBrainz アカウントごとに保持されます。\n\n6. 長さ不明：長さが不明なストリーム（ほとんどのラジオなど）は送信されません。",
   },
   nl = {
     ["Could not open text entry. Try again."] = "Tekstinvoer kon niet worden geopend. Probeer opnieuw.",
@@ -162,12 +606,86 @@ local T = {
     ["ListenBrainz token saved."] = "ListenBrainz-token opgeslagen.",
     ["Set ListenBrainz user token"] = "ListenBrainz-gebruikerstoken instellen",
     ["ListenBrainz user token"] = "ListenBrainz-gebruikerstoken",
-    ["Enabled"] = "Ingeschakeld",
-    ["Could not save that setting. Try again."] = "Kon die instelling niet opslaan. Probeer opnieuw.",
     ["Log out"] = "Uitloggen",
     ["Log out (%s)"] = "Uitloggen (%s)",
-    ["Logged out of ListenBrainz."] = "Uitgelogd bij ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "ListenBrainz Scrobbler",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi uit \u{2014} wordt verzonden na verbinding",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Geen Wi-Fi-verbinding \u{2014} wordt verzonden na verbinding",
+    ["Waiting list could not be updated."] = "Wachtlijst kon niet worden bijgewerkt.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Verzonden, maar opschonen van wachtlijst kon niet worden opgeslagen.",
+    ["Could not send scrobble request."] = "Kon scrobble-verzoek niet verzenden.",
+    ["Waiting to send"] = "Wachten op verzending",
+    ["Not saved yet"] = "Nog niet opgeslagen",
+    ["Discarded by you"] = "Verworpen door jou",
+    ["Sending…"] = "Verzenden…",
+    ["waiting for Wi-Fi"] = "wachten op Wi-Fi",
+    ["next try %dm"] = "volgende poging over %dm",
+    ["sent %s"] = "verzonden %s",
+    ["Sync now"] = "Nu synchroniseren",
+    ["Account & settings"] = "Account en instellingen",
+    ["Press Back."] = "Druk op Terug.",
+    ["Account changed. Nothing changed."] = "Account gewijzigd. Niets gewijzigd.",
+    ["Account changed. Nothing discarded."] = "Account gewijzigd. Niets verworpen.",
+    ["Saved: %s"] = "Opgeslagen: %s",
+    ["Saved time unavailable"] = "Opslagtijd niet beschikbaar",
+    ["Scrobbling"] = "Scrobbelen",
+    ["Scrobbling: %s"] = "Scrobbelen: %s",
+    ["Scrobbling turned on."] = "Scrobbelen ingeschakeld.",
+    ["Scrobbling turned off."] = "Scrobbelen uitgeschakeld.",
+    ["Could not save scrobbling preference. Try again."] = "Kon scrobble-voorkeur niet opslaan. Probeer het opnieuw.",
+    ["This track: No music playing"] = "Dit nummer: Geen muziek die afspeelt",
+    ["This track: Scrobbling off"] = "Dit nummer: Scrobbelen uit",
+    ["This track: Reading length"] = "Dit nummer: Duur lezen",
+    ["This track: Too short (<30s)"] = "Dit nummer: Te kort (<30s)",
+    ["This track: Playback paused"] = "Dit nummer: Afspelen gepauzeerd",
+    ["This track: Counts after %s"] = "Dit nummer: Telt na %s",
+    ["This track: This listen not counted"] = "Dit nummer: Deze afspeling telt niet mee",
+    ["This track: %s"] = "Dit nummer: %s",
+    ["No track playing."] = "Er wordt geen nummer afgespeeld.",
+    ["Status: %s"] = "Status: %s",
+    ["How Scrobbling Works"] = "Hoe scrobbelen werkt",
+    ["Tracks >= 30s only"] = "Alleen nummers >= 30s",
+    ["Listened 50% or 4 min"] = "50% of 4 min geluisterd",
+    ["Pauses do not count"] = "Pauzes tellen niet mee",
+    ["ListenBrainz not reachable."] = "ListenBrainz niet bereikbaar.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz tijdelijk bezet.",
+    ["Status: user token not accepted"] = "Status: gebruikerstoken niet geaccepteerd",
+    ["Logged in as %s"] = "Aangemeld als %s",
+    ["Sent to ListenBrainz"] = "Verzonden naar ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz heeft deze luisterbeurt geweigerd",
+    ["%d listen waiting"] = "%d luisterbeurt in de wachtrij",
+    ["%d listens waiting"] = "%d luisterbeurten in de wachtrij",
+    ["Waiting listens could not be read"] = "Wachtende luisterbeurten konden niet worden gelezen",
+    ["Waiting listens could not be read. Nothing discarded."] = "Wachtende luisterbeurten konden niet worden gelezen. Niets verworpen.",
+    ["Waiting listens"] = "Wachtende luisterbeurten",
+    ["No listens are waiting to send"] = "Er wachten geen luisterbeurten om te verzenden",
+    ["Qualified listens send automatically."] = "In aanmerking komende luisterbeurten worden automatisch verzonden.",
+    ["%d listens kept for %s"] = "%d luisterbeurten bewaard voor %s",
+    ["Oldest listens are sent first."] = "Oudste luisterbeurten worden eerst verzonden.",
+    ["Send waiting listens now"] = "Wachtende luisterbeurten nu verzenden",
+    ["Discard waiting listens…"] = "Wachtende luisterbeurten verwerpen…",
+    ["Discard waiting listens (%d)"] = "Wachtende luisterbeurten verwerpen (%d)",
+    ["Discard %d listens?"] = "%d luisterbeurten verwerpen?",
+    ["Discard %d listens"] = "%d luisterbeurten verwerpen",
+    ["Keep waiting listens"] = "Wachtende luisterbeurten bewaren",
+    ["Kept waiting listens."] = "Wachtende luisterbeurten bewaard.",
+    ["Waiting listens discarded."] = "Wachtende luisterbeurten verworpen.",
+    ["Could not discard listens. Try again."] = "Kon luisterbeurten niet verwerpen. Probeer het opnieuw.",
+    ["Account changed. Open waiting listens again."] = "Account gewijzigd. Open wachtende luisterbeurten opnieuw.",
+    ["Log out?"] = "Uitloggen?",
+    ["Stay logged in"] = "Ingelogd blijven",
+    ["Log out %s"] = "Log %s uit",
+    ["Stayed logged in."] = "Ingelogd gebleven.",
+    ["Logged out. Waiting listens are kept for this account."] = "Uitgelogd. Wachtende luisterbeurten worden bewaard voor dit account.",
+    ["Sending waiting listens…"] = "Wachtende luisterbeurten verzenden…",
+    ["Already sending waiting listens."] = "Wachtende luisterbeurten worden al verzonden.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Stel je ListenBrainz-gebruikerstoken in voordat je wachtende luisterbeurten verzendt.",
+    ["Turn scrobbling on before sending waiting listens."] = "Schakel scrobbelen in voordat je wachtende luisterbeurten verzendt.",
+    ["User token: set"] = "Gebruikerstoken: ingesteld",
+    ["Up to 100 offline listens"] = "Tot 100 offline luisterbeurten",
+    ["Separate queue per account"] = "Aparte wachtrij per account",
+    ["Streams without length are not sent"] = "Streams zonder lengte worden niet verzonden",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Hoe ListenBrainz-scrobbelen werkt:\n\n1. 30-secondenregel: Nummers onder 30 seconden worden niet gescrobbeld.\n\n2. Luisterdrempel: Een luisterbeurt telt na de helft van de duur of 4 minuten (wat eerst komt).\n\n3. Pauzes & spoelen: Tijd gepauzeerd of spoelend telt niet mee voor de drempel.\n\n4. Offline wachtrij: Tot 100 luisterbeurten (64 KB) offline opgeslagen en automatisch verzonden bij verbinding.\n\n5. Accountscheiding: Wachtende luisterbeurten worden per ListenBrainz-account bewaard.\n\n6. Onbekende lengte: Streams zonder bekende lengte, zoals de meeste radio, worden niet verzonden.",
   },
   pt = {
     ["Could not open text entry. Try again."] = "Não foi possível abrir a entrada de texto. Tente novamente.",
@@ -186,12 +704,86 @@ local T = {
     ["ListenBrainz token saved."] = "Token do ListenBrainz salvo.",
     ["Set ListenBrainz user token"] = "Definir token de usuário do ListenBrainz",
     ["ListenBrainz user token"] = "Token de usuário do ListenBrainz",
-    ["Enabled"] = "Ativado",
-    ["Could not save that setting. Try again."] = "Não foi possível salvar essa configuração. Tente novamente.",
     ["Log out"] = "Sair",
     ["Log out (%s)"] = "Sair (%s)",
-    ["Logged out of ListenBrainz."] = "Desconectado do ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Scrobbler do ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi desligado \u{2014} será enviado ao conectar",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi não conectado \u{2014} será enviado ao conectar",
+    ["Waiting list could not be updated."] = "Não foi possível atualizar a fila de espera.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Enviado, mas a limpeza da fila de espera não pôde ser salva.",
+    ["Could not send scrobble request."] = "Não foi possível enviar a solicitação de scrobbling.",
+    ["Waiting to send"] = "Aguardando envio",
+    ["Not saved yet"] = "Ainda não salvo",
+    ["Discarded by you"] = "Descartado por você",
+    ["Sending…"] = "Enviando…",
+    ["waiting for Wi-Fi"] = "aguardando Wi-Fi",
+    ["next try %dm"] = "próxima tentativa em %dm",
+    ["sent %s"] = "enviado %s",
+    ["Sync now"] = "Sincronizar agora",
+    ["Account & settings"] = "Conta e ajustes",
+    ["Press Back."] = "Pressione Voltar.",
+    ["Account changed. Nothing changed."] = "Conta alterada. Nada foi modificado.",
+    ["Account changed. Nothing discarded."] = "Conta alterada. Nada foi descartado.",
+    ["Saved: %s"] = "Salvo: %s",
+    ["Saved time unavailable"] = "Horário salvo indisponível",
+    ["Scrobbling"] = "Scrobbling",
+    ["Scrobbling: %s"] = "Scrobbling: %s",
+    ["Scrobbling turned on."] = "Scrobbling ativado.",
+    ["Scrobbling turned off."] = "Scrobbling desativado.",
+    ["Could not save scrobbling preference. Try again."] = "Não foi possível salvar a preferência de scrobbling. Tente novamente.",
+    ["This track: No music playing"] = "Esta faixa: Nenhuma música tocando",
+    ["This track: Scrobbling off"] = "Esta faixa: Scrobbling desativado",
+    ["This track: Reading length"] = "Esta faixa: Lendo duração",
+    ["This track: Too short (<30s)"] = "Esta faixa: Muito curta (<30s)",
+    ["This track: Playback paused"] = "Esta faixa: Reprodução pausada",
+    ["This track: Counts after %s"] = "Esta faixa: Conta após %s",
+    ["This track: This listen not counted"] = "Esta faixa: Esta reprodução não é contabilizada",
+    ["This track: %s"] = "Esta faixa: %s",
+    ["No track playing."] = "Nenhuma faixa em reprodução.",
+    ["Status: %s"] = "Status: %s",
+    ["How Scrobbling Works"] = "Como funciona o scrobbling",
+    ["Tracks >= 30s only"] = "Apenas faixas >= 30s",
+    ["Listened 50% or 4 min"] = "Ouvido 50% ou 4 min",
+    ["Pauses do not count"] = "Pausas não contam",
+    ["ListenBrainz not reachable."] = "ListenBrainz inacessível.",
+    ["ListenBrainz temporarily busy."] = "O ListenBrainz está temporariamente ocupado.",
+    ["Status: user token not accepted"] = "Status: token de usuário não aceito",
+    ["Logged in as %s"] = "Conectado como %s",
+    ["Sent to ListenBrainz"] = "Enviado para o ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "O ListenBrainz rejeitou esta reprodução",
+    ["%d listen waiting"] = "%d reprodução em espera",
+    ["%d listens waiting"] = "%d reproduções em espera",
+    ["Waiting listens could not be read"] = "Não foi possível ler as reproduções em espera",
+    ["Waiting listens could not be read. Nothing discarded."] = "Não foi possível ler as reproduções em espera. Nada foi descartado.",
+    ["Waiting listens"] = "Reproduções em espera",
+    ["No listens are waiting to send"] = "Nenhuma reprodução aguardando envio",
+    ["Qualified listens send automatically."] = "Reproduções qualificadas são enviadas automaticamente.",
+    ["%d listens kept for %s"] = "%d reproduções mantidas para %s",
+    ["Oldest listens are sent first."] = "As reproduções mais antigas são enviadas primeiro.",
+    ["Send waiting listens now"] = "Enviar reproduções em espera agora",
+    ["Discard waiting listens…"] = "Descartar reproduções em espera…",
+    ["Discard waiting listens (%d)"] = "Descartar reproduções em espera (%d)",
+    ["Discard %d listens?"] = "Descartar %d reproduções?",
+    ["Discard %d listens"] = "Descartar %d reproduções",
+    ["Keep waiting listens"] = "Manter reproduções em espera",
+    ["Kept waiting listens."] = "Reproduções em espera mantidas.",
+    ["Waiting listens discarded."] = "Reproduções em espera descartadas.",
+    ["Could not discard listens. Try again."] = "Não foi possível descartar as reproduções. Tente novamente.",
+    ["Account changed. Open waiting listens again."] = "Conta alterada. Abra as reproduções em espera novamente.",
+    ["Log out?"] = "Sair da conta?",
+    ["Stay logged in"] = "Manter sessão iniciada",
+    ["Log out %s"] = "Sair de %s",
+    ["Stayed logged in."] = "Sessão mantida.",
+    ["Logged out. Waiting listens are kept for this account."] = "Sessão encerrada. As reproduções em espera foram mantidas para esta conta.",
+    ["Sending waiting listens…"] = "Enviando reproduções em espera…",
+    ["Already sending waiting listens."] = "Já enviando as reproduções em espera.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Defina seu token de usuário do ListenBrainz antes de enviar as reproduções em espera.",
+    ["Turn scrobbling on before sending waiting listens."] = "Ative o scrobbling antes de enviar as reproduções em espera.",
+    ["User token: set"] = "Token de usuário: definido",
+    ["Up to 100 offline listens"] = "Até 100 reproduções offline",
+    ["Separate queue per account"] = "Fila separada por conta",
+    ["Streams without length are not sent"] = "Transmissões sem duração não são enviadas",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Como funciona o scrobbling no ListenBrainz:\n\n1. Regra dos 30 segundos: Faixas com menos de 30 segundos não são registradas.\n\n2. Limite de reprodução: Uma reprodução é válida após metade da duração ou 4 minutos (o que ocorrer primeiro).\n\n3. Pausas e busca: O tempo pausado ou avançando não conta para o limite.\n\n4. Fila offline: Até 100 reproduções (64 KB) salvas offline e enviadas automaticamente ao conectar.\n\n5. Separação de contas: As reproduções em espera são mantidas por conta do ListenBrainz.\n\n6. Duração desconhecida: Transmissões sem duração conhecida, como a maioria das rádios, não são enviadas.",
   },
   ru = {
     ["Could not open text entry. Try again."] = "Не удалось открыть ввод текста. Повторите попытку.",
@@ -210,12 +802,86 @@ local T = {
     ["ListenBrainz token saved."] = "Токен ListenBrainz сохранён.",
     ["Set ListenBrainz user token"] = "Задать токен пользователя ListenBrainz",
     ["ListenBrainz user token"] = "Токен пользователя ListenBrainz",
-    ["Enabled"] = "Включено",
-    ["Could not save that setting. Try again."] = "Не удалось сохранить настройку. Повторите попытку.",
     ["Log out"] = "Выйти",
     ["Log out (%s)"] = "Выйти (%s)",
-    ["Logged out of ListenBrainz."] = "Вы вышли из ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Скробблер ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi выключен \u{2014} отправится при подключении",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi не подключен \u{2014} отправится при подключении",
+    ["Waiting list could not be updated."] = "Не удалось обновить список ожидания.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Отправлено, но очистку списка ожидания не удалось сохранить.",
+    ["Could not send scrobble request."] = "Не удалось отправить запрос скробблинга.",
+    ["Waiting to send"] = "Ожидает отправки",
+    ["Not saved yet"] = "Еще не сохранено",
+    ["Discarded by you"] = "Отклонено вами",
+    ["Sending…"] = "Отправка…",
+    ["waiting for Wi-Fi"] = "ожидание Wi-Fi",
+    ["next try %dm"] = "след. попытка через %dм",
+    ["sent %s"] = "отправлено %s",
+    ["Sync now"] = "Синхронизировать сейчас",
+    ["Account & settings"] = "Аккаунт и настройки",
+    ["Press Back."] = "Нажмите «Назад».",
+    ["Account changed. Nothing changed."] = "Аккаунт изменился. Ничего не изменено.",
+    ["Account changed. Nothing discarded."] = "Аккаунт изменился. Ничего не удалено.",
+    ["Saved: %s"] = "Сохранено: %s",
+    ["Saved time unavailable"] = "Время сохранения недоступно",
+    ["Scrobbling"] = "Скробблинг",
+    ["Scrobbling: %s"] = "Скробблинг: %s",
+    ["Scrobbling turned on."] = "Скробблинг включен.",
+    ["Scrobbling turned off."] = "Скробблинг выключен.",
+    ["Could not save scrobbling preference. Try again."] = "Не удалось сохранить настройки скробблинга. Повторите попытку.",
+    ["This track: No music playing"] = "Этот трек: Музыка не играет",
+    ["This track: Scrobbling off"] = "Этот трек: Скробблинг выключен",
+    ["This track: Reading length"] = "Этот трек: Определение длительности",
+    ["This track: Too short (<30s)"] = "Этот трек: Слишком короткий (<30с)",
+    ["This track: Playback paused"] = "Этот трек: Воспроизведение приостановлено",
+    ["This track: Counts after %s"] = "Этот трек: Засчитается через %s",
+    ["This track: This listen not counted"] = "Этот трек: Это прослушивание не засчитано",
+    ["This track: %s"] = "Этот трек: %s",
+    ["No track playing."] = "Трек не воспроизводится.",
+    ["Status: %s"] = "Статус: %s",
+    ["How Scrobbling Works"] = "Как работает скробблинг",
+    ["Tracks >= 30s only"] = "Только треки >= 30с",
+    ["Listened 50% or 4 min"] = "Прослушано 50% или 4 мин",
+    ["Pauses do not count"] = "Паузы не считаются",
+    ["ListenBrainz not reachable."] = "ListenBrainz недоступен.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz временно занят.",
+    ["Status: user token not accepted"] = "Статус: токен пользователя не принят",
+    ["Logged in as %s"] = "Вход выполнен как %s",
+    ["Sent to ListenBrainz"] = "Отправлено в ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz отклонил это прослушивание",
+    ["%d listen waiting"] = "%d прослушивание ожидает",
+    ["%d listens waiting"] = "%d прослушиваний ожидают",
+    ["Waiting listens could not be read"] = "Не удалось прочитать ожидающие прослушивания",
+    ["Waiting listens could not be read. Nothing discarded."] = "Не удалось прочитать ожидающие прослушивания. Ничего не удалено.",
+    ["Waiting listens"] = "Ожидающие прослушивания",
+    ["No listens are waiting to send"] = "Нет прослушиваний, ожидающих отправки",
+    ["Qualified listens send automatically."] = "Подходящие прослушивания отправляются автоматически.",
+    ["%d listens kept for %s"] = "%d прослушиваний сохранено для %s",
+    ["Oldest listens are sent first."] = "Старые прослушивания отправляются первыми.",
+    ["Send waiting listens now"] = "Отправить ожидающие прослушивания сейчас",
+    ["Discard waiting listens…"] = "Удалить ожидающие прослушивания…",
+    ["Discard waiting listens (%d)"] = "Удалить ожидающие прослушивания (%d)",
+    ["Discard %d listens?"] = "Удалить %d прослушиваний?",
+    ["Discard %d listens"] = "Удалить %d прослушиваний",
+    ["Keep waiting listens"] = "Оставить ожидающие прослушивания",
+    ["Kept waiting listens."] = "Ожидающие прослушивания оставлены.",
+    ["Waiting listens discarded."] = "Ожидающие прослушивания удалены.",
+    ["Could not discard listens. Try again."] = "Не удалось удалить прослушивания. Повторите попытку.",
+    ["Account changed. Open waiting listens again."] = "Аккаунт изменился. Откройте ожидающие прослушивания снова.",
+    ["Log out?"] = "Выйти?",
+    ["Stay logged in"] = "Оставаться в системе",
+    ["Log out %s"] = "Выйти из %s",
+    ["Stayed logged in."] = "Вход сохранён.",
+    ["Logged out. Waiting listens are kept for this account."] = "Выход выполнен. Ожидающие прослушивания сохранены для этого аккаунта.",
+    ["Sending waiting listens…"] = "Отправка ожидающих прослушиваний…",
+    ["Already sending waiting listens."] = "Ожидающие прослушивания уже отправляются.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Задайте токен пользователя ListenBrainz перед отправкой ожидающих прослушиваний.",
+    ["Turn scrobbling on before sending waiting listens."] = "Включите скробблинг перед отправкой ожидающих прослушиваний.",
+    ["User token: set"] = "Токен пользователя: задан",
+    ["Up to 100 offline listens"] = "До 100 офлайн-прослушиваний",
+    ["Separate queue per account"] = "Отдельная очередь для каждого аккаунта",
+    ["Streams without length are not sent"] = "Потоки без длины не отправляются",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Как работает скробблинг ListenBrainz:\n\n1. Правило 30 секунд: Треки короче 30 секунд не скробблятся.\n\n2. Порог прослушивания: Прослушивание засчитывается после половины длины или 4 минут (что наступит раньше).\n\n3. Паузы и перемотка: Время на паузе или перемотке не учитывается в пороге.\n\n4. Офлайн-очередь: До 100 прослушиваний (64 КБ) сохраняются офлайн и отправляются при подключении.\n\n5. Разделение аккаунтов: Ожидающие прослушивания хранятся отдельно для каждого аккаунта ListenBrainz.\n\n6. Неизвестная длина: Потоки с неизвестной длиной, например большинство радио, не отправляются.",
   },
   uk = {
     ["Could not open text entry. Try again."] = "Не вдалося відкрити введення тексту. Спробуйте ще раз.",
@@ -234,12 +900,86 @@ local T = {
     ["ListenBrainz token saved."] = "Токен ListenBrainz збережено.",
     ["Set ListenBrainz user token"] = "Встановити токен користувача ListenBrainz",
     ["ListenBrainz user token"] = "Токен користувача ListenBrainz",
-    ["Enabled"] = "Увімкнено",
-    ["Could not save that setting. Try again."] = "Не вдалося зберегти це налаштування. Спробуйте ще раз.",
     ["Log out"] = "Вийти",
     ["Log out (%s)"] = "Вийти (%s)",
-    ["Logged out of ListenBrainz."] = "Ви вийшли з ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Скроблер ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi вимкнено \u{2014} надішлеться після підключення",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi не підключено \u{2014} надішлеться після підключення",
+    ["Waiting list could not be updated."] = "Не вдалося оновити список очікування.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Надіслано, але очищення списку очікування не вдалося зберегти.",
+    ["Could not send scrobble request."] = "Не вдалося надіслати запит на скробблінг.",
+    ["Waiting to send"] = "Очікує на надсилання",
+    ["Not saved yet"] = "Ще не збережено",
+    ["Discarded by you"] = "Відкинуто вами",
+    ["Sending…"] = "Надсилання…",
+    ["waiting for Wi-Fi"] = "очікування Wi-Fi",
+    ["next try %dm"] = "наст. спроба через %dхв",
+    ["sent %s"] = "надіслано %s",
+    ["Sync now"] = "Синхронізувати зараз",
+    ["Account & settings"] = "Обліковий запис і налаштування",
+    ["Press Back."] = "Натисніть «Назад».",
+    ["Account changed. Nothing changed."] = "Обліковий запис змінився. Нічого не змінено.",
+    ["Account changed. Nothing discarded."] = "Обліковий запис змінився. Нічого не відкинуто.",
+    ["Saved: %s"] = "Збережено: %s",
+    ["Saved time unavailable"] = "Час збереження недоступний",
+    ["Scrobbling"] = "Скробблінг",
+    ["Scrobbling: %s"] = "Скробблінг: %s",
+    ["Scrobbling turned on."] = "Скробблінг увімкнено.",
+    ["Scrobbling turned off."] = "Скробблінг вимкнено.",
+    ["Could not save scrobbling preference. Try again."] = "Не вдалося зберегти налаштування скробблінгу. Спробуйте знову.",
+    ["This track: No music playing"] = "Цей трек: Музика не відтворюється",
+    ["This track: Scrobbling off"] = "Цей трек: Скробблінг вимкнено",
+    ["This track: Reading length"] = "Цей трек: Визначення тривалості",
+    ["This track: Too short (<30s)"] = "Цей трек: Занадто короткий (<30с)",
+    ["This track: Playback paused"] = "Цей трек: Відтворення призупинено",
+    ["This track: Counts after %s"] = "Цей трек: Зарахується через %s",
+    ["This track: This listen not counted"] = "Цей трек: Це прослуховування не зараховано",
+    ["This track: %s"] = "Цей трек: %s",
+    ["No track playing."] = "Жоден трек не відтворюється.",
+    ["Status: %s"] = "Статус: %s",
+    ["How Scrobbling Works"] = "Як працює скробблінг",
+    ["Tracks >= 30s only"] = "Лише треки >= 30с",
+    ["Listened 50% or 4 min"] = "Прослухано 50% або 4 хв",
+    ["Pauses do not count"] = "Паузи не враховуються",
+    ["ListenBrainz not reachable."] = "ListenBrainz недосяжний.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz тимчасово зайнятий.",
+    ["Status: user token not accepted"] = "Статус: токен користувача не прийнято",
+    ["Logged in as %s"] = "Увійшли як %s",
+    ["Sent to ListenBrainz"] = "Надіслано до ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz відхилив це прослуховування",
+    ["%d listen waiting"] = "%d прослуховування очікує",
+    ["%d listens waiting"] = "%d прослуховувань очікують",
+    ["Waiting listens could not be read"] = "Не вдалося прочитати очікувані прослуховування",
+    ["Waiting listens could not be read. Nothing discarded."] = "Не вдалося прочитати очікувані прослуховування. Нічого не відкинуто.",
+    ["Waiting listens"] = "Очікувані прослуховування",
+    ["No listens are waiting to send"] = "Немає прослуховувань, що очікують на надсилання",
+    ["Qualified listens send automatically."] = "Відповідні прослуховування надсилаються автоматично.",
+    ["%d listens kept for %s"] = "%d прослуховувань збережено для %s",
+    ["Oldest listens are sent first."] = "Найстаріші прослуховування надсилаються першими.",
+    ["Send waiting listens now"] = "Надіслати очікувані прослуховування зараз",
+    ["Discard waiting listens…"] = "Відкинути очікувані прослуховування…",
+    ["Discard waiting listens (%d)"] = "Відкинути очікувані прослуховування (%d)",
+    ["Discard %d listens?"] = "Відкинути %d прослуховувань?",
+    ["Discard %d listens"] = "Відкинути %d прослуховувань",
+    ["Keep waiting listens"] = "Залишити очікувані прослуховування",
+    ["Kept waiting listens."] = "Очікувані прослуховування залишено.",
+    ["Waiting listens discarded."] = "Очікувані прослуховування відкинуто.",
+    ["Could not discard listens. Try again."] = "Не вдалося відкинути прослуховування. Спробуйте знову.",
+    ["Account changed. Open waiting listens again."] = "Обліковий запис змінився. Відкрийте очікувані прослуховування знову.",
+    ["Log out?"] = "Вийти?",
+    ["Stay logged in"] = "Залишатися в системі",
+    ["Log out %s"] = "Вийти з %s",
+    ["Stayed logged in."] = "Вхід збережено.",
+    ["Logged out. Waiting listens are kept for this account."] = "Вихід виконано. Очікувані прослуховування збережено для цього облікового запису.",
+    ["Sending waiting listens…"] = "Надсилання очікуваних прослуховувань…",
+    ["Already sending waiting listens."] = "Очікувані прослуховування вже надсилаються.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Встановіть токен користувача ListenBrainz перед надсиланням очікуваних прослуховувань.",
+    ["Turn scrobbling on before sending waiting listens."] = "Увімкніть скробблінг перед надсиланням очікуваних прослуховувань.",
+    ["User token: set"] = "Токен користувача: встановлено",
+    ["Up to 100 offline listens"] = "До 100 офлайн-прослуховувань",
+    ["Separate queue per account"] = "Окрема черга для кожного облікового запису",
+    ["Streams without length are not sent"] = "Потоки без тривалості не надсилаються",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Як працює скробблінг ListenBrainz:\n\n1. Правило 30 секунд: Треки менше 30 секунд не скроббляться.\n\n2. Поріг прослуховування: Прослуховування зараховується після половини тривалості або 4 хвилин (що настане раніше).\n\n3. Паузи та перемотування: Час на паузі або перемотуванні не враховується.\n\n4. Офлайн-черга: До 100 прослуховувань (64 КБ) зберігаються офлайн і надсилаються при підключенні.\n\n5. Розділення акаунтів: Очікувані прослуховування зберігаються окремо для кожного облікового запису ListenBrainz.\n\n6. Невідома тривалість: Потоки з невідомою тривалістю, як-от більшість радіо, не надсилаються.",
   },
   vi = {
     ["Could not open text entry. Try again."] = "Không thể mở mục nhập văn bản. Hãy thử lại.",
@@ -258,12 +998,86 @@ local T = {
     ["ListenBrainz token saved."] = "Đã lưu mã ListenBrainz.",
     ["Set ListenBrainz user token"] = "Đặt mã người dùng ListenBrainz",
     ["ListenBrainz user token"] = "Mã người dùng ListenBrainz",
-    ["Enabled"] = "Đã bật",
-    ["Could not save that setting. Try again."] = "Không thể lưu cài đặt đó. Hãy thử lại.",
     ["Log out"] = "Đăng xuất",
     ["Log out (%s)"] = "Đăng xuất (%s)",
-    ["Logged out of ListenBrainz."] = "Đã đăng xuất khỏi ListenBrainz.",
     ["ListenBrainz Scrobbler"] = "Trình scrobble ListenBrainz",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi tắt \u{2014} sẽ gửi khi kết nối",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Chưa kết nối Wi-Fi \u{2014} sẽ gửi khi kết nối",
+    ["Waiting list could not be updated."] = "Không thể cập nhật danh sách chờ.",
+    ["Sent, but waiting-list cleanup could not be saved."] = "Đã gửi, nhưng không thể lưu việc dọn dẹp danh sách chờ.",
+    ["Could not send scrobble request."] = "Không thể gửi yêu cầu scrobble.",
+    ["Waiting to send"] = "Đang chờ gửi",
+    ["Not saved yet"] = "Chưa lưu",
+    ["Discarded by you"] = "Bạn đã loại bỏ",
+    ["Sending…"] = "Đang gửi…",
+    ["waiting for Wi-Fi"] = "đang chờ Wi-Fi",
+    ["next try %dm"] = "thử lại sau %d phút",
+    ["sent %s"] = "đã gửi lúc %s",
+    ["Sync now"] = "Đồng bộ ngay",
+    ["Account & settings"] = "Tài khoản & cài đặt",
+    ["Press Back."] = "Nhấn Quay lại.",
+    ["Account changed. Nothing changed."] = "Tài khoản đã đổi. Không có gì thay đổi.",
+    ["Account changed. Nothing discarded."] = "Tài khoản đã đổi. Chưa loại bỏ gì.",
+    ["Saved: %s"] = "Đã lưu: %s",
+    ["Saved time unavailable"] = "Không có thời gian đã lưu",
+    ["Scrobbling"] = "Scrobble",
+    ["Scrobbling: %s"] = "Scrobble: %s",
+    ["Scrobbling turned on."] = "Đã bật scrobble.",
+    ["Scrobbling turned off."] = "Đã tắt scrobble.",
+    ["Could not save scrobbling preference. Try again."] = "Không thể lưu tùy chọn scrobble. Hãy thử lại.",
+    ["This track: No music playing"] = "Bài này: Không phát nhạc",
+    ["This track: Scrobbling off"] = "Bài này: Tắt scrobble",
+    ["This track: Reading length"] = "Bài này: Đang đọc thời lượng",
+    ["This track: Too short (<30s)"] = "Bài này: Quá ngắn (<30s)",
+    ["This track: Playback paused"] = "Bài này: Đã tạm dừng phát",
+    ["This track: Counts after %s"] = "Bài này: Tính sau %s",
+    ["This track: This listen not counted"] = "Bài này: Lượt nghe này không được tính",
+    ["This track: %s"] = "Bài này: %s",
+    ["No track playing."] = "Không có bài hát nào đang phát.",
+    ["Status: %s"] = "Trạng thái: %s",
+    ["How Scrobbling Works"] = "Cách hoạt động của Scrobble",
+    ["Tracks >= 30s only"] = "Chỉ bài hát >= 30s",
+    ["Listened 50% or 4 min"] = "Đã nghe 50% hoặc 4 phút",
+    ["Pauses do not count"] = "Tạm dừng không được tính",
+    ["ListenBrainz not reachable."] = "Không thể kết nối với ListenBrainz.",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz tạm thời bận.",
+    ["Status: user token not accepted"] = "Trạng thái: mã người dùng không được chấp nhận",
+    ["Logged in as %s"] = "Đã đăng nhập với tên %s",
+    ["Sent to ListenBrainz"] = "Đã gửi tới ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz đã từ chối lượt nghe này",
+    ["%d listen waiting"] = "%d lượt nghe đang chờ",
+    ["%d listens waiting"] = "%d lượt nghe đang chờ",
+    ["Waiting listens could not be read"] = "Không thể đọc các lượt nghe đang chờ",
+    ["Waiting listens could not be read. Nothing discarded."] = "Không thể đọc các lượt nghe chờ. Chưa loại bỏ gì.",
+    ["Waiting listens"] = "Lượt nghe đang chờ",
+    ["No listens are waiting to send"] = "Không có lượt nghe nào đang chờ gửi",
+    ["Qualified listens send automatically."] = "Các lượt nghe đủ điều kiện sẽ gửi tự động.",
+    ["%d listens kept for %s"] = "%d lượt nghe giữ cho %s",
+    ["Oldest listens are sent first."] = "Các lượt nghe cũ nhất được gửi trước.",
+    ["Send waiting listens now"] = "Gửi các lượt nghe đang chờ ngay",
+    ["Discard waiting listens…"] = "Loại bỏ các lượt nghe đang chờ…",
+    ["Discard waiting listens (%d)"] = "Loại bỏ các lượt nghe đang chờ (%d)",
+    ["Discard %d listens?"] = "Loại bỏ %d lượt nghe?",
+    ["Discard %d listens"] = "Loại bỏ %d lượt nghe",
+    ["Keep waiting listens"] = "Giữ các lượt nghe đang chờ",
+    ["Kept waiting listens."] = "Đã giữ các lượt nghe đang chờ.",
+    ["Waiting listens discarded."] = "Đã loại bỏ các lượt nghe đang chờ.",
+    ["Could not discard listens. Try again."] = "Không thể loại bỏ các lượt nghe. Hãy thử lại.",
+    ["Account changed. Open waiting listens again."] = "Tài khoản đã đổi. Hãy mở lại các lượt nghe chờ.",
+    ["Log out?"] = "Đăng xuất?",
+    ["Stay logged in"] = "Tiếp tục đăng nhập",
+    ["Log out %s"] = "Đăng xuất %s",
+    ["Stayed logged in."] = "Đã giữ đăng nhập.",
+    ["Logged out. Waiting listens are kept for this account."] = "Đã đăng xuất. Các lượt nghe đang chờ được giữ lại cho tài khoản này.",
+    ["Sending waiting listens…"] = "Đang gửi các lượt nghe đang chờ…",
+    ["Already sending waiting listens."] = "Đang gửi các lượt nghe chờ rồi.",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "Hãy đặt mã người dùng ListenBrainz trước khi gửi các lượt nghe đang chờ.",
+    ["Turn scrobbling on before sending waiting listens."] = "Hãy bật scrobble trước khi gửi các lượt nghe đang chờ.",
+    ["User token: set"] = "Mã người dùng: đã đặt",
+    ["Up to 100 offline listens"] = "Tối đa 100 lượt nghe ngoại tuyến",
+    ["Separate queue per account"] = "Hàng đợi riêng theo tài khoản",
+    ["Streams without length are not sent"] = "Luồng không rõ độ dài sẽ không được gửi",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Cách hoạt động của Scrobble ListenBrainz:\n\n1. Quy tắc 30 giây: Bài hát dưới 30 giây không được scrobble.\n\n2. Ngưỡng nghe: Lượt nghe hợp lệ sau một nửa thời lượng hoặc 4 phút (tùy điều kiện nào đến trước).\n\n3. Tạm dừng & Tua: Thời gian tạm dừng hoặc tua không được tính vào ngưỡng.\n\n4. Hàng đợi ngoại tuyến: Lưu tối đa 100 lượt nghe (64 KB) ngoại tuyến và tự động gửi khi có kết nối.\n\n5. Tách biệt tài khoản: Các lượt nghe chờ được giữ riêng theo từng tài khoản ListenBrainz.\n\n6. Độ dài không xác định: Luồng phát không rõ độ dài, như hầu hết đài radio, sẽ không được gửi.",
   },
   zh_CN = {
     ["Could not open text entry. Try again."] = "无法打开文本输入。请重试。",
@@ -282,12 +1096,86 @@ local T = {
     ["ListenBrainz token saved."] = "ListenBrainz 令牌已保存。",
     ["Set ListenBrainz user token"] = "设置 ListenBrainz 用户令牌",
     ["ListenBrainz user token"] = "ListenBrainz 用户令牌",
-    ["Enabled"] = "已启用",
-    ["Could not save that setting. Try again."] = "无法保存该设置。请重试。",
     ["Log out"] = "退出登录",
     ["Log out (%s)"] = "退出登录 (%s)",
-    ["Logged out of ListenBrainz."] = "已退出 ListenBrainz。",
     ["ListenBrainz Scrobbler"] = "ListenBrainz 听歌记录器",
+    ["Wi-Fi off \u{2014} will send when connected"] = "Wi-Fi 已关闭 \u{2014} 连接后将发送",
+    ["Wi-Fi not connected \u{2014} will send when connected"] = "Wi-Fi 未连接 \u{2014} 连接后将发送",
+    ["Waiting list could not be updated."] = "无法更新等待列表。",
+    ["Sent, but waiting-list cleanup could not be saved."] = "已发送，但无法保存等待列表清理。",
+    ["Could not send scrobble request."] = "无法发送记录请求。",
+    ["Waiting to send"] = "等待发送",
+    ["Not saved yet"] = "尚未保存",
+    ["Discarded by you"] = "已由你放弃",
+    ["Sending…"] = "正在发送…",
+    ["waiting for Wi-Fi"] = "等待 Wi-Fi",
+    ["next try %dm"] = "将在 %d 分钟后重试",
+    ["sent %s"] = "已发送于 %s",
+    ["Sync now"] = "立即同步",
+    ["Account & settings"] = "账号与设置",
+    ["Press Back."] = "按返回。",
+    ["Account changed. Nothing changed."] = "账号已更改。未做任何变更。",
+    ["Account changed. Nothing discarded."] = "账号已更改。未丢弃任何内容。",
+    ["Saved: %s"] = "已保存：%s",
+    ["Saved time unavailable"] = "保存时间不可用",
+    ["Scrobbling"] = "记录播放",
+    ["Scrobbling: %s"] = "记录播放：%s",
+    ["Scrobbling turned on."] = "记录功能已开启。",
+    ["Scrobbling turned off."] = "记录功能已关闭。",
+    ["Could not save scrobbling preference. Try again."] = "无法保存记录播放偏好设置。请重试。",
+    ["This track: No music playing"] = "当前曲目：未播放音乐",
+    ["This track: Scrobbling off"] = "当前曲目：记录已关闭",
+    ["This track: Reading length"] = "当前曲目：正在读取时长",
+    ["This track: Too short (<30s)"] = "当前曲目：太短 (<30秒)",
+    ["This track: Playback paused"] = "当前曲目：播放已暂停",
+    ["This track: Counts after %s"] = "当前曲目：播放达到 %s 后计入",
+    ["This track: This listen not counted"] = "当前曲目：此次聆听不计入",
+    ["This track: %s"] = "当前曲目：%s",
+    ["No track playing."] = "没有正在播放的曲目。",
+    ["Status: %s"] = "状态：%s",
+    ["How Scrobbling Works"] = "记录功能运作方式",
+    ["Tracks >= 30s only"] = "仅限 >= 30 秒的曲目",
+    ["Listened 50% or 4 min"] = "播放满 50% 或 4 分钟",
+    ["Pauses do not count"] = "暂停不计入",
+    ["ListenBrainz not reachable."] = "无法连接到 ListenBrainz。",
+    ["ListenBrainz temporarily busy."] = "ListenBrainz 暂时繁忙。",
+    ["Status: user token not accepted"] = "状态：用户令牌未被接受",
+    ["Logged in as %s"] = "已作为 %s 登录",
+    ["Sent to ListenBrainz"] = "已发送至 ListenBrainz",
+    ["ListenBrainz rejected this listen"] = "ListenBrainz 拒绝了此收听记录",
+    ["%d listen waiting"] = "%d 条收听记录等待中",
+    ["%d listens waiting"] = "%d 条收听记录等待中",
+    ["Waiting listens could not be read"] = "无法读取等待中的收听记录",
+    ["Waiting listens could not be read. Nothing discarded."] = "无法读取等待中的收听记录。未丢弃任何内容。",
+    ["Waiting listens"] = "等待中的收听记录",
+    ["No listens are waiting to send"] = "没有等待发送的收听记录",
+    ["Qualified listens send automatically."] = "符合条件的收听记录将自动发送。",
+    ["%d listens kept for %s"] = "%d 条收听记录已为 %s 保留",
+    ["Oldest listens are sent first."] = "较早的收听记录将优先发送。",
+    ["Send waiting listens now"] = "立即发送等待中的收听记录",
+    ["Discard waiting listens…"] = "丢弃等待中的收听记录…",
+    ["Discard waiting listens (%d)"] = "丢弃等待中的收听记录 (%d)",
+    ["Discard %d listens?"] = "丢弃 %d 条收听记录？",
+    ["Discard %d listens"] = "丢弃 %d 条收听记录",
+    ["Keep waiting listens"] = "保留等待中的收听记录",
+    ["Kept waiting listens."] = "已保留等待中的收听记录。",
+    ["Waiting listens discarded."] = "已丢弃等待中的收听记录。",
+    ["Could not discard listens. Try again."] = "无法丢弃收听记录。请重试。",
+    ["Account changed. Open waiting listens again."] = "账号已更改。请重新打开等待中的收听记录。",
+    ["Log out?"] = "退出登录？",
+    ["Stay logged in"] = "保持登录状态",
+    ["Log out %s"] = "退出登录 %s",
+    ["Stayed logged in."] = "已保持登录状态。",
+    ["Logged out. Waiting listens are kept for this account."] = "已退出登录。此账号的等待收听记录已保留。",
+    ["Sending waiting listens…"] = "正在发送等待中的收听记录…",
+    ["Already sending waiting listens."] = "已经在发送等待中的收听记录。",
+    ["Set your ListenBrainz user token before sending waiting listens."] = "发送等待中的收听记录前请先设置 ListenBrainz 用户令牌。",
+    ["Turn scrobbling on before sending waiting listens."] = "发送等待中的收听记录前请先开启记录。",
+    ["User token: set"] = "用户令牌：已设置",
+    ["Up to 100 offline listens"] = "最多 100 条离线收听记录",
+    ["Separate queue per account"] = "每个账号独立队列",
+    ["Streams without length are not sent"] = "无时长的流媒体不会被发送",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "ListenBrainz 记录收听的运作方式：\n\n1. 30 秒规则：短于 30 秒的曲目不予记录。\n\n2. 聆听阈值：播放达到曲目时长的一半或 4 分钟（以先到者为准）即视为有效收听。\n\n3. 暂停与快进：暂停或快进跳转的时间不计入阈值。\n\n4. 离线队列：离线最多保存 100 条收听记录（64 KB），连接网络后自动发送。\n\n5. 账号独立：等待中的收听记录按 ListenBrainz 账号分别保留。\n\n6. 时长未知：时长未知的流媒体（如大多数电台）不会被发送。",
   },
 }
 local function tr(s)
@@ -295,7 +1183,8 @@ local function tr(s)
 end
 
 -- ListenBrainz scrobbler. The user token lives only in plugin.secrets.
--- Playback state and the offline queue live in plugin.storage.
+-- Playback state and the waiting listens live in plugin.storage, kept per
+-- ListenBrainz account so they survive logging out.
 -- Listens follow ListenBrainz's rule: at least 30 seconds long, and played
 -- for half the track or 4 minutes, whichever is less. Pauses and forward
 -- seeks do not count. Unknown-duration streams (typical radio) are skipped.
@@ -304,10 +1193,25 @@ local VALIDATE_URL = "https://api.listenbrainz.org/1/validate-token"
 local SUBMIT_URL = "https://api.listenbrainz.org/1/submit-listens"
 local CLIENT_NAME = "Compas"
 local CLIENT_VERSION = "1.0"
-local QUEUE_MAX_RECORDS = 40
-local QUEUE_MAX_BYTES = 32768
+local QUEUE_MAX_RECORDS = 100
+local QUEUE_MAX_BYTES = 65536
+local MAX_BACKOFF = 300
 local USER_AGENT = "Compas/1.0"
 local REQUEST_TIMEOUTS = { connect_timeout_ms = 8000, read_timeout_ms = 12000, total_timeout_ms = 20000 }
+
+-- Status texts. They double as translation keys.
+local NETWORK_ERROR = "ListenBrainz not reachable."
+local BUSY_ERROR = "ListenBrainz temporarily busy."
+local LIST_ERROR = "Waiting list could not be updated."
+local CLEANUP_ERROR = "Sent, but waiting-list cleanup could not be saved."
+local SEND_ERROR = "Could not send scrobble request."
+local OFFLINE_OFF = "Wi-Fi off \u{2014} will send when connected"
+local OFFLINE_NO_LINK = "Wi-Fi not connected \u{2014} will send when connected"
+local DELIVERY_WAITING = "Waiting to send"
+local DELIVERY_SENT = "Sent to ListenBrainz"
+local DELIVERY_REJECTED = "ListenBrainz rejected this listen"
+local DELIVERY_UNSAVED = "Not saved yet"
+local DELIVERY_DISCARDED = "Discarded by you"
 
 local can_secrets = plugin.has_capability("storage.secrets") and plugin.has_capability("storage.secrets_get")
 local can_http = plugin.has_capability("network.http.async")
@@ -315,19 +1219,29 @@ local can_json = plugin.has_capability("data.json")
 
 local state = {
   enabled = plugin.storage.get("enabled", "0") == "1",
-  user_name = plugin.storage.get("user_name"),
+  user_name = nil, -- set from the account record below
 }
-if state.user_name == "" then state.user_name = nil end
+
+-- The last account that logged in. Its waiting listens outlive a log out.
+local last_user = plugin.storage.get("last_user")
+if last_user == "" then last_user = nil end
 
 local auth_hold = plugin.storage.get("auth_hold") == "1"
 local account_generation = 1
 local validation_generation = 0
 local failures, next_sync_at = 0, 0
+-- ListenBrainz's Retry-After: nothing resets it early.
+local rate_limited_until = 0
+local last_failure_network = false
+local last_error = nil
 local inflight = nil
 local current = nil
 local queue_full_told = false
 local queue_write_told = false
 local missing_api_told = false
+local refresh_main_list = function() end
+local current_main_handle = nil
+local main_refresh_pending = false
 
 local function trim(value)
   return (tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", ""))
@@ -337,6 +1251,31 @@ local function clip(value)
   local text = trim(value)
   if #text > 200 then text = text:sub(1, 200) end
   return text
+end
+
+local function truncate(value, max_len)
+  local text = tostring(value or ""):gsub("%c", " ")
+  if #text <= max_len then return text end
+  local cut = max_len - 1
+  while cut > 0 do
+    local next_byte = text:byte(cut + 1)
+    if not next_byte or next_byte < 128 or next_byte > 191 then break end
+    cut = cut - 1
+  end
+  return text:sub(1, cut) .. "…"
+end
+
+local function format_time(seconds)
+  seconds = math.max(0, math.floor(seconds or 0))
+  return string.format("%d:%02d", seconds // 60, seconds % 60)
+end
+
+local function format_last_sent(ts)
+  ts = tonumber(ts)
+  if not ts or ts <= 0 then return nil end
+  local fmt = (os.time() - ts) > 86400 and "%m-%d %H:%M" or "%H:%M"
+  local ok, text = pcall(os.date, fmt, ts)
+  return ok and text or nil
 end
 
 local function url_encode(value)
@@ -351,24 +1290,52 @@ local function url_decode(value)
   end)
 end
 
-local function current_token()
-  if not can_secrets then return nil end
+-- The token and the account it belongs to are one secret, "name<TAB>token",
+-- so a write leaves either the old pair or the new one, never a mix. 1.1 kept
+-- the token alone (user_token) and the name in storage; that is still read.
+local function read_account()
+  if not can_secrets then return nil, nil end
+  local record = plugin.secrets.get("account")
+  if type(record) == "string" then
+    local name, token = record:match("^([^\t]*)\t(.+)$")
+    if token then return token, name ~= "" and name or nil end
+  end
   local token = plugin.secrets.get("user_token")
-  if type(token) ~= "string" or token == "" then return nil end
-  return token
+  if type(token) ~= "string" or token == "" then return nil, nil end
+  local name = plugin.storage.get("user_name")
+  return token, (type(name) == "string" and name ~= "") and name or nil
 end
 
-local function account_key(prefix, token)
-  return prefix .. plugin.md5(token)
+local function current_token()
+  return (read_account())
 end
 
-local function queue_key(token)
-  return account_key("queue_", token)
+-- Stores the pair, or logs out with nil. A write can land and still return
+-- false, so success is what storage holds afterwards.
+local function save_account(token, name)
+  if token then
+    plugin.secrets.set("account", (name or "") .. "\t" .. token)
+    local stored_token, stored_name = read_account()
+    if stored_token ~= token or stored_name ~= name then return false end
+  else
+    plugin.secrets.delete("account")
+    plugin.secrets.delete("user_token")
+    if read_account() then return false end
+  end
+  -- The 1.1 copies are no longer read once the record holds the account.
+  plugin.secrets.delete("user_token")
+  plugin.storage.delete("user_name")
+  return true
 end
 
-local function sent_key(token)
-  return account_key("sent_", token)
+local function remember_user(name)
+  state.user_name = name
+  if name and name ~= last_user then
+    last_user = name
+    plugin.storage.set("last_user", name)
+  end
 end
+remember_user(select(2, read_account()))
 
 local function token_shape_ok(token)
   return type(token) == "string" and #token >= 10 and #token <= 200 and token:match("^[%w%-%.%_%~]+$") ~= nil
@@ -392,6 +1359,55 @@ end
 local function decode_json(text)
   if not can_json or type(text) ~= "string" then return nil, "json" end
   return plugin.json_decode(text)
+end
+
+local function is_active()
+  return plugin.is_playing() and not plugin.is_paused()
+end
+
+-- Network awareness (API 18). Players without it keep plain backoff.
+local function network_state()
+  if type(plugin.network_status) ~= "function" then return nil end
+  if not plugin.has_capability("network.status") then return nil end
+  local ok, st = pcall(plugin.network_status)
+  if ok and type(st) == "table" then return st end
+  return nil
+end
+
+-- Wi-Fi switched off: the one state that stays accurate with the screen off,
+-- so sends are hard-skipped.
+local function wifi_disabled()
+  local st = network_state()
+  return st ~= nil and st.wifi_enabled == false
+end
+
+-- Wi-Fi on but not associated. This can be stale while the screen is off, so
+-- it never blocks a send; it only stops failures from growing the backoff.
+local function link_down()
+  local st = network_state()
+  return st ~= nil and st.wifi_enabled ~= false and st.connected == false
+end
+
+local function offline_text()
+  if wifi_disabled() then return tr(OFFLINE_OFF) end
+  return tr(OFFLINE_NO_LINK)
+end
+
+-- Waiting listens are stored per account: the user name, or the token while
+-- no name is known yet (the key older versions used).
+local function queue_id(token)
+  if state.user_name then return plugin.md5(state.user_name:lower()) end
+  if token then return plugin.md5(token) end
+  if last_user then return plugin.md5(last_user:lower()) end
+  return nil
+end
+
+local function queue_key(id)
+  return "queue_" .. id
+end
+
+local function sent_key(id)
+  return "sent_" .. id
 end
 
 local function format_line(item)
@@ -444,38 +1460,78 @@ local function load_queue(key)
   return items, kept
 end
 
-local function save_queue(key, items, kept)
-  if #items > QUEUE_MAX_RECORDS then return false end
+-- The stored text for a queue, or nil when it would break a limit.
+local function queue_raw(items, kept)
+  if #items > QUEUE_MAX_RECORDS then return nil end
   local lines = {}
   for i = 1, #kept do lines[#lines + 1] = kept[i] end
   for i = 1, #items do lines[#lines + 1] = format_line(items[i]) end
   local raw = table.concat(lines, "\n")
-  if raw == "" then
-    plugin.storage.delete(key)
-    return true
-  end
-  if #raw > QUEUE_MAX_BYTES then return false end
+  if #raw > QUEUE_MAX_BYTES then return nil end
+  return raw
+end
+
+local function save_queue(key, items, kept)
+  local raw = queue_raw(items, kept or {})
+  if not raw then return false end
+  -- An empty queue is no key; one already missing needs no delete.
+  if raw == "" then return plugin.storage.get(key) == nil or plugin.storage.delete(key) == true end
   return plugin.storage.set(key, raw) == true
 end
 
-local function load_sent(token)
+local function load_sent(id)
   local set = {}
-  local raw = plugin.storage.get(sent_key(token), "")
+  local raw = plugin.storage.get(sent_key(id), "")
   if type(raw) ~= "string" then return set end
   for line in raw:gmatch("([^\n]+)") do set[line] = true end
   return set
 end
 
-local function save_sent(token, set)
+local function save_sent(id, set)
   local ids = {}
-  for id in pairs(set) do ids[#ids + 1] = id end
+  for item_id in pairs(set) do ids[#ids + 1] = item_id end
   table.sort(ids)
   if #ids > QUEUE_MAX_RECORDS then
     local trimmed = {}
     for i = #ids - QUEUE_MAX_RECORDS + 1, #ids do trimmed[#trimmed + 1] = ids[i] end
     ids = trimmed
   end
-  return plugin.storage.set(sent_key(token), table.concat(ids, "\n")) == true
+  return plugin.storage.set(sent_key(id), table.concat(ids, "\n")) == true
+end
+
+-- False when the waiting listens could not be removed; they stay as they were.
+local function clear_queue(id)
+  if not save_queue(queue_key(id), {}) then return false end
+  plugin.storage.delete(sent_key(id))
+  return true
+end
+
+-- The queues of the current (or last) account: its own, and the queue
+-- version 1.1 kept under the token. That one is sent with the same token and
+-- never moves; 1.1 listens still waiting when that token is replaced stay
+-- stored under it.
+local function account_queue_ids(token)
+  local ids = {}
+  local own = queue_id(token)
+  if own then ids[1] = own end
+  if token and plugin.md5(token) ~= own then ids[#ids + 1] = plugin.md5(token) end
+  return ids
+end
+
+-- Every waiting listen of the account, oldest queue first; nil if unreadable.
+local function account_listens(token)
+  local all = {}
+  for _, id in ipairs(account_queue_ids(token)) do
+    local items = load_queue(queue_key(id))
+    if not items then return nil end
+    for _, item in ipairs(items) do all[#all + 1] = item end
+  end
+  return all
+end
+
+local function queued_count()
+  local items = account_listens(current_token())
+  return items and #items or nil
 end
 
 local function request(method, url, token, body, callback)
@@ -504,6 +1560,7 @@ local function hold_auth()
   auth_hold = true
   plugin.storage.set("auth_hold", "1")
   plugin.show_toast(tr("ListenBrainz did not accept the user token. Saved listens are kept."))
+  refresh_main_list()
 end
 
 local function header_value(headers, name)
@@ -531,19 +1588,46 @@ local function retry_after_seconds(headers)
   return seconds
 end
 
-local function sync_failed(retry_after)
-  failures = failures + 1
-  local delay = retry_after
-  if not delay then
-    delay = 15
-    local step = 1
-    while step < failures do
-      delay = delay * 2
-      if delay >= 1800 then delay = 1800 break end
-      step = step + 1
-    end
-  end
+local function reset_backoff()
+  failures, next_sync_at = 0, 0
+  last_failure_network = false
+  last_error = nil
+end
+
+-- Failures back off 15 s doubling up to MAX_BACKOFF. A network failure while
+-- the link is down waits the long fallback instead: network_changed sends at
+-- once on reconnect, so the backoff need not grow.
+local function sync_failed(reason, retry_after)
+  last_failure_network = (reason == NETWORK_ERROR)
+  local fallback = last_failure_network and link_down()
+  if not fallback then failures = failures + 1 end
+  local delay = retry_after or (fallback and MAX_BACKOFF) or math.min(15 * 2 ^ (failures - 1), MAX_BACKOFF)
   next_sync_at = os.time() + delay
+  -- The delay is shown live on the queue row, never baked into this text.
+  last_error = reason
+end
+
+-- Shared by queue sends and playing_now. True when the reply was a failure
+-- that is already handled; false for any other status.
+local function note_failure(status, err, headers)
+  if err or not status or status < 100 then
+    if wifi_disabled() then
+      -- Wi-Fi went off mid-request: wait for network_changed.
+      if last_error == NETWORK_ERROR then last_error = nil end
+    else
+      sync_failed(NETWORK_ERROR)
+    end
+  elseif status == 401 then
+    hold_auth()
+  elseif status == 429 then
+    sync_failed(BUSY_ERROR, retry_after_seconds(headers))
+    rate_limited_until = math.max(rate_limited_until, next_sync_at)
+  elseif status >= 500 then
+    sync_failed(BUSY_ERROR)
+  else
+    return false
+  end
+  return true
 end
 
 local function tell_queue_full()
@@ -574,164 +1658,170 @@ local function payload_for(item, kind)
   return { listen_type = kind, payload = { entry } }
 end
 
-local function forget_queue(token)
-  if not token or token == "" then return end
-  plugin.storage.delete(queue_key(token))
-  plugin.storage.delete(sent_key(token))
-end
-
 local function cancel_inflight()
   if inflight and inflight.handle then plugin.cancel(inflight.handle) end
   inflight = nil
 end
 
--- Drop the previous account's queue before any later request can read it.
-local function switch_account(new_token, user_name)
-  local old = current_token()
-  if old == new_token then
-    auth_hold = false
-    plugin.storage.delete("auth_hold")
-    failures, next_sync_at = 0, 0
-    if user_name and user_name ~= "" then
-      state.user_name = user_name
-      plugin.storage.set("user_name", user_name)
-    end
-    return true
-  end
-  if new_token then
-    if not plugin.secrets.set("user_token", new_token) then
-      plugin.show_toast(tr("Could not save the ListenBrainz token. Try again."))
-      return false
-    end
-  elseif can_secrets then
-    if not plugin.secrets.delete("user_token") then
-      plugin.show_toast(tr("Could not log out of ListenBrainz. Try again."))
-      return false
-    end
-  end
-  validation_generation = validation_generation + 1
+-- Cancel the running send and ignore any reply that is still on its way.
+local function cancel_account_requests()
   account_generation = account_generation + 1
   cancel_inflight()
-  if old and old ~= new_token then forget_queue(old) end
+end
+
+local function reset_account_state()
   auth_hold = false
-  failures, next_sync_at = 0, 0
   plugin.storage.delete("auth_hold")
-  if current then current.submitted = true end
-  if user_name and user_name ~= "" then
-    state.user_name = user_name
-    plugin.storage.set("user_name", user_name)
-  else
-    state.user_name = nil
-    plugin.storage.delete("user_name")
+  reset_backoff()
+end
+
+-- Log in with a token (and the user name ListenBrainz gave for it), or log
+-- out with nil. Waiting listens stay in storage under their account.
+-- Returns false and a message when the change could not be stored.
+local function switch_account(new_token, user_name)
+  if user_name == "" then user_name = nil end
+  local old_token, old_name = read_account()
+  local saved = true
+  if old_token ~= new_token or (user_name and user_name ~= old_name) then
+    saved = save_account(new_token, user_name)
   end
-  return true
+  -- Follow what storage holds, whichever way a failed write went.
+  local token, name = read_account()
+  if token ~= old_token then
+    validation_generation = validation_generation + 1
+    cancel_account_requests()
+    if current then current.submitted = true end
+  end
+  remember_user(name)
+  if token == new_token then reset_account_state() end
+  if saved or (token == new_token and old_token == new_token) then return true end
+  return false, new_token and tr("Could not save the ListenBrainz token. Try again.")
+    or tr("Could not log out of ListenBrainz. Try again.")
 end
 
 local sync_queue
 
-local function apply_submit_result(item_id, key, token_used, generation, status, err, headers)
-  if inflight and inflight.id == item_id and inflight.generation == generation then
-    inflight = nil
+-- Record the delivery state of the listen shown on the main screen.
+local function mark_delivery(ctx, text)
+  local snap = current
+  if snap and snap.record and snap.record.id == ctx.id and snap.delivery_qid == ctx.qid then
+    snap.delivery = text
   end
-  if generation ~= account_generation or current_token() ~= token_used then return end
-  if status == 200 and not err then
-    local sent = load_sent(token_used)
-    sent[item_id] = true
-    if not save_sent(token_used, sent) then
-      sync_failed()
-      return
-    end
-    local items, kept = load_queue(key)
-    if not items then
-      sync_failed()
-      return
-    end
-    local remain = {}
-    for i = 1, #items do
-      if items[i].id ~= item_id then remain[#remain + 1] = items[i] end
-    end
-    if save_queue(key, remain, kept) then
-      failures, next_sync_at = 0, 0
-      sync_queue()
-    else
-      sync_failed()
-    end
-    return
-  end
-  if status == 401 and not err then
-    hold_auth()
-    return
-  end
-  if status == 429 and not err then
-    sync_failed(retry_after_seconds(headers))
-    return
-  end
-  if err or status == nil or status >= 500 then
-    sync_failed()
-    return
-  end
-  local items, kept = load_queue(key)
-  if not items then return end
-  for i = 1, #items do
-    if items[i].id == item_id then items[i].hold = 1 end
-  end
-  save_queue(key, items, kept)
 end
 
-sync_queue = function()
-  if inflight or auth_hold or os.time() < next_sync_at or not state.enabled then return end
+local function submit_succeeded(ctx)
+  local sent = load_sent(ctx.qid)
+  sent[ctx.id] = true
+  if not save_sent(ctx.qid, sent) then return sync_failed(LIST_ERROR) end
+  local items, kept = load_queue(ctx.key)
+  if not items then return sync_failed(LIST_ERROR) end
+  local remain = {}
+  for i = 1, #items do
+    if items[i].id ~= ctx.id then remain[#remain + 1] = items[i] end
+  end
+  if not save_queue(ctx.key, remain, kept) then return sync_failed(CLEANUP_ERROR) end
+  reset_backoff()
+  plugin.storage.set("last_sent_at", tostring(os.time()))
+  mark_delivery(ctx, DELIVERY_SENT)
+  sync_queue()
+end
+
+-- ListenBrainz refused this listen (4xx other than 401/429): sending it again
+-- cannot help, so it leaves the waiting list, as LastFM Scrobbler V2 does.
+local function submit_rejected(ctx)
+  local items, kept = load_queue(ctx.key)
+  if not items then return sync_failed(LIST_ERROR) end
+  local remain = {}
+  for i = 1, #items do
+    if items[i].id ~= ctx.id then remain[#remain + 1] = items[i] end
+  end
+  if not save_queue(ctx.key, remain, kept) then return sync_failed(LIST_ERROR) end
+  mark_delivery(ctx, DELIVERY_REJECTED)
+  sync_queue()
+end
+
+local function apply_submit_result(ctx, status, err, headers)
+  if inflight and inflight.id == ctx.id and inflight.generation == ctx.generation then
+    inflight = nil
+  end
+  if ctx.generation ~= account_generation or current_token() ~= ctx.token then return end
+  if not note_failure(status, err, headers) then
+    if status >= 200 and status < 300 then
+      submit_succeeded(ctx)
+    elseif status >= 400 and status < 500 then
+      submit_rejected(ctx)
+    else
+      sync_failed(BUSY_ERROR)
+    end
+  end
+  refresh_main_list()
+end
+
+-- The next listen to send. Listens already sent but not yet cleaned up, and
+-- listens version 1.1 held after a rejection, are removed on the way.
+local function next_listen(key, qid)
+  local items, kept = load_queue(key)
+  if not items then return nil end
+  local sent = load_sent(qid)
+  local remain = {}
+  for i = 1, #items do
+    if not sent[items[i].id] and items[i].hold ~= 1 then remain[#remain + 1] = items[i] end
+  end
+  if #remain ~= #items and not save_queue(key, remain, kept) then return nil end
+  return remain[1]
+end
+
+local function start_send(ctx, body)
+  inflight = { id = ctx.id, generation = ctx.generation }
+  local handle = request("POST", SUBMIT_URL, ctx.token, body, function(status, _, err, headers)
+    apply_submit_result(ctx, status, err, headers)
+  end)
+  local mine = inflight and inflight.id == ctx.id and inflight.generation == ctx.generation
+  if not mine then return end
+  if handle then
+    inflight.handle = handle
+  else
+    inflight = nil
+    sync_failed(SEND_ERROR)
+  end
+  refresh_main_list()
+end
+
+local function can_start_send()
+  if inflight or auth_hold or not state.enabled then return false end
+  if os.time() < next_sync_at or os.time() < rate_limited_until then return false end
+  -- Never start a send while Wi-Fi is switched off.
+  if wifi_disabled() then return false end
   if not can_http or not can_json then
     if not missing_api_told then
       missing_api_told = true
       plugin.show_toast(tr("This player cannot send ListenBrainz listens. Saved listens are kept."))
     end
-    return
+    return false
   end
+  return true
+end
+
+sync_queue = function()
+  if not can_start_send() then return end
   local token = current_token()
   if not token then return end
-  local key = queue_key(token)
-  local items, kept = load_queue(key)
-  if not items then return end
-  local sent = load_sent(token)
-  local remain, changed = {}, false
-  for i = 1, #items do
-    if sent[items[i].id] then changed = true else remain[#remain + 1] = items[i] end
-  end
-  if changed then
-    if not save_queue(key, remain, kept) then return end
-    items = remain
-  end
-  local item = nil
-  for i = 1, #items do
-    if items[i].hold ~= 1 then item = items[i] break end
-  end
-  if not item then return end
-  local body = encode_json(payload_for(item, "single"))
-  if not body then
-    sync_failed()
-    return
-  end
-  local generation = account_generation
-  local token_used = token
-  local item_id = item.id
-  inflight = { id = item_id, generation = generation, key = key }
-  local handle = request("POST", SUBMIT_URL, token_used, body, function(status, _, err, headers)
-    apply_submit_result(item_id, key, token_used, generation, status, err, headers)
-  end)
-  if inflight and inflight.id == item_id and inflight.generation == generation then
-    inflight.handle = handle
-  end
-  if not handle and inflight and inflight.id == item_id and inflight.generation == generation then
-    inflight = nil
-    sync_failed()
+  for _, qid in ipairs(account_queue_ids(token)) do
+    local key = queue_key(qid)
+    local item = next_listen(key, qid)
+    if item then
+      local body = encode_json(payload_for(item, "single"))
+      if not body then return sync_failed(SEND_ERROR) end
+      return start_send({ id = item.id, key = key, qid = qid, token = token, generation = account_generation }, body)
+    end
   end
 end
 
-local function enqueue(record, token)
+local function enqueue(record, qid)
   if record.artist == "" or record.track == "" or not record.listened_at or record.listened_at <= 0 then
     return false
   end
-  local key = queue_key(token)
+  local key = queue_key(qid)
   local items, kept = load_queue(key)
   if not items then return false end
   if record.id then
@@ -792,9 +1882,15 @@ local function consider(snap)
     release = snap.release,
     duration_ms = duration_ms,
   }
-  if enqueue(snap.record, token) then
+  local qid = queue_id(token)
+  if enqueue(snap.record, qid) then
     snap.submitted = true
+    snap.delivery, snap.delivery_qid = DELIVERY_WAITING, qid
+    refresh_main_list()
     if not auth_hold then sync_queue() end
+  elseif snap.delivery ~= DELIVERY_UNSAVED then
+    snap.delivery = DELIVERY_UNSAVED
+    refresh_main_list()
   end
 end
 
@@ -819,7 +1915,7 @@ end
 
 local function send_playing_now(snap)
   if snap.now_sent or not state.enabled or auth_hold or not can_http or not can_json then return end
-  if os.time() < next_sync_at then return end
+  if os.time() < next_sync_at or os.time() < rate_limited_until or wifi_disabled() then return end
   if not metadata_ok(snap.artist, snap.track) or snap.duration < 30 then return end
   local token = current_token()
   if not token then return end
@@ -833,16 +1929,13 @@ local function send_playing_now(snap)
   if not body then return end
   snap.now_sent = true
   local generation = account_generation
-  local token_used = token
-  local handle = request("POST", SUBMIT_URL, token_used, body, function(status, _, err, headers)
-    if generation ~= account_generation or current_token() ~= token_used then return end
-    if status == 401 and not err then
-      hold_auth()
-    elseif status == 429 and not err then
-      sync_failed(retry_after_seconds(headers))
-    elseif err or status == nil or (status and status >= 500) then
-      sync_failed()
+  local handle = request("POST", SUBMIT_URL, token, body, function(status, _, err, headers)
+    if generation ~= account_generation or current_token() ~= token then return end
+    -- A reply proves the connection works again.
+    if not note_failure(status, err, headers) and status == 200 and last_failure_network then
+      reset_backoff()
     end
+    refresh_main_list()
   end)
   if not handle then snap.now_sent = false end
 end
@@ -866,13 +1959,14 @@ plugin.on("track_started", function(title, artist, album, duration_seconds)
     duration = tonumber(duration_seconds) or 0,
     started = os.time(),
     listened = 0,
-    active = plugin.is_playing() and not plugin.is_paused(),
+    active = is_active(),
     last_poll = os.time(),
     last_pos = tonumber(plugin.get_position()) or 0,
     submitted = false,
   }
   send_playing_now(current)
   sync_queue()
+  refresh_main_list()
 end)
 
 local function finish_stretch()
@@ -882,35 +1976,79 @@ local function finish_stretch()
   consider(current)
 end
 
-plugin.on("paused", finish_stretch)
-plugin.on("stopped", finish_stretch)
+local function finish_stretch_and_refresh()
+  finish_stretch()
+  refresh_main_list()
+end
+
+plugin.on("paused", finish_stretch_and_refresh)
+plugin.on("stopped", finish_stretch_and_refresh)
 plugin.on("suspending", finish_stretch)
 
 plugin.on("resumed", function()
   if not current then return end
   rebase(current, false)
   current.active = true
+  refresh_main_list()
 end)
 
-plugin.on("system_resumed", function()
-  if not current then return end
-  rebase(current, false)
-  current.active = plugin.is_playing() and not plugin.is_paused()
+-- Connectivity came back (or may have, after sleep): send promptly. The
+-- backoff is dropped only if the last failure was a network one; rate-limit
+-- and storage backoffs stay, and sync_queue() still honours them.
+local function network_back()
+  if wifi_disabled() then return end
+  if last_failure_network then reset_backoff() end
+  if state.enabled then sync_queue() end
+  refresh_main_list()
+end
+
+if type(plugin.network_status) == "function" then
+  pcall(plugin.on, "network_changed", function(info)
+    if type(info) == "table" and info.connected then
+      network_back()
+    else
+      refresh_main_list()
+    end
+  end)
+end
+-- Fallbacks for players without network_changed, and for Wi-Fi that stayed
+-- up across sleep while the old backoff was still ticking.
+pcall(plugin.on, "system_resumed", function()
+  if current then
+    rebase(current, false)
+    current.active = is_active()
+  end
+  network_back()
 end)
+pcall(plugin.on, "screen_woke", function()
+  if next_sync_at > 0 then network_back() end
+end)
+
+local last_backoff_refresh = 0
 
 plugin.set_interval(5, function()
+  -- A real change while a child screen was open is drawn once on return.
+  if main_refresh_pending then refresh_main_list() end
   if current then
     -- `was_active` is the stretch since the previous sample. Pause, stop and
     -- a new track sample that stretch themselves and clear `active`, so a
     -- later poll does not add it again.
     local was_active = current.active
-    current.active = plugin.is_playing() and not plugin.is_paused()
+    current.active = is_active()
     rebase(current, was_active)
+    local had_duration = current.duration
     refresh_duration(current)
+    if current.duration ~= had_duration then main_refresh_pending = true end
     if current.duration >= 30 and not current.now_sent then send_playing_now(current) end
     consider(current)
   end
   sync_queue()
+  -- The queue row shows "next try Nm": redraw at most once a minute while
+  -- backing off (the fingerprint check skips it if nothing changed).
+  if next_sync_at > os.time() and os.time() - last_backoff_refresh >= 60 then
+    last_backoff_refresh = os.time()
+    refresh_main_list()
+  end
 end)
 
 local function validate_token(token)
@@ -947,86 +2085,374 @@ local function validate_token(token)
       user_name = clip(data.user_name)
       if user_name == token or user_name:find("%c") then user_name = nil end
     end
-    if switch_account(token, user_name) then
-      plugin.show_toast(tr("ListenBrainz token saved."))
-      sync_queue()
-    end
+    local ok, message = switch_account(token, user_name)
+    plugin.show_toast(ok and tr("ListenBrainz token saved.") or message)
+    if ok then sync_queue() end
+    refresh_main_list()
   end)
   if not handle then plugin.show_toast(tr("Could not reach ListenBrainz.")) end
 end
 
-local function open_menu()
-  local rows = {
-    {
-      type = "row",
-      label = tr("Set ListenBrainz user token"),
-      on_select = function()
-        show_input(tr("ListenBrainz user token"), function(value)
-          if value == nil or trim(value) == "" then return end
-          validate_token(trim(value))
-        end)
-      end,
-    },
-    {
-      type = "toggle",
-      label = tr("Enabled"),
-      value = state.enabled,
-      on_change = function(value)
-        if value then
-          state.enabled = true
-          if not save_enabled() then
-            state.enabled = false
-            plugin.show_toast(tr("Could not save that setting. Try again."))
-            return
-          end
-          if current then
-            rebase(current, false)
-            current.active = plugin.is_playing() and not plugin.is_paused()
-          end
-          failures, next_sync_at = 0, 0
-          sync_queue()
-        else
-          if current then
-            rebase(current, current.active)
-            consider(current)
-            current.submitted = true
-            current.active = false
-          end
-          state.enabled = false
-          if not save_enabled() then
-            plugin.show_toast(tr("Could not save that setting. Try again."))
-          end
-        end
-      end,
-    },
-  }
-  if current_token() then
-    local label = tr("Log out")
-    if state.user_name and state.user_name ~= "" then
-      label = string.format(tr("Log out (%s)"), state.user_name)
-    end
-    rows[#rows + 1] = {
-      type = "row",
-      label = label,
-      on_select = function()
-        if switch_account(nil, nil) then
-          plugin.show_toast(tr("Logged out of ListenBrainz."))
-        end
-      end,
-    }
-  end
-  plugin.show_settings_list(tr("ListenBrainz Scrobbler"), rows)
+local function prompt_token()
+  show_input(tr("ListenBrainz user token"), function(value)
+    if value == nil or trim(value) == "" then return end
+    validate_token(trim(value))
+  end)
 end
 
-plugin.register_list_item("playback", tr("ListenBrainz Scrobbler"), open_menu)
+local function set_scrobbling(value)
+  if value then
+    state.enabled = true
+    if not save_enabled() then
+      state.enabled = false
+      plugin.show_toast(tr("Could not save scrobbling preference. Try again."))
+      return false
+    end
+    if current then
+      rebase(current, false)
+      current.active = is_active()
+    end
+    reset_backoff()
+    sync_queue()
+  else
+    if current then
+      rebase(current, current.active)
+      consider(current)
+      current.submitted = true
+      current.active = false
+    end
+    state.enabled = false
+    if not save_enabled() then
+      plugin.show_toast(tr("Could not save scrobbling preference. Try again."))
+    end
+  end
+  refresh_main_list()
+  return true
+end
+
+-- Show the outcome of a confirmation in place of its two rows.
+local function finish_confirmation(handle, title, message)
+  plugin.show_toast(message)
+  if handle and plugin.has_capability("ui.list_update") and plugin.is_list_showing(handle) then
+    plugin.show_list(title, { message .. " " .. tr("Press Back.") }, function() end, { replace = handle })
+  end
+end
+
+local function confirm_log_out()
+  if not current_token() then return end
+  local name, generation = state.user_name or "", account_generation
+  local title = tr("Log out?")
+  local done, handle = false, nil
+  handle = plugin.show_list(title, { tr("Stay logged in"), string.format(tr("Log out %s"), truncate(name, 20)) }, function(idx)
+    if done or (idx ~= 1 and idx ~= 2) then return end
+    done = true
+    if idx == 1 then finish_confirmation(handle, title, tr("Stayed logged in.")); return end
+    if generation ~= account_generation or name ~= (state.user_name or "") then
+      finish_confirmation(handle, title, tr("Account changed. Nothing changed.")); return
+    end
+    local ok, message = switch_account(nil, nil)
+    if not ok then finish_confirmation(handle, title, message); return end
+    finish_confirmation(handle, title, tr("Logged out. Waiting listens are kept for this account."))
+    refresh_main_list()
+  end)
+end
+
+local function confirm_discard_queue()
+  local qid = queue_id(current_token())
+  if not qid then return end
+  local ids = account_queue_ids(current_token())
+  local items = account_listens(current_token())
+  if not items then plugin.show_toast(tr("Waiting listens could not be read. Nothing discarded.")); return end
+  local count = #items
+  if count == 0 then plugin.show_toast(tr("No listens are waiting to send")); return end
+  local generation, done, handle = account_generation, false, nil
+  local title = string.format(tr("Discard %d listens?"), count)
+  handle = plugin.show_list(title, { tr("Keep waiting listens"), string.format(tr("Discard %d listens"), count) }, function(idx)
+    if done or (idx ~= 1 and idx ~= 2) then return end
+    done = true
+    if idx == 1 then finish_confirmation(handle, title, tr("Kept waiting listens.")); return end
+    if generation ~= account_generation or qid ~= queue_id(current_token()) then
+      finish_confirmation(handle, title, tr("Account changed. Nothing discarded.")); return
+    end
+    -- Cancel and invalidate every reply before emptying the queue.
+    cancel_account_requests()
+    for _, id in ipairs(ids) do
+      if not clear_queue(id) then
+        finish_confirmation(handle, title, tr("Could not discard listens. Try again."))
+        sync_queue()
+        return
+      end
+    end
+    if current and current.delivery_qid and current.delivery ~= DELIVERY_SENT then
+      for _, id in ipairs(ids) do
+        if current.delivery_qid == id then current.delivery = DELIVERY_DISCARDED end
+      end
+    end
+    finish_confirmation(handle, title, tr("Waiting listens discarded."))
+    refresh_main_list()
+  end)
+end
+
+local function can_send_now()
+  return current_token() ~= nil and not auth_hold and state.enabled
+end
+
+local function retry_now()
+  if auth_hold then
+    plugin.show_toast(tr("ListenBrainz did not accept the user token. Saved listens are kept."))
+    return
+  end
+  if not current_token() then
+    plugin.show_toast(tr("Set your ListenBrainz user token before sending waiting listens."))
+    return
+  end
+  if not state.enabled then plugin.show_toast(tr("Turn scrobbling on before sending waiting listens.")); return end
+  local count = queued_count()
+  if count == nil then plugin.show_toast(tr("Waiting listens could not be read")); return end
+  if count == 0 then plugin.show_toast(tr("No listens are waiting to send")); return end
+  if inflight then plugin.show_toast(tr("Already sending waiting listens.")); return end
+  if wifi_disabled() then plugin.show_toast(offline_text()); return end
+  reset_backoff()
+  plugin.show_toast(tr("Sending waiting listens…"))
+  sync_queue()
+  refresh_main_list()
+end
+
+local function open_queue_list()
+  local qid = queue_id(current_token())
+  if not qid then return end
+  local items = account_listens(current_token())
+  if not items then plugin.show_toast(tr("Waiting listens could not be read")); return end
+  local labels, actions = {}, {}
+  local function add(label, action)
+    labels[#labels + 1], actions[#actions + 1] = label, action
+  end
+  if #items == 0 then
+    add(tr("No listens are waiting to send"), function() plugin.show_toast(tr("Qualified listens send automatically.")) end)
+  else
+    add(string.format(tr("%d listens kept for %s"), #items, truncate(state.user_name or last_user or "", 20)),
+      function() plugin.show_toast(tr("Oldest listens are sent first.")) end)
+    if can_send_now() then add(tr("Send waiting listens now"), retry_now) end
+    for i, item in ipairs(items) do
+      local timestamp = item.listened_at
+      add(string.format("%d. %s - %s", i, truncate(item.artist, 20), truncate(item.track, 20)), function()
+        local ok, time_text = pcall(os.date, "!%Y-%m-%d %H:%M UTC", timestamp)
+        plugin.show_toast(ok and time_text and string.format(tr("Saved: %s"), time_text) or tr("Saved time unavailable"))
+      end)
+    end
+    add(tr("Discard waiting listens…"), confirm_discard_queue)
+  end
+  plugin.show_list(tr("Waiting listens"), labels, function(idx)
+    if qid ~= queue_id(current_token()) then
+      plugin.show_toast(tr("Account changed. Open waiting listens again."))
+      return
+    end
+    if actions[idx] then actions[idx]() end
+  end)
+end
+
+local function open_how_it_works()
+  local text = tr("How ListenBrainz Scrobbling Works:\n\n"
+    .. "1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n"
+    .. "2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n"
+    .. "3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n"
+    .. "4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n"
+    .. "5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n"
+    .. "6. Unknown Length: Streams without a known length, such as most radio, are not sent.")
+  if plugin.has_capability("ui.text_view") and plugin.show_text_view then
+    if plugin.show_text_view(tr("How Scrobbling Works"), text) ~= false then return end
+  end
+  plugin.show_list(tr("How Scrobbling Works"), {
+    tr("Tracks >= 30s only"),
+    tr("Listened 50% or 4 min"),
+    tr("Pauses do not count"),
+    tr("Up to 100 offline listens"),
+    tr("Separate queue per account"),
+    tr("Streams without length are not sent"),
+  }, function() end)
+end
+
+local function open_settings_screen()
+  local has_token = current_token() ~= nil
+  local rows = {
+    { type = "row", label = has_token and tr("User token: set") or tr("Set ListenBrainz user token"), on_select = prompt_token },
+  }
+  if has_token then
+    local label = tr("Log out")
+    if state.user_name then label = string.format(tr("Log out (%s)"), truncate(state.user_name, 18)) end
+    rows[#rows + 1] = { type = "row", label = label, on_select = confirm_log_out }
+  end
+  local count = queued_count()
+  if count and count > 0 then
+    rows[#rows + 1] = {
+      type = "row",
+      label = string.format(tr("Discard waiting listens (%d)"), count),
+      on_select = confirm_discard_queue,
+    }
+  end
+  rows[#rows + 1] = { type = "row", label = tr("How Scrobbling Works"), on_select = open_how_it_works }
+  plugin.show_settings_list(tr("Account & settings"), rows, { update = true })
+end
+
+local function is_main_showing()
+  if not current_main_handle or not plugin.has_capability("ui.list_showing") then return false end
+  return plugin.is_list_showing(current_main_handle)
+end
+
+local function main_status(count)
+  local offline = state.enabled and count and count > 0 and (wifi_disabled() or link_down())
+  if last_error and (last_error ~= NETWORK_ERROR or not offline) then
+    return string.format(tr("Status: %s"), truncate(tr(last_error), 45)), tr(last_error)
+  elseif offline then
+    return offline_text(), offline_text()
+  end
+  local who = state.user_name or "?"
+  return string.format(tr("Logged in as %s"), truncate(who, 20)), string.format(tr("Logged in as %s"), who)
+end
+
+local function track_label()
+  local snap = current
+  if not snap or snap.track == "" then return tr("This track: No music playing") end
+  if not state.enabled then return tr("This track: Scrobbling off") end
+  if snap.duration <= 0 then return tr("This track: Reading length") end
+  if snap.duration < 30 then return tr("This track: Too short (<30s)") end
+  if snap.delivery then return string.format(tr("This track: %s"), tr(snap.delivery)) end
+  if snap.submitted then return tr("This track: This listen not counted") end
+  if not is_active() then return tr("This track: Playback paused") end
+  return string.format(tr("This track: Counts after %s"), format_time(threshold(snap.duration)))
+end
+
+local function show_track_progress()
+  local snap = current
+  if not snap or snap.track == "" then
+    plugin.show_toast(tr("No track playing."))
+    return
+  end
+  plugin.show_toast(string.format("%s - %s (%s / %s)", truncate(snap.artist, 25), truncate(snap.track, 25),
+    format_time(snap.listened), format_time(threshold(snap.duration))))
+end
+
+local function scrobbling_label()
+  local label = state.enabled and "On" or "Off"
+  if plugin.has_capability("ui.list_wrap") then return tr("Scrobbling") .. "\n" .. label end
+  return string.format(tr("Scrobbling: %s"), label)
+end
+
+local function queue_label(count)
+  if count == nil then return tr("Waiting listens could not be read") end
+  local parts = {
+    count == 1 and string.format(tr("%d listen waiting"), count) or string.format(tr("%d listens waiting"), count),
+  }
+  local remaining = next_sync_at - os.time()
+  if count > 0 then
+    if inflight then
+      parts[#parts + 1] = tr("Sending…")
+    elseif state.enabled and wifi_disabled() then
+      parts[#parts + 1] = tr("waiting for Wi-Fi")
+    elseif remaining > 0 then
+      parts[#parts + 1] = string.format(tr("next try %dm"), math.max(1, math.ceil(remaining / 60)))
+    end
+  end
+  local last_sent = format_last_sent(plugin.storage.get("last_sent_at", ""))
+  if last_sent then parts[#parts + 1] = string.format(tr("sent %s"), last_sent) end
+  return table.concat(parts, " \u{b7} ")
+end
+
+-- The rows of the main screen with what each one does.
+local function build_main_menu()
+  local items, actions = {}, {}
+  local function add(label, action)
+    items[#items + 1], actions[#actions + 1] = label, action
+  end
+  if not current_token() or auth_hold then
+    if auth_hold then
+      add(tr("Status: user token not accepted"), function()
+        plugin.show_toast(tr("ListenBrainz did not accept the user token. Saved listens are kept."))
+      end)
+    end
+    add(tr("Set ListenBrainz user token"), prompt_token)
+    add(tr("Account & settings"), open_settings_screen)
+    add(tr("How Scrobbling Works"), open_how_it_works)
+    return items, actions
+  end
+  local count = queued_count()
+  local status_label, status_toast = main_status(count)
+  add(status_label, function() plugin.show_toast(status_toast) end)
+  add(track_label(), show_track_progress)
+  add(scrobbling_label(), function()
+    local desired = not state.enabled
+    if set_scrobbling(desired) then
+      plugin.show_toast(desired and tr("Scrobbling turned on.") or tr("Scrobbling turned off."))
+    end
+  end)
+  add(queue_label(count), open_queue_list)
+  if count and count > 0 and can_send_now() then add(tr("Sync now"), retry_now) end
+  add(tr("Account & settings"), open_settings_screen)
+  return items, actions
+end
+
+local current_main_actions = nil
+local last_menu_fingerprint = nil
+
+local function render_main_items(items)
+  if not plugin.has_capability("ui.list_wrap") then return items end
+  local rows = {}
+  for i, label in ipairs(items) do rows[i] = { label = label, wrap = true } end
+  return rows
+end
+
+local function on_main_select(index)
+  if current_main_actions and current_main_actions[index] then current_main_actions[index]() end
+end
+
+-- Redraw the main screen in place, only when its rows changed.
+refresh_main_list = function()
+  main_refresh_pending = true
+  if not current_main_handle then return end
+  if plugin.has_capability("ui.list_update") and is_main_showing() then
+    local items, actions = build_main_menu()
+    local fingerprint = table.concat(items, "\31")
+    if fingerprint == last_menu_fingerprint then
+      main_refresh_pending = false
+      current_main_actions = actions
+      return
+    end
+    local new_handle = plugin.show_list(tr("ListenBrainz Scrobbler"), render_main_items(items), on_main_select,
+      { replace = current_main_handle })
+    if new_handle then
+      main_refresh_pending = false
+      last_menu_fingerprint = fingerprint
+      current_main_actions = actions
+      current_main_handle = new_handle
+    end
+  end
+end
+
+local function open_main_list()
+  local items, actions = build_main_menu()
+  last_menu_fingerprint = table.concat(items, "\31")
+  current_main_actions = actions
+  current_main_handle = plugin.show_list(tr("ListenBrainz Scrobbler"), render_main_items(items), on_main_select)
+  main_refresh_pending = false
+end
+
+plugin.register_list_item("playback", tr("ListenBrainz Scrobbler"), open_main_list)
 
 if not auth_hold then sync_queue() end
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
   _G.COMPAS_PLUGIN_UNDER_TEST = {
-    open_menu = open_menu,
+    open_menu = open_main_list,
     listened = function() return current and current.listened or 0 end,
     submitted = function() return current and current.submitted == true end,
     generation = function() return account_generation end,
+    translations = T,
+    queued_count = queued_count,
+    confirm_log_out = confirm_log_out,
+    confirm_discard_queue = confirm_discard_queue,
+    open_queue_list = open_queue_list,
+    open_settings_screen = open_settings_screen,
+    open_how_it_works = open_how_it_works,
+    validate_token = validate_token,
   }
 end

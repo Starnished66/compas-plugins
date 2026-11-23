@@ -1,5 +1,5 @@
 {
-  "description": "Scrobbles plays to ListenBrainz with a user token. Keeps an offline queue until each listen is accepted.",
+  "description": "Scrobbles plays to ListenBrainz with a user token. Keeps up to 100 listens offline per account and sends them as soon as Wi-Fi is back.",
   "category": "Listening",
   "author": "Compás"
 }
