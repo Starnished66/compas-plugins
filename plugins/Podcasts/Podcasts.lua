@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.2", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.3", api_min = 19 })
 
 local T = {
     de = {
@@ -3467,23 +3467,23 @@ local function add_feed_input()
     end
 end
 
--- Follows the redirect chain one request per tick: HEAD, or a one-byte GET
--- where HEAD is refused. A full request pool retries the same step from the
--- URL already reached.
+-- Follows the redirect chain one request per tick with a one-byte GET: some
+-- hosts answer HEAD with 200 and redirect only the GET the download sends.
+-- A full request pool retries the same step from the URL already reached.
 -- is_cancelled, when given, stops the chain before any further request.
 resolve_redirect = function(url, callback, on_handle, is_cancelled)
     local current, hops, busy_tries = url, 0, 0
     local step
-    local function start(use_get)
+    local function start()
         if is_cancelled and is_cancelled() then
             return
         end
-        local opts = request_options(current, use_get and { Range = "bytes=0-0" } or nil)
-        opts.method = use_get and "GET" or "HEAD"
+        local opts = request_options(current, { Range = "bytes=0-0" })
+        opts.method = "GET"
         opts.redirect_limit = 0
         opts.max_response_bytes = 4096
         local handle, err = start_request(plugin.http_request, opts, function(code, _, request_err, headers)
-            step(code, request_err, headers, use_get)
+            step(code, request_err, headers)
         end)
         if handle then
             busy_tries = 0
@@ -3492,32 +3492,24 @@ resolve_redirect = function(url, callback, on_handle, is_cancelled)
             end
         elseif pool_busy(err) and busy_tries < 30 then
             busy_tries = busy_tries + 1
-            defer(function()
-                start(use_get)
-            end)
+            defer(start)
         else
             callback(nil, err or "Could not start redirect request")
         end
     end
-    step = function(code, request_err, headers, from_get)
+    step = function(code, request_err, headers)
         if is_cancelled and is_cancelled() then
             return
         end
         -- A body too big for the probe means this URL serves the file (a
         -- chunked body reports "io" instead); the transfer itself will
         -- report a real network failure.
-        if from_get and (request_err == "response_too_large" or request_err == "io") then
+        if request_err == "response_too_large" or request_err == "io" then
             callback(current)
             return
         end
-        if request_err or code == 405 or code == 403 or code == 501 then
-            if from_get then
-                callback(nil, request_err or ("HTTP " .. tostring(code)))
-            else
-                defer(function()
-                    start(true)
-                end)
-            end
+        if request_err then
+            callback(nil, request_err)
             return
         end
         local location
@@ -3543,9 +3535,7 @@ resolve_redirect = function(url, callback, on_handle, is_cancelled)
                 return
             end
             current = next_url
-            defer(function()
-                start(false)
-            end)
+            defer(start)
             return
         end
         if (code >= 200 and code < 300) or code == 206 then
@@ -3557,7 +3547,7 @@ resolve_redirect = function(url, callback, on_handle, is_cancelled)
     if not valid_url(url) then
         callback(nil, "Invalid URL")
     else
-        start(false)
+        start()
     end
 end
 
