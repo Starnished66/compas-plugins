@@ -1,4 +1,6 @@
-plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = "1.2", api_min = 19 })
+-- The one place the plugin version lives; the index builder reads define().
+local PLUGIN_VERSION = "1.2.1"
+plugin.define({ id = "compas.listenbrainz_scrobbler", name = "ListenBrainz Scrobbler", version = PLUGIN_VERSION, api_min = 19 })
 
 local T = {
   de = {
@@ -16,7 +18,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "ListenBrainz nicht erreichbar.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz hat dieses Token abgelehnt.",
     ["ListenBrainz token saved."] = "ListenBrainz-Token gespeichert.",
+    ["Logged in to ListenBrainz as %s"] = "Bei ListenBrainz angemeldet als %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Konto gespeichert. Tippe auf Scrobbeln, um es zu aktivieren.",
     ["Set ListenBrainz user token"] = "ListenBrainz-Benutzertoken festlegen",
+    ["Read token from SD card"] = "Token von SD-Karte lesen",
+    ["Delete token file?"] = "Tokendatei löschen?",
+    ["Keep the file"] = "Datei behalten",
+    ["Delete the file"] = "Datei löschen",
+    ["Token file deleted."] = "Tokendatei gelöscht.",
+    ["Could not delete the token file."] = "Tokendatei konnte nicht gelöscht werden.",
+    ["Token file kept."] = "Tokendatei behalten.",
+    ["No ListenBrainz token found in that file."] = "In dieser Datei wurde kein ListenBrainz-Token gefunden.",
+    ["Could not read that file."] = "Datei konnte nicht gelesen werden.",
+    ["Could not open the file picker. Try again."] = "Dateiauswahl konnte nicht geöffnet werden. Erneut versuchen.",
     ["ListenBrainz user token"] = "ListenBrainz-Benutzertoken",
     ["Log out"] = "Abmelden",
     ["Log out (%s)"] = "Abmelden (%s)",
@@ -97,7 +111,7 @@ local T = {
     ["Up to 100 offline listens"] = "Bis zu 100 Offline-Wiedergaben",
     ["Separate queue per account"] = "Eigene Warteschlange pro Konto",
     ["Streams without length are not sent"] = "Streams ohne Länge werden nicht gesendet",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "So funktioniert das ListenBrainz-Scrobbeln:\n\n1. 30-Sekunden-Regel: Titel unter 30 Sekunden werden nicht gescrobbelt.\n\n2. Hörschwelle: Eine Wiedergabe zählt nach der halben Dauer oder 4 Minuten (was zuerst eintritt).\n\n3. Pause & Spulen: Pausierte oder gespulte Zeit zählt nicht zur Schwelle.\n\n4. Offline-Warteschlange: Bis zu 100 Wiedergaben (64 KB) werden offline gespeichert und bei Verbindung gesendet.\n\n5. Kontentrennung: Wartende Wiedergaben werden pro ListenBrainz-Konto aufbewahrt.\n\n6. Unbekannte Länge: Streams ohne bekannte Länge, etwa die meisten Radiosender, werden nicht gesendet.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "So funktioniert das ListenBrainz-Scrobbeln:\n\n1. 30-Sekunden-Regel: Titel unter 30 Sekunden werden nicht gescrobbelt.\n\n2. Hörschwelle: Eine Wiedergabe zählt nach der halben Dauer oder 4 Minuten (was zuerst eintritt).\n\n3. Pause & Spulen: Pausierte oder gespulte Zeit zählt nicht zur Schwelle.\n\n4. Offline-Warteschlange: Bis zu 100 Wiedergaben (64 KB) werden offline gespeichert und bei Verbindung gesendet.\n\n5. Kontentrennung: Wartende Wiedergaben werden pro ListenBrainz-Konto aufbewahrt.\n\n6. Unbekannte Länge: Streams ohne bekannte Länge, etwa die meisten Radiosender, werden nicht gesendet.\n\n7. Token: Kopiere auf einem Smartphone oder Computer dein Benutzertoken von listenbrainz.org/settings in eine Textdatei auf der SD-Karte und wähle dann „Token von SD-Karte lesen“.",
   },
   es = {
     ["Could not open text entry. Try again."] = "No se pudo abrir la entrada de texto. Inténtalo de nuevo.",
@@ -114,7 +128,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "No se pudo conectar con ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz no aceptó ese token.",
     ["ListenBrainz token saved."] = "Token de ListenBrainz guardado.",
+    ["Logged in to ListenBrainz as %s"] = "Sesión iniciada en ListenBrainz como %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Cuenta guardada. Toca Scrobbling para activarlo.",
     ["Set ListenBrainz user token"] = "Configurar token de usuario de ListenBrainz",
+    ["Read token from SD card"] = "Leer token desde la tarjeta SD",
+    ["Delete token file?"] = "¿Eliminar el archivo del token?",
+    ["Keep the file"] = "Conservar el archivo",
+    ["Delete the file"] = "Eliminar el archivo",
+    ["Token file deleted."] = "Archivo del token eliminado.",
+    ["Could not delete the token file."] = "No se pudo eliminar el archivo del token.",
+    ["Token file kept."] = "Archivo del token conservado.",
+    ["No ListenBrainz token found in that file."] = "No se encontró ningún token de ListenBrainz en ese archivo.",
+    ["Could not read that file."] = "No se pudo leer ese archivo.",
+    ["Could not open the file picker. Try again."] = "No se pudo abrir el selector de archivos. Inténtalo de nuevo.",
     ["ListenBrainz user token"] = "Token de usuario de ListenBrainz",
     ["Log out"] = "Cerrar sesión",
     ["Log out (%s)"] = "Cerrar sesión (%s)",
@@ -195,7 +221,7 @@ local T = {
     ["Up to 100 offline listens"] = "Hasta 100 escuchas sin conexión",
     ["Separate queue per account"] = "Cola separada por cuenta",
     ["Streams without length are not sent"] = "Las emisiones sin duración no se envían",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Cómo funciona el scrobbling de ListenBrainz:\n\n1. Regla de 30 segundos: Las pistas de menos de 30 segundos no se envían.\n\n2. Umbral de escucha: Una escucha califica tras la mitad de su duración o 4 minutos (lo que ocurra antes).\n\n3. Pausas y búsqueda: El tiempo en pausa o buscando no cuenta para el umbral.\n\n4. Cola sin conexión: Se guardan hasta 100 escuchas (64 KB) y se envían al conectar.\n\n5. Separación por cuenta: Las escuchas en espera se conservan por cuenta de ListenBrainz.\n\n6. Duración desconocida: Las emisiones sin duración conocida, como casi toda la radio, no se envían.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Cómo funciona el scrobbling de ListenBrainz:\n\n1. Regla de 30 segundos: Las pistas de menos de 30 segundos no se envían.\n\n2. Umbral de escucha: Una escucha califica tras la mitad de su duración o 4 minutos (lo que ocurra antes).\n\n3. Pausas y búsqueda: El tiempo en pausa o buscando no cuenta para el umbral.\n\n4. Cola sin conexión: Se guardan hasta 100 escuchas (64 KB) y se envían al conectar.\n\n5. Separación por cuenta: Las escuchas en espera se conservan por cuenta de ListenBrainz.\n\n6. Duración desconocida: Las emisiones sin duración conocida, como casi toda la radio, no se envían.\n\n7. Token: En un teléfono u ordenador, copia tu token de usuario de listenbrainz.org/settings en un archivo de texto de la tarjeta SD y usa después “Leer token desde la tarjeta SD”.",
   },
   fi = {
     ["Could not open text entry. Try again."] = "Tekstinsyöttöä ei voitu avata. Yritä uudelleen.",
@@ -212,7 +238,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "ListenBrainziin ei saatu yhteyttä.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz ei hyväksynyt tätä tunnistetta.",
     ["ListenBrainz token saved."] = "ListenBrainz-tunniste tallennettu.",
+    ["Logged in to ListenBrainz as %s"] = "Kirjauduttu ListenBrainz-palveluun käyttäjänä %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Tili tallennettu. Napauta Skrobblaus ottaaksesi käyttöön.",
     ["Set ListenBrainz user token"] = "Aseta ListenBrainz-käyttäjätunniste",
+    ["Read token from SD card"] = "Lue tunniste SD-kortilta",
+    ["Delete token file?"] = "Poistetaanko tunnistetiedosto?",
+    ["Keep the file"] = "Säilytä tiedosto",
+    ["Delete the file"] = "Poista tiedosto",
+    ["Token file deleted."] = "Tunnistetiedosto poistettu.",
+    ["Could not delete the token file."] = "Tunnistetiedoston poisto epäonnistui.",
+    ["Token file kept."] = "Tunnistetiedosto säilytettiin.",
+    ["No ListenBrainz token found in that file."] = "Tiedostosta ei löytynyt ListenBrainz-tunnistetta.",
+    ["Could not read that file."] = "Tiedostoa ei voitu lukea.",
+    ["Could not open the file picker. Try again."] = "Tiedostovalitsinta ei voitu avata. Yritä uudelleen.",
     ["ListenBrainz user token"] = "ListenBrainz-käyttäjätunniste",
     ["Log out"] = "Kirjaudu ulos",
     ["Log out (%s)"] = "Kirjaudu ulos (%s)",
@@ -293,7 +331,7 @@ local T = {
     ["Up to 100 offline listens"] = "Jopa 100 offline-kuuntelua",
     ["Separate queue per account"] = "Erillinen jono tiliä kohden",
     ["Streams without length are not sent"] = "Virtoja ilman kestoa ei lähetetä",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Miten ListenBrainz-skrobblaus toimii:\n\n1. 30 sekunnin sääntö: Alle 30 sekunnin kappaleita ei skroblata.\n\n2. Kuuntelukynnys: Kuuntelu hyväksytään puolivälissä tai 4 minuutin jälkeen (kumpi täyttyy ensin).\n\n3. Tauot ja kelaus: Tauolla tai kelatessa vietettyä aikaa ei lasketa kynnykseen.\n\n4. Offline-jono: Jopa 100 kuuntelua (64 KB) tallennetaan offline-tilassa ja lähetetään yhdistettäessä.\n\n5. Tilikohtainen erottelu: Odottavat kuuntelut säilytetään erikseen kullekin ListenBrainz-tilille.\n\n6. Tuntematon kesto: Virtoja, joiden kestoa ei tiedetä, kuten useimpia radioasemia, ei lähetetä.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Miten ListenBrainz-skrobblaus toimii:\n\n1. 30 sekunnin sääntö: Alle 30 sekunnin kappaleita ei skroblata.\n\n2. Kuuntelukynnys: Kuuntelu hyväksytään puolivälissä tai 4 minuutin jälkeen (kumpi täyttyy ensin).\n\n3. Tauot ja kelaus: Tauolla tai kelatessa vietettyä aikaa ei lasketa kynnykseen.\n\n4. Offline-jono: Jopa 100 kuuntelua (64 KB) tallennetaan offline-tilassa ja lähetetään yhdistettäessä.\n\n5. Tilikohtainen erottelu: Odottavat kuuntelut säilytetään erikseen kullekin ListenBrainz-tilille.\n\n6. Tuntematon kesto: Virtoja, joiden kestoa ei tiedetä, kuten useimpia radioasemia, ei lähetetä.\n\n7. Tunniste: Kopioi puhelimella tai tietokoneella käyttäjätunnisteesi osoitteesta listenbrainz.org/settings tekstitiedostoon SD-kortille ja valitse sitten ”Lue tunniste SD-kortilta”.",
   },
   fr = {
     ["Could not open text entry. Try again."] = "Impossible d'ouvrir la saisie de texte. Réessayez.",
@@ -310,7 +348,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Impossible de joindre ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz a refusé ce jeton.",
     ["ListenBrainz token saved."] = "Jeton ListenBrainz enregistré.",
+    ["Logged in to ListenBrainz as %s"] = "Connecté à ListenBrainz en tant que %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Compte enregistré. Touchez Scrobble pour l'activer.",
     ["Set ListenBrainz user token"] = "Définir le jeton utilisateur ListenBrainz",
+    ["Read token from SD card"] = "Lire le jeton depuis la carte SD",
+    ["Delete token file?"] = "Supprimer le fichier du jeton ?",
+    ["Keep the file"] = "Garder le fichier",
+    ["Delete the file"] = "Supprimer le fichier",
+    ["Token file deleted."] = "Fichier du jeton supprimé.",
+    ["Could not delete the token file."] = "Impossible de supprimer le fichier du jeton.",
+    ["Token file kept."] = "Fichier du jeton conservé.",
+    ["No ListenBrainz token found in that file."] = "Aucun jeton ListenBrainz trouvé dans ce fichier.",
+    ["Could not read that file."] = "Impossible de lire ce fichier.",
+    ["Could not open the file picker. Try again."] = "Impossible d'ouvrir le sélecteur de fichiers. Réessayez.",
     ["ListenBrainz user token"] = "Jeton utilisateur ListenBrainz",
     ["Log out"] = "Se déconnecter",
     ["Log out (%s)"] = "Se déconnecter (%s)",
@@ -391,7 +441,7 @@ local T = {
     ["Up to 100 offline listens"] = "Jusqu'à 100 écoutes hors ligne",
     ["Separate queue per account"] = "File distincte par compte",
     ["Streams without length are not sent"] = "Les flux sans durée ne sont pas envoyés",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Fonctionnement du scrobble ListenBrainz :\n\n1. Règle des 30 secondes : Les morceaux de moins de 30 secondes ne sont pas scrobblés.\n\n2. Seuil d'écoute : Une écoute est validée après la moitié de sa durée ou 4 minutes (au premier des deux).\n\n3. Pauses et recherche : Le temps en pause ou en avance rapide ne compte pas dans le seuil.\n\n4. File hors ligne : Jusqu'à 100 écoutes (64 Ko) enregistrées hors ligne et envoyées dès la connexion.\n\n5. Séparation des comptes : Les écoutes en attente sont conservées par compte ListenBrainz.\n\n6. Durée inconnue : Les flux de durée inconnue, comme la plupart des radios, ne sont pas envoyés.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Fonctionnement du scrobble ListenBrainz :\n\n1. Règle des 30 secondes : Les morceaux de moins de 30 secondes ne sont pas scrobblés.\n\n2. Seuil d'écoute : Une écoute est validée après la moitié de sa durée ou 4 minutes (au premier des deux).\n\n3. Pauses et recherche : Le temps en pause ou en avance rapide ne compte pas dans le seuil.\n\n4. File hors ligne : Jusqu'à 100 écoutes (64 Ko) enregistrées hors ligne et envoyées dès la connexion.\n\n5. Séparation des comptes : Les écoutes en attente sont conservées par compte ListenBrainz.\n\n6. Durée inconnue : Les flux de durée inconnue, comme la plupart des radios, ne sont pas envoyés.\n\n7. Jeton : sur un téléphone ou un ordinateur, copiez votre jeton utilisateur depuis listenbrainz.org/settings dans un fichier texte sur la carte SD, puis utilisez « Lire le jeton depuis la carte SD ».",
   },
   it = {
     ["Could not open text entry. Try again."] = "Impossibile aprire l'inserimento testo. Riprova.",
@@ -408,7 +458,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Impossibile raggiungere ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz non ha accettato questo token.",
     ["ListenBrainz token saved."] = "Token ListenBrainz salvato.",
+    ["Logged in to ListenBrainz as %s"] = "Connesso a ListenBrainz come %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Account salvato. Tocca Scrobbling per attivarlo.",
     ["Set ListenBrainz user token"] = "Imposta token utente ListenBrainz",
+    ["Read token from SD card"] = "Leggi token dalla scheda SD",
+    ["Delete token file?"] = "Eliminare il file del token?",
+    ["Keep the file"] = "Mantieni il file",
+    ["Delete the file"] = "Elimina il file",
+    ["Token file deleted."] = "File del token eliminato.",
+    ["Could not delete the token file."] = "Impossibile eliminare il file del token.",
+    ["Token file kept."] = "File del token mantenuto.",
+    ["No ListenBrainz token found in that file."] = "Nessun token ListenBrainz trovato in quel file.",
+    ["Could not read that file."] = "Impossibile leggere quel file.",
+    ["Could not open the file picker. Try again."] = "Impossibile aprire il selettore di file. Riprova.",
     ["ListenBrainz user token"] = "Token utente ListenBrainz",
     ["Log out"] = "Esci",
     ["Log out (%s)"] = "Esci (%s)",
@@ -489,7 +551,7 @@ local T = {
     ["Up to 100 offline listens"] = "Fino a 100 ascolti offline",
     ["Separate queue per account"] = "Coda separata per account",
     ["Streams without length are not sent"] = "Gli stream senza durata non vengono inviati",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Come funziona lo scrobbling di ListenBrainz:\n\n1. Regola dei 30 secondi: I brani sotto i 30 secondi non vengono inviati.\n\n2. Soglia di ascolto: Un ascolto è valido dopo metà durata o 4 minuti (quello che viene prima).\n\n3. Pause e avanzamento: Il tempo in pausa o ricerca non conta ai fini della soglia.\n\n4. Coda non in linea: Fino a 100 ascolti (64 KB) salvati offline e inviati automaticamente alla connessione.\n\n5. Separazione account: Gli ascolti in attesa sono conservati per ogni account ListenBrainz.\n\n6. Durata sconosciuta: Gli stream di durata sconosciuta, come la maggior parte delle radio, non vengono inviati.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Come funziona lo scrobbling di ListenBrainz:\n\n1. Regola dei 30 secondi: I brani sotto i 30 secondi non vengono inviati.\n\n2. Soglia di ascolto: Un ascolto è valido dopo metà durata o 4 minuti (quello che viene prima).\n\n3. Pause e avanzamento: Il tempo in pausa o ricerca non conta ai fini della soglia.\n\n4. Coda non in linea: Fino a 100 ascolti (64 KB) salvati offline e inviati automaticamente alla connessione.\n\n5. Separazione account: Gli ascolti in attesa sono conservati per ogni account ListenBrainz.\n\n6. Durata sconosciuta: Gli stream di durata sconosciuta, come la maggior parte delle radio, non vengono inviati.\n\n7. Token: da telefono o computer, copia il tuo token utente da listenbrainz.org/settings in un file di testo sulla scheda SD, poi usa “Leggi token dalla scheda SD”.",
   },
   ja = {
     ["Could not open text entry. Try again."] = "テキスト入力を開けませんでした。もう一度お試しください。",
@@ -506,7 +568,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "ListenBrainz に接続できませんでした。",
     ["ListenBrainz did not accept that token."] = "ListenBrainz がそのトークンを拒否しました。",
     ["ListenBrainz token saved."] = "ListenBrainz トークンを保存しました。",
+    ["Logged in to ListenBrainz as %s"] = "ListenBrainzに%sとしてログインしました",
+    ["Account saved. Tap Scrobbling to turn it on."] = "アカウントが保存されました。「スクロブル」をタップしてオンにします。",
     ["Set ListenBrainz user token"] = "ListenBrainz ユーザートークンを設定",
+    ["Read token from SD card"] = "SDカードからトークンを読み込む",
+    ["Delete token file?"] = "トークンファイルを削除しますか？",
+    ["Keep the file"] = "ファイルを残す",
+    ["Delete the file"] = "ファイルを削除",
+    ["Token file deleted."] = "トークンファイルを削除しました。",
+    ["Could not delete the token file."] = "トークンファイルを削除できませんでした。",
+    ["Token file kept."] = "トークンファイルを残しました。",
+    ["No ListenBrainz token found in that file."] = "そのファイルにListenBrainzトークンが見つかりません。",
+    ["Could not read that file."] = "そのファイルを読み込めませんでした。",
+    ["Could not open the file picker. Try again."] = "ファイル選択を開けませんでした。もう一度お試しください。",
     ["ListenBrainz user token"] = "ListenBrainz ユーザートークン",
     ["Log out"] = "ログアウト",
     ["Log out (%s)"] = "ログアウト (%s)",
@@ -587,7 +661,7 @@ local T = {
     ["Up to 100 offline listens"] = "最大100件のオフライン再生履歴",
     ["Separate queue per account"] = "アカウントごとの個別キュー",
     ["Streams without length are not sent"] = "長さ不明のストリームは送信されません",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "ListenBrainz スクロブルの仕組み：\n\n1. 30秒ルール：30秒未満のトラックはスクロブルされません。\n\n2. 再生しきい値：曲の半分または4分のいずれか早い方に達すると再生履歴としてカウントされます。\n\n3. 一時停止とシーク：一時停止中やシーク中の時間はしきい値に含まれません。\n\n4. オフラインキュー：最大100件（64 KB）までオフライン保存され、接続時に自動送信されます。\n\n5. アカウント分離：待機中の再生履歴は ListenBrainz アカウントごとに保持されます。\n\n6. 長さ不明：長さが不明なストリーム（ほとんどのラジオなど）は送信されません。",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "ListenBrainz スクロブルの仕組み：\n\n1. 30秒ルール：30秒未満のトラックはスクロブルされません。\n\n2. 再生しきい値：曲の半分または4分のいずれか早い方に達すると再生履歴としてカウントされます。\n\n3. 一時停止とシーク：一時停止中やシーク中の時間はしきい値に含まれません。\n\n4. オフラインキュー：最大100件（64 KB）までオフライン保存され、接続時に自動送信されます。\n\n5. アカウント分離：待機中の再生履歴は ListenBrainz アカウントごとに保持されます。\n\n6. 長さ不明：長さが不明なストリーム（ほとんどのラジオなど）は送信されません。\n\n7. トークン：スマートフォンまたはパソコンで listenbrainz.org/settings からユーザートークンをコピーし、SDカード上のテキストファイルに貼り付けてから「SDカードからトークンを読み込む」を使います。",
   },
   nl = {
     ["Could not open text entry. Try again."] = "Tekstinvoer kon niet worden geopend. Probeer opnieuw.",
@@ -604,7 +678,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Kon ListenBrainz niet bereiken.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz heeft die token geweigerd.",
     ["ListenBrainz token saved."] = "ListenBrainz-token opgeslagen.",
+    ["Logged in to ListenBrainz as %s"] = "Aangemeld bij ListenBrainz als %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Account opgeslagen. Tik op Scrobbelen om in te schakelen.",
     ["Set ListenBrainz user token"] = "ListenBrainz-gebruikerstoken instellen",
+    ["Read token from SD card"] = "Token van SD-kaart lezen",
+    ["Delete token file?"] = "Tokenbestand verwijderen?",
+    ["Keep the file"] = "Bestand bewaren",
+    ["Delete the file"] = "Bestand verwijderen",
+    ["Token file deleted."] = "Tokenbestand verwijderd.",
+    ["Could not delete the token file."] = "Tokenbestand kon niet worden verwijderd.",
+    ["Token file kept."] = "Tokenbestand bewaard.",
+    ["No ListenBrainz token found in that file."] = "Geen ListenBrainz-token gevonden in dat bestand.",
+    ["Could not read that file."] = "Dat bestand kon niet worden gelezen.",
+    ["Could not open the file picker. Try again."] = "Bestandskiezer kon niet worden geopend. Probeer opnieuw.",
     ["ListenBrainz user token"] = "ListenBrainz-gebruikerstoken",
     ["Log out"] = "Uitloggen",
     ["Log out (%s)"] = "Uitloggen (%s)",
@@ -685,7 +771,7 @@ local T = {
     ["Up to 100 offline listens"] = "Tot 100 offline luisterbeurten",
     ["Separate queue per account"] = "Aparte wachtrij per account",
     ["Streams without length are not sent"] = "Streams zonder lengte worden niet verzonden",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Hoe ListenBrainz-scrobbelen werkt:\n\n1. 30-secondenregel: Nummers onder 30 seconden worden niet gescrobbeld.\n\n2. Luisterdrempel: Een luisterbeurt telt na de helft van de duur of 4 minuten (wat eerst komt).\n\n3. Pauzes & spoelen: Tijd gepauzeerd of spoelend telt niet mee voor de drempel.\n\n4. Offline wachtrij: Tot 100 luisterbeurten (64 KB) offline opgeslagen en automatisch verzonden bij verbinding.\n\n5. Accountscheiding: Wachtende luisterbeurten worden per ListenBrainz-account bewaard.\n\n6. Onbekende lengte: Streams zonder bekende lengte, zoals de meeste radio, worden niet verzonden.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Hoe ListenBrainz-scrobbelen werkt:\n\n1. 30-secondenregel: Nummers onder 30 seconden worden niet gescrobbeld.\n\n2. Luisterdrempel: Een luisterbeurt telt na de helft van de duur of 4 minuten (wat eerst komt).\n\n3. Pauzes & spoelen: Tijd gepauzeerd of spoelend telt niet mee voor de drempel.\n\n4. Offline wachtrij: Tot 100 luisterbeurten (64 KB) offline opgeslagen en automatisch verzonden bij verbinding.\n\n5. Accountscheiding: Wachtende luisterbeurten worden per ListenBrainz-account bewaard.\n\n6. Onbekende lengte: Streams zonder bekende lengte, zoals de meeste radio, worden niet verzonden.\n\n7. Token: kopieer op een telefoon of computer je gebruikerstoken van listenbrainz.org/settings naar een tekstbestand op de SD-kaart en gebruik daarna “Token van SD-kaart lezen”.",
   },
   pt = {
     ["Could not open text entry. Try again."] = "Não foi possível abrir a entrada de texto. Tente novamente.",
@@ -702,7 +788,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Não foi possível conectar ao ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "O ListenBrainz não aceitou esse token.",
     ["ListenBrainz token saved."] = "Token do ListenBrainz salvo.",
+    ["Logged in to ListenBrainz as %s"] = "Sessão iniciada no ListenBrainz como %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Conta salva. Toque em Scrobbling para ativá-lo.",
     ["Set ListenBrainz user token"] = "Definir token de usuário do ListenBrainz",
+    ["Read token from SD card"] = "Ler token do cartão SD",
+    ["Delete token file?"] = "Excluir o arquivo do token?",
+    ["Keep the file"] = "Manter o arquivo",
+    ["Delete the file"] = "Excluir o arquivo",
+    ["Token file deleted."] = "Arquivo do token excluído.",
+    ["Could not delete the token file."] = "Não foi possível excluir o arquivo do token.",
+    ["Token file kept."] = "Arquivo do token mantido.",
+    ["No ListenBrainz token found in that file."] = "Nenhum token do ListenBrainz encontrado nesse arquivo.",
+    ["Could not read that file."] = "Não foi possível ler esse arquivo.",
+    ["Could not open the file picker. Try again."] = "Não foi possível abrir o seletor de arquivos. Tente novamente.",
     ["ListenBrainz user token"] = "Token de usuário do ListenBrainz",
     ["Log out"] = "Sair",
     ["Log out (%s)"] = "Sair (%s)",
@@ -783,7 +881,7 @@ local T = {
     ["Up to 100 offline listens"] = "Até 100 reproduções offline",
     ["Separate queue per account"] = "Fila separada por conta",
     ["Streams without length are not sent"] = "Transmissões sem duração não são enviadas",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Como funciona o scrobbling no ListenBrainz:\n\n1. Regra dos 30 segundos: Faixas com menos de 30 segundos não são registradas.\n\n2. Limite de reprodução: Uma reprodução é válida após metade da duração ou 4 minutos (o que ocorrer primeiro).\n\n3. Pausas e busca: O tempo pausado ou avançando não conta para o limite.\n\n4. Fila offline: Até 100 reproduções (64 KB) salvas offline e enviadas automaticamente ao conectar.\n\n5. Separação de contas: As reproduções em espera são mantidas por conta do ListenBrainz.\n\n6. Duração desconhecida: Transmissões sem duração conhecida, como a maioria das rádios, não são enviadas.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Como funciona o scrobbling no ListenBrainz:\n\n1. Regra dos 30 segundos: Faixas com menos de 30 segundos não são registradas.\n\n2. Limite de reprodução: Uma reprodução é válida após metade da duração ou 4 minutos (o que ocorrer primeiro).\n\n3. Pausas e busca: O tempo pausado ou avançando não conta para o limite.\n\n4. Fila offline: Até 100 reproduções (64 KB) salvas offline e enviadas automaticamente ao conectar.\n\n5. Separação de contas: As reproduções em espera são mantidas por conta do ListenBrainz.\n\n6. Duração desconhecida: Transmissões sem duração conhecida, como a maioria das rádios, não são enviadas.\n\n7. Token: em um celular ou computador, copie seu token de usuário de listenbrainz.org/settings para um arquivo de texto no cartão SD e depois use “Ler token do cartão SD”.",
   },
   ru = {
     ["Could not open text entry. Try again."] = "Не удалось открыть ввод текста. Повторите попытку.",
@@ -800,7 +898,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Не удалось связаться с ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz не принял этот токен.",
     ["ListenBrainz token saved."] = "Токен ListenBrainz сохранён.",
+    ["Logged in to ListenBrainz as %s"] = "Выполнен вход в ListenBrainz как %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Аккаунт сохранен. Нажмите «Скробблинг», чтобы включить его.",
     ["Set ListenBrainz user token"] = "Задать токен пользователя ListenBrainz",
+    ["Read token from SD card"] = "Прочитать токен с SD-карты",
+    ["Delete token file?"] = "Удалить файл с токеном?",
+    ["Keep the file"] = "Оставить файл",
+    ["Delete the file"] = "Удалить файл",
+    ["Token file deleted."] = "Файл с токеном удалён.",
+    ["Could not delete the token file."] = "Не удалось удалить файл с токеном.",
+    ["Token file kept."] = "Файл с токеном оставлен.",
+    ["No ListenBrainz token found in that file."] = "В этом файле не найден токен ListenBrainz.",
+    ["Could not read that file."] = "Не удалось прочитать этот файл.",
+    ["Could not open the file picker. Try again."] = "Не удалось открыть выбор файла. Повторите попытку.",
     ["ListenBrainz user token"] = "Токен пользователя ListenBrainz",
     ["Log out"] = "Выйти",
     ["Log out (%s)"] = "Выйти (%s)",
@@ -881,7 +991,7 @@ local T = {
     ["Up to 100 offline listens"] = "До 100 офлайн-прослушиваний",
     ["Separate queue per account"] = "Отдельная очередь для каждого аккаунта",
     ["Streams without length are not sent"] = "Потоки без длины не отправляются",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Как работает скробблинг ListenBrainz:\n\n1. Правило 30 секунд: Треки короче 30 секунд не скробблятся.\n\n2. Порог прослушивания: Прослушивание засчитывается после половины длины или 4 минут (что наступит раньше).\n\n3. Паузы и перемотка: Время на паузе или перемотке не учитывается в пороге.\n\n4. Офлайн-очередь: До 100 прослушиваний (64 КБ) сохраняются офлайн и отправляются при подключении.\n\n5. Разделение аккаунтов: Ожидающие прослушивания хранятся отдельно для каждого аккаунта ListenBrainz.\n\n6. Неизвестная длина: Потоки с неизвестной длиной, например большинство радио, не отправляются.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Как работает скробблинг ListenBrainz:\n\n1. Правило 30 секунд: Треки короче 30 секунд не скробблятся.\n\n2. Порог прослушивания: Прослушивание засчитывается после половины длины или 4 минут (что наступит раньше).\n\n3. Паузы и перемотка: Время на паузе или перемотке не учитывается в пороге.\n\n4. Офлайн-очередь: До 100 прослушиваний (64 КБ) сохраняются офлайн и отправляются при подключении.\n\n5. Разделение аккаунтов: Ожидающие прослушивания хранятся отдельно для каждого аккаунта ListenBrainz.\n\n6. Неизвестная длина: Потоки с неизвестной длиной, например большинство радио, не отправляются.\n\n7. Токен: на телефоне или компьютере скопируйте свой пользовательский токен со страницы listenbrainz.org/settings в текстовый файл на SD-карте, затем выберите «Прочитать токен с SD-карты».",
   },
   uk = {
     ["Could not open text entry. Try again."] = "Не вдалося відкрити введення тексту. Спробуйте ще раз.",
@@ -898,7 +1008,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Не вдалося з'єднатися з ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz не прийняв цей токен.",
     ["ListenBrainz token saved."] = "Токен ListenBrainz збережено.",
+    ["Logged in to ListenBrainz as %s"] = "Увійшли до ListenBrainz як %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Обліковий запис збережено. Торкніться «Скробблінг», щоб увімкнути.",
     ["Set ListenBrainz user token"] = "Встановити токен користувача ListenBrainz",
+    ["Read token from SD card"] = "Прочитати токен з SD-картки",
+    ["Delete token file?"] = "Видалити файл із токеном?",
+    ["Keep the file"] = "Залишити файл",
+    ["Delete the file"] = "Видалити файл",
+    ["Token file deleted."] = "Файл із токеном видалено.",
+    ["Could not delete the token file."] = "Не вдалося видалити файл із токеном.",
+    ["Token file kept."] = "Файл із токеном залишено.",
+    ["No ListenBrainz token found in that file."] = "У цьому файлі не знайдено токен ListenBrainz.",
+    ["Could not read that file."] = "Не вдалося прочитати цей файл.",
+    ["Could not open the file picker. Try again."] = "Не вдалося відкрити вибір файлу. Повторіть спробу.",
     ["ListenBrainz user token"] = "Токен користувача ListenBrainz",
     ["Log out"] = "Вийти",
     ["Log out (%s)"] = "Вийти (%s)",
@@ -979,7 +1101,7 @@ local T = {
     ["Up to 100 offline listens"] = "До 100 офлайн-прослуховувань",
     ["Separate queue per account"] = "Окрема черга для кожного облікового запису",
     ["Streams without length are not sent"] = "Потоки без тривалості не надсилаються",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Як працює скробблінг ListenBrainz:\n\n1. Правило 30 секунд: Треки менше 30 секунд не скроббляться.\n\n2. Поріг прослуховування: Прослуховування зараховується після половини тривалості або 4 хвилин (що настане раніше).\n\n3. Паузи та перемотування: Час на паузі або перемотуванні не враховується.\n\n4. Офлайн-черга: До 100 прослуховувань (64 КБ) зберігаються офлайн і надсилаються при підключенні.\n\n5. Розділення акаунтів: Очікувані прослуховування зберігаються окремо для кожного облікового запису ListenBrainz.\n\n6. Невідома тривалість: Потоки з невідомою тривалістю, як-от більшість радіо, не надсилаються.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Як працює скробблінг ListenBrainz:\n\n1. Правило 30 секунд: Треки менше 30 секунд не скроббляться.\n\n2. Поріг прослуховування: Прослуховування зараховується після половини тривалості або 4 хвилин (що настане раніше).\n\n3. Паузи та перемотування: Час на паузі або перемотуванні не враховується.\n\n4. Офлайн-черга: До 100 прослуховувань (64 КБ) зберігаються офлайн і надсилаються при підключенні.\n\n5. Розділення акаунтів: Очікувані прослуховування зберігаються окремо для кожного облікового запису ListenBrainz.\n\n6. Невідома тривалість: Потоки з невідомою тривалістю, як-от більшість радіо, не надсилаються.\n\n7. Токен: на телефоні або комп’ютері скопіюйте свій токен користувача зі сторінки listenbrainz.org/settings у текстовий файл на SD-картці, потім виберіть «Прочитати токен з SD-картки».",
   },
   vi = {
     ["Could not open text entry. Try again."] = "Không thể mở mục nhập văn bản. Hãy thử lại.",
@@ -996,7 +1118,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "Không thể kết nối tới ListenBrainz.",
     ["ListenBrainz did not accept that token."] = "ListenBrainz không chấp nhận mã đó.",
     ["ListenBrainz token saved."] = "Đã lưu mã ListenBrainz.",
+    ["Logged in to ListenBrainz as %s"] = "Đã đăng nhập ListenBrainz với tên %s",
+    ["Account saved. Tap Scrobbling to turn it on."] = "Đã lưu tài khoản. Nhấn vào Scrobble để bật.",
     ["Set ListenBrainz user token"] = "Đặt mã người dùng ListenBrainz",
+    ["Read token from SD card"] = "Đọc mã từ thẻ SD",
+    ["Delete token file?"] = "Xóa tệp mã?",
+    ["Keep the file"] = "Giữ tệp",
+    ["Delete the file"] = "Xóa tệp",
+    ["Token file deleted."] = "Đã xóa tệp mã.",
+    ["Could not delete the token file."] = "Không thể xóa tệp mã.",
+    ["Token file kept."] = "Đã giữ tệp mã.",
+    ["No ListenBrainz token found in that file."] = "Không tìm thấy mã ListenBrainz trong tệp đó.",
+    ["Could not read that file."] = "Không thể đọc tệp đó.",
+    ["Could not open the file picker. Try again."] = "Không thể mở trình chọn tệp. Thử lại.",
     ["ListenBrainz user token"] = "Mã người dùng ListenBrainz",
     ["Log out"] = "Đăng xuất",
     ["Log out (%s)"] = "Đăng xuất (%s)",
@@ -1077,7 +1211,7 @@ local T = {
     ["Up to 100 offline listens"] = "Tối đa 100 lượt nghe ngoại tuyến",
     ["Separate queue per account"] = "Hàng đợi riêng theo tài khoản",
     ["Streams without length are not sent"] = "Luồng không rõ độ dài sẽ không được gửi",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "Cách hoạt động của Scrobble ListenBrainz:\n\n1. Quy tắc 30 giây: Bài hát dưới 30 giây không được scrobble.\n\n2. Ngưỡng nghe: Lượt nghe hợp lệ sau một nửa thời lượng hoặc 4 phút (tùy điều kiện nào đến trước).\n\n3. Tạm dừng & Tua: Thời gian tạm dừng hoặc tua không được tính vào ngưỡng.\n\n4. Hàng đợi ngoại tuyến: Lưu tối đa 100 lượt nghe (64 KB) ngoại tuyến và tự động gửi khi có kết nối.\n\n5. Tách biệt tài khoản: Các lượt nghe chờ được giữ riêng theo từng tài khoản ListenBrainz.\n\n6. Độ dài không xác định: Luồng phát không rõ độ dài, như hầu hết đài radio, sẽ không được gửi.",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "Cách hoạt động của Scrobble ListenBrainz:\n\n1. Quy tắc 30 giây: Bài hát dưới 30 giây không được scrobble.\n\n2. Ngưỡng nghe: Lượt nghe hợp lệ sau một nửa thời lượng hoặc 4 phút (tùy điều kiện nào đến trước).\n\n3. Tạm dừng & Tua: Thời gian tạm dừng hoặc tua không được tính vào ngưỡng.\n\n4. Hàng đợi ngoại tuyến: Lưu tối đa 100 lượt nghe (64 KB) ngoại tuyến và tự động gửi khi có kết nối.\n\n5. Tách biệt tài khoản: Các lượt nghe chờ được giữ riêng theo từng tài khoản ListenBrainz.\n\n6. Độ dài không xác định: Luồng phát không rõ độ dài, như hầu hết đài radio, sẽ không được gửi.\n\n7. Mã: trên điện thoại hoặc máy tính, hãy sao chép mã người dùng từ listenbrainz.org/settings vào một tệp văn bản trên thẻ SD, rồi dùng “Đọc mã từ thẻ SD”.",
   },
   zh_CN = {
     ["Could not open text entry. Try again."] = "无法打开文本输入。请重试。",
@@ -1094,7 +1228,19 @@ local T = {
     ["Could not reach ListenBrainz."] = "无法连接到 ListenBrainz。",
     ["ListenBrainz did not accept that token."] = "ListenBrainz 未接受该令牌。",
     ["ListenBrainz token saved."] = "ListenBrainz 令牌已保存。",
+    ["Logged in to ListenBrainz as %s"] = "已作为 %s 登录 ListenBrainz",
+    ["Account saved. Tap Scrobbling to turn it on."] = "账号已保存。点按“记录播放”以开启。",
     ["Set ListenBrainz user token"] = "设置 ListenBrainz 用户令牌",
+    ["Read token from SD card"] = "从 SD 卡读取令牌",
+    ["Delete token file?"] = "删除令牌文件？",
+    ["Keep the file"] = "保留文件",
+    ["Delete the file"] = "删除文件",
+    ["Token file deleted."] = "令牌文件已删除。",
+    ["Could not delete the token file."] = "无法删除令牌文件。",
+    ["Token file kept."] = "令牌文件已保留。",
+    ["No ListenBrainz token found in that file."] = "该文件中未找到 ListenBrainz 令牌。",
+    ["Could not read that file."] = "无法读取该文件。",
+    ["Could not open the file picker. Try again."] = "无法打开文件选择器。请重试。",
     ["ListenBrainz user token"] = "ListenBrainz 用户令牌",
     ["Log out"] = "退出登录",
     ["Log out (%s)"] = "退出登录 (%s)",
@@ -1175,7 +1321,7 @@ local T = {
     ["Up to 100 offline listens"] = "最多 100 条离线收听记录",
     ["Separate queue per account"] = "每个账号独立队列",
     ["Streams without length are not sent"] = "无时长的流媒体不会被发送",
-    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent."] = "ListenBrainz 记录收听的运作方式：\n\n1. 30 秒规则：短于 30 秒的曲目不予记录。\n\n2. 聆听阈值：播放达到曲目时长的一半或 4 分钟（以先到者为准）即视为有效收听。\n\n3. 暂停与快进：暂停或快进跳转的时间不计入阈值。\n\n4. 离线队列：离线最多保存 100 条收听记录（64 KB），连接网络后自动发送。\n\n5. 账号独立：等待中的收听记录按 ListenBrainz 账号分别保留。\n\n6. 时长未知：时长未知的流媒体（如大多数电台）不会被发送。",
+    ["How ListenBrainz Scrobbling Works:\n\n1. 30-Second Rule: Tracks under 30 seconds are not scrobbled.\n\n2. Listening Threshold: A listen qualifies after half its length or 4 minutes, whichever comes first.\n\n3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card."] = "ListenBrainz 记录收听的运作方式：\n\n1. 30 秒规则：短于 30 秒的曲目不予记录。\n\n2. 聆听阈值：播放达到曲目时长的一半或 4 分钟（以先到者为准）即视为有效收听。\n\n3. 暂停与快进：暂停或快进跳转的时间不计入阈值。\n\n4. 离线队列：离线最多保存 100 条收听记录（64 KB），连接网络后自动发送。\n\n5. 账号独立：等待中的收听记录按 ListenBrainz 账号分别保留。\n\n6. 时长未知：时长未知的流媒体（如大多数电台）不会被发送。\n\n7. 令牌：在手机或电脑上，从 listenbrainz.org/settings 复制你的用户令牌，粘贴到 SD 卡上的文本文件中，然后使用“从 SD 卡读取令牌”。",
   },
 }
 local function tr(s)
@@ -1192,7 +1338,7 @@ end
 local VALIDATE_URL = "https://api.listenbrainz.org/1/validate-token"
 local SUBMIT_URL = "https://api.listenbrainz.org/1/submit-listens"
 local CLIENT_NAME = "Compas"
-local CLIENT_VERSION = "1.0"
+local CLIENT_VERSION = PLUGIN_VERSION
 local QUEUE_MAX_RECORDS = 100
 local QUEUE_MAX_BYTES = 65536
 local MAX_BACKOFF = 300
@@ -1216,6 +1362,8 @@ local DELIVERY_DISCARDED = "Discarded by you"
 local can_secrets = plugin.has_capability("storage.secrets") and plugin.has_capability("storage.secrets_get")
 local can_http = plugin.has_capability("network.http.async")
 local can_json = plugin.has_capability("data.json")
+local can_pick = plugin.has_capability("ui.file_picker") and plugin.pick_file ~= nil
+local can_delete = plugin.has_capability("filesystem.file_ops") and plugin.file_delete ~= nil
 
 local state = {
   enabled = plugin.storage.get("enabled", "0") == "1",
@@ -1914,7 +2062,8 @@ local function rebase(snap, count_previous)
 end
 
 local function send_playing_now(snap)
-  if snap.now_sent or not state.enabled or auth_hold or not can_http or not can_json then return end
+  -- Only while it really plays; the 5 s poll sends it once playback resumes.
+  if snap.now_sent or not state.enabled or not is_active() or auth_hold or not can_http or not can_json then return end
   if os.time() < next_sync_at or os.time() < rate_limited_until or wifi_disabled() then return end
   if not metadata_ok(snap.artist, snap.track) or snap.duration < 30 then return end
   local token = current_token()
@@ -1946,27 +2095,38 @@ local function refresh_duration(snap)
   if duration >= 30 then snap.duration = duration end
 end
 
+-- Start tracking a song. Used by track_started and by a song that was
+-- already playing when the plugin loaded.
+-- `picked_up`: the song was already playing, so it began `pos` seconds ago.
+-- At a real track start the position can still be the previous song's.
+local function begin_track(title, artist, album, duration_seconds, picked_up)
+  local now = os.time()
+  local pos = tonumber(plugin.get_position()) or 0
+  if pos < 0 then pos = 0 end
+  current = {
+    artist = clip(artist),
+    track = clip(title),
+    release = clip(album),
+    duration = tonumber(duration_seconds) or 0,
+    started = picked_up and now - math.floor(pos) or now,
+    listened = 0,
+    active = is_active(),
+    last_poll = now,
+    last_pos = pos,
+    submitted = false,
+  }
+  send_playing_now(current)
+  sync_queue()
+  refresh_main_list()
+end
+
 plugin.on("track_started", function(title, artist, album, duration_seconds)
   if current then
     rebase(current, current.active)
     current.active = false
     consider(current)
   end
-  current = {
-    artist = clip(artist),
-    track = clip(title),
-    release = clip(album),
-    duration = tonumber(duration_seconds) or 0,
-    started = os.time(),
-    listened = 0,
-    active = is_active(),
-    last_poll = os.time(),
-    last_pos = tonumber(plugin.get_position()) or 0,
-    submitted = false,
-  }
-  send_playing_now(current)
-  sync_queue()
-  refresh_main_list()
+  begin_track(title, artist, album, duration_seconds)
 end)
 
 local function finish_stretch()
@@ -2051,7 +2211,9 @@ plugin.set_interval(5, function()
   end
 end)
 
-local function validate_token(token)
+local set_scrobbling
+
+local function validate_token(token, on_saved)
   if not can_secrets then
     plugin.show_toast(tr("This player cannot store a ListenBrainz token."))
     return
@@ -2085,27 +2247,39 @@ local function validate_token(token)
       user_name = clip(data.user_name)
       if user_name == token or user_name:find("%c") then user_name = nil end
     end
+    -- Scrobbling turns on at login only while the user has never chosen.
+    local never_chosen = plugin.storage.get("enabled") == nil
     local ok, message = switch_account(token, user_name)
-    plugin.show_toast(ok and tr("ListenBrainz token saved.") or message)
-    if ok then sync_queue() end
+    if ok then
+      local toast = user_name and string.format(tr("Logged in to ListenBrainz as %s"), user_name) or tr("ListenBrainz token saved.")
+      local enabling = never_chosen and not state.enabled
+      if not enabling or set_scrobbling(true, tr("Account saved. Tap Scrobbling to turn it on.")) then
+        plugin.show_toast(toast)
+      end
+      sync_queue()
+    else
+      plugin.show_toast(message)
+    end
     refresh_main_list()
+    if ok and on_saved then on_saved() end
   end)
   if not handle then plugin.show_toast(tr("Could not reach ListenBrainz.")) end
 end
 
-local function prompt_token()
+local function prompt_token(on_saved)
   show_input(tr("ListenBrainz user token"), function(value)
     if value == nil or trim(value) == "" then return end
-    validate_token(trim(value))
+    validate_token(trim(value), on_saved)
   end)
 end
 
-local function set_scrobbling(value)
+-- fail_message replaces the generic toast when the preference cannot be saved.
+set_scrobbling = function(value, fail_message)
   if value then
     state.enabled = true
     if not save_enabled() then
       state.enabled = false
-      plugin.show_toast(tr("Could not save scrobbling preference. Try again."))
+      plugin.show_toast(fail_message or tr("Could not save scrobbling preference. Try again."))
       return false
     end
     if current then
@@ -2134,8 +2308,76 @@ end
 local function finish_confirmation(handle, title, message)
   plugin.show_toast(message)
   if handle and plugin.has_capability("ui.list_update") and plugin.is_list_showing(handle) then
-    plugin.show_list(title, { message .. " " .. tr("Press Back.") }, function() end, { replace = handle })
+    local text = message .. " " .. tr("Press Back.")
+    -- Wrapped, so a long outcome is not cut at the screen edge.
+    local row = plugin.has_capability("ui.list_wrap") and { label = text, wrap = true } or text
+    plugin.show_list(title, { row }, function() end, { replace = handle })
   end
+end
+
+local open_settings_screen
+local is_main_showing
+
+local UUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
+
+-- ListenBrainz tokens are UUIDs, so take the first one in the text. A file
+-- holding nothing but one other token-shaped word is used as it is.
+local function token_from_text(text)
+  text = text:gsub("^\239\187\191", "")
+  local uuid = text:match("%f[%w]" .. UUID_PATTERN .. "%f[^%w]")
+  if uuid then return uuid end
+  local only = trim(text)
+  if token_shape_ok(only) then return only end
+  return nil
+end
+
+-- Returns the token in the file, or nil and "read" or "none".
+local function read_token_file(path)
+  local file = io.open(path, "rb")
+  if not file then return nil, "read" end
+  local text = file:read(4096)
+  file:close()
+  if not text then return nil, "read" end
+  return token_from_text(text) or nil, "none"
+end
+
+-- After a token was saved, offer to remove the file so it does not stay on the card.
+local function confirm_delete_token_file(path)
+  if not can_delete then return end
+  local title = tr("Delete token file?")
+  local done, handle = false, nil
+  handle = plugin.show_list(title, { tr("Keep the file"), tr("Delete the file") }, function(idx)
+    if done or (idx ~= 1 and idx ~= 2) then return end
+    done = true
+    if idx == 1 then finish_confirmation(handle, title, tr("Token file kept.")); return end
+    local called, started = pcall(plugin.file_delete, path, function(result)
+      local ok = result and result.failed == 0 and not result.stopped
+      finish_confirmation(handle, title, ok and tr("Token file deleted.") or tr("Could not delete the token file."))
+    end)
+    if not (called and started) then finish_confirmation(handle, title, tr("Could not delete the token file.")) end
+  end)
+end
+
+-- Pick a text file on the SD card and use the token inside it.
+local function read_token_from_sd(on_saved)
+  local opened = plugin.pick_file(nil, function(path)
+    if not path then return end
+    local token, why = read_token_file(path)
+    if not token then
+      plugin.show_toast(why == "read" and tr("Could not read that file.") or tr("No ListenBrainz token found in that file."))
+      return
+    end
+    validate_token(token, function()
+      -- From the main screen, only offer while the user is still on it.
+      if on_saved then
+        on_saved()
+      elseif not is_main_showing() then
+        return
+      end
+      confirm_delete_token_file(path)
+    end)
+  end)
+  if not opened then plugin.show_toast(tr("Could not open the file picker. Try again.")) end
 end
 
 local function confirm_log_out()
@@ -2154,6 +2396,7 @@ local function confirm_log_out()
     if not ok then finish_confirmation(handle, title, message); return end
     finish_confirmation(handle, title, tr("Logged out. Waiting listens are kept for this account."))
     refresh_main_list()
+    open_settings_screen()
   end)
 end
 
@@ -2258,7 +2501,8 @@ local function open_how_it_works()
     .. "3. Pauses & Seeking: Time spent paused or seeking does not count toward the threshold.\n\n"
     .. "4. Offline Queue: Up to 100 listens (64 KB) are saved offline and sent automatically when connected.\n\n"
     .. "5. Account Separation: Waiting listens are kept per ListenBrainz account.\n\n"
-    .. "6. Unknown Length: Streams without a known length, such as most radio, are not sent.")
+    .. "6. Unknown Length: Streams without a known length, such as most radio, are not sent.\n\n"
+    .. "7. Token: On a phone or computer, copy your user token from listenbrainz.org/settings into a text file on the SD card, then use Read token from SD card.")
   if plugin.has_capability("ui.text_view") and plugin.show_text_view then
     if plugin.show_text_view(tr("How Scrobbling Works"), text) ~= false then return end
   end
@@ -2272,11 +2516,22 @@ local function open_how_it_works()
   }, function() end)
 end
 
-local function open_settings_screen()
+open_settings_screen = function()
   local has_token = current_token() ~= nil
   local rows = {
-    { type = "row", label = has_token and tr("User token: set") or tr("Set ListenBrainz user token"), on_select = prompt_token },
+    {
+      type = "row",
+      label = has_token and tr("User token: set") or tr("Set ListenBrainz user token"),
+      on_select = function() prompt_token(open_settings_screen) end,
+    },
   }
+  if can_pick then
+    rows[#rows + 1] = {
+      type = "row",
+      label = tr("Read token from SD card"),
+      on_select = function() read_token_from_sd(open_settings_screen) end,
+    }
+  end
   if has_token then
     local label = tr("Log out")
     if state.user_name then label = string.format(tr("Log out (%s)"), truncate(state.user_name, 18)) end
@@ -2294,7 +2549,7 @@ local function open_settings_screen()
   plugin.show_settings_list(tr("Account & settings"), rows, { update = true })
 end
 
-local function is_main_showing()
+is_main_showing = function()
   if not current_main_handle or not plugin.has_capability("ui.list_showing") then return false end
   return plugin.is_list_showing(current_main_handle)
 end
@@ -2370,9 +2625,11 @@ local function build_main_menu()
         plugin.show_toast(tr("ListenBrainz did not accept the user token. Saved listens are kept."))
       end)
     end
-    add(tr("Set ListenBrainz user token"), prompt_token)
-    add(tr("Account & settings"), open_settings_screen)
-    add(tr("How Scrobbling Works"), open_how_it_works)
+    add(tr("Set ListenBrainz user token"), function() prompt_token() end)
+    if can_pick then add(tr("Read token from SD card"), function() read_token_from_sd() end) end
+    -- Signed out, the settings screen would only repeat these rows and How.
+    if auth_hold then add(tr("Account & settings"), open_settings_screen)
+    else add(tr("How Scrobbling Works"), open_how_it_works) end
     return items, actions
   end
   local count = queued_count()
@@ -2439,6 +2696,15 @@ end
 plugin.register_list_item("playback", tr("ListenBrainz Scrobbler"), open_main_list)
 
 if not auth_hold then sync_queue() end
+
+-- A song may already be playing when the plugin loads. Time listened
+-- counts from now; the listen timestamp is when the song really began.
+if plugin.get_current_track_path() then
+  local title, artist, album, duration = plugin.get_now_playing()
+  if title and title ~= "" then
+    begin_track(title, artist, album, duration, true)
+  end
+end
 
 if rawget(_G, "COMPAS_PLUGIN_TEST") then
   _G.COMPAS_PLUGIN_UNDER_TEST = {
