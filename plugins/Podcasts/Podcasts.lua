@@ -1,4 +1,4 @@
-plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.1", api_min = 19 })
+plugin.define({ id = "example.podcasts", name = "Podcasts", version = "1.9.2", api_min = 19 })
 
 local T = {
     de = {
@@ -1485,7 +1485,9 @@ local MAX_OPML_BYTES = 1048576
 -- History bounds. Past them the oldest entries without a download are
 -- dropped (played marks, old positions); downloads are never dropped.
 local MAX_PROGRESS_BYTES, MAX_PROGRESS_RECORDS = 2097152, 5000
-local MAX_PROGRESS_READ_BYTES = 8388608
+-- Reading takes about twice the bytes read (buffer and result), which must fit
+-- in the player's 8 MiB per-plugin memory with room for the plugin itself.
+local MAX_PROGRESS_READ_BYTES = 3145728
 -- Download entries are never pruned, so new downloads stop here instead.
 local MAX_DOWNLOADS = 2000
 local MAX_NEW_PER_SHOW = 5
@@ -2530,12 +2532,29 @@ local function save_progress()
     return ok
 end
 
+-- Reads at most max bytes. read(n) reserves n bytes before reading, even for a
+-- small file, so ask only for what the file holds. nil when the file cannot
+-- be measured, which callers treat as unreadable, never as empty.
+local function read_upto(f, max)
+    local size = f:seek("end")
+    if not size or not f:seek("set") then
+        return nil
+    end
+    return f:read(math.min(size, max)) or ""
+end
+
 local function load_progress()
     local f = io.open(PROGRESS, "r")
     if not f then
         return
     end
-    local body = f:read(MAX_PROGRESS_READ_BYTES) or ""
+    local body = read_upto(f, MAX_PROGRESS_READ_BYTES)
+    if not body then
+        f:close()
+        progress_partial = true -- keep the file as it is: no saves this session
+        plugin.show_toast(tr("Some download history could not be loaded"))
+        return
+    end
     if #body == MAX_PROGRESS_READ_BYTES and f:read(1) then
         progress_partial = true
         body = body:match("^(.*\n)") or "" -- only complete entries
@@ -2596,7 +2615,7 @@ local function load_subscriptions()
     if not f then
         return
     end
-    local body = f:read(MAX_OPML_BYTES) or ""
+    local body = read_upto(f, MAX_OPML_BYTES) or ""
     f:close()
     scan_budget = 400000
     local ok = pcall(function()
@@ -3260,7 +3279,7 @@ local function import_file(path)
         plugin.show_toast(tr("Could not read OPML"))
         return
     end
-    local xml = f:read(MAX_OPML_BYTES) or ""
+    local xml = read_upto(f, MAX_OPML_BYTES) or ""
     f:close()
     scan_budget = 400000
     local parsed, imported = pcall(parse_attrs_for_opml, xml)

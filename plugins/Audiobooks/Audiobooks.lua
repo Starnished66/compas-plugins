@@ -1,4 +1,4 @@
-plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.8.1", api_min = 19 })
+plugin.define({ id = "example.audiobooks", name = "Audiobooks", version = "3.8.2", api_min = 19 })
 
 local T = {
     de = {
@@ -1504,14 +1504,33 @@ local function path_parts(path)
     return parts
 end
 
+-- Reads at most max bytes. read(n) reserves n bytes before reading, even for a
+-- small file, so ask only for what the file holds. nil when the file cannot
+-- be measured, which callers treat as unreadable, never as empty.
+local function read_upto(f, max)
+    local size = f:seek("end")
+    if not size or not f:seek("set") then
+        return nil
+    end
+    return f:read(math.min(size, max)) or ""
+end
+
+-- Set when the state file exists but could not be read: saving would replace
+-- it with whatever little is in memory.
+local state_unreadable = false
+
 local function read_state_file(path, importing)
     local f = io.open(path, "r")
     if not f then
         return false
     end
     local records, record_count = {}, 0
-    local raw = f:read(2097152) or ""
+    local raw = read_upto(f, 2097152)
     f:close()
+    if not raw then
+        state_unreadable = true
+        return true -- handled: no import of the old file over this one
+    end
     local pos, lines = 1, 0
     while pos <= #raw and lines < 20000 do
         local ending = raw:find("\n", pos, true)
@@ -1611,6 +1630,9 @@ end
 local STATE_MAX_BYTES, STATE_MAX_LINES = 2097152 - 8192, 20000 - 10
 
 local function save_state()
+    if state_unreadable then
+        return false
+    end
     local keys = {}
     for key in pairs(state) do
         keys[#keys + 1] = key
